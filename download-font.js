@@ -1,22 +1,27 @@
 const fs = require('fs');
-const https = require('https');
 
-const url = 'https://raw.githubusercontent.com/wutipong/thai-fonts/master/fonts/THSarabunNew.ttf';
-const dest = 'src/lib/fonts/THSarabunNew.ttf';
-const tsDest = 'src/lib/fonts/thSarabunNewBase64.ts';
+async function downloadFont() {
+  try {
+    const url = 'https://raw.githubusercontent.com/googlefonts/noto-fonts/main/hinted/ttf/NotoSansThai/NotoSansThai-Regular.ttf';
+    console.log('Downloading from:', url);
+    const response = await fetch(url);
+    if (!response.ok) {
+      throw new Error(`Failed to fetch: ${response.status} ${response.statusText}`);
+    }
+    const arrayBuffer = await response.arrayBuffer();
+    const buffer = Buffer.from(arrayBuffer);
+    
+    if (buffer.length < 1000) {
+      throw new Error('Downloaded file is too small, likely an error page.');
+    }
 
-https.get(url, (res) => {
-  const file = fs.createWriteStream(dest);
-  res.pipe(file);
-  file.on('finish', () => {
-    file.close(() => {
-      const data = fs.readFileSync(dest);
-      const base64 = data.toString('base64');
-      const tsContent = `export const thSarabunNewBase64 = "${base64}";\n`;
-      fs.writeFileSync(tsDest, tsContent);
-      console.log('Font downloaded and converted successfully!');
-    });
-  });
-}).on('error', (err) => {
-  console.error('Error downloading font:', err.message);
-});
+    const base64 = buffer.toString('base64');
+    const tsContent = `export const thSarabunNewBase64 = "${base64}";\n`;
+    fs.writeFileSync('src/lib/fonts/thSarabunNewBase64.ts', tsContent);
+    console.log('Font downloaded and converted successfully! Size:', buffer.length);
+  } catch (err) {
+    console.error(err);
+  }
+}
+
+downloadFont();
