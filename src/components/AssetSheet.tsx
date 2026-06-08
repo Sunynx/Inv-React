@@ -231,7 +231,7 @@ export default function AssetSheet({ isOpen, onClose, assetId, mode = 'edit', on
                   <span className="font-mono bg-muted px-2 py-0.5 rounded-md">{formData.asset_code || '-'}</span>
                 </p>
               </div>
-              <div className="flex flex-col items-end gap-2">
+              <div className="flex flex-col items-end gap-2 pr-8 mt-2 sm:mt-0">
                 {onEdit && (
                   <Button variant="outline" size="sm" onClick={onEdit} className="gap-2 h-8">
                     <Edit size={14} />

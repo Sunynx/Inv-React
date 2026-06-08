@@ -22,12 +22,14 @@
   body {
     background-color: var(--background);
     color: var(--foreground);
+    overflow-x: hidden;
     @apply bg-background text-foreground;
   }
   * {
     @apply border-border outline-ring/50;
   }
   html {
+    overflow-x: hidden;
     @apply font-sans;
   }
 }
