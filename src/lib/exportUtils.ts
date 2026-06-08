@@ -3,27 +3,65 @@ import { saveAs } from 'file-saver';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import { format } from 'date-fns';
+import { thSarabunNewBase64 } from './fonts/thSarabunNewBase64';
 
 export async function exportToExcel(data: any, options: { filename: string, includeSummary?: boolean }) {
   const workbook = new ExcelJS.Workbook();
   workbook.creator = 'RPM IT Inventory System';
   workbook.created = new Date();
 
+  // Helper to style sheets
+  const styleSheet = (sheet: ExcelJS.Worksheet, headerRowIndex: number = 1) => {
+    const headerRow = sheet.getRow(headerRowIndex);
+    headerRow.font = { bold: true, color: { argb: 'FFFFFFFF' } };
+    headerRow.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF1B365D' } }; // RPM Navy Blue
+    headerRow.alignment = { vertical: 'middle', horizontal: 'center' };
+    
+    // Auto filter
+    const lastColIndex = sheet.columns?.length || 1;
+    const lastColLetter = String.fromCharCode(64 + lastColIndex);
+    sheet.autoFilter = `A${headerRowIndex}:${lastColLetter}${headerRowIndex}`;
+
+    // Add borders to all cells
+    sheet.eachRow((row) => {
+      row.eachCell((cell) => {
+        cell.border = {
+          top: { style: 'thin', color: { argb: 'FFDDDDDD' } },
+          left: { style: 'thin', color: { argb: 'FFDDDDDD' } },
+          bottom: { style: 'thin', color: { argb: 'FFDDDDDD' } },
+          right: { style: 'thin', color: { argb: 'FFDDDDDD' } }
+        };
+      });
+    });
+  };
+
   // Create Summary Sheet
   if (options.includeSummary) {
     const summarySheet = workbook.addWorksheet('Summary Report');
     summarySheet.columns = [
-      { header: 'Metric', key: 'metric', width: 30 },
-      { header: 'Value', key: 'value', width: 20 },
+      { header: 'Metric', key: 'metric', width: 35 },
+      { header: 'Value', key: 'value', width: 25 },
     ];
-    summarySheet.getRow(1).font = { bold: true };
-    summarySheet.addRow({ metric: 'Generated On', value: format(new Date(), 'dd MMM yyyy HH:mm') });
     
+    // Add title
+    summarySheet.insertRow(1, ['RPM IT Inventory System - Export Summary']);
+    summarySheet.mergeCells('A1:B1');
+    const titleCell = summarySheet.getCell('A1');
+    titleCell.font = { size: 16, bold: true, color: { argb: 'FF1B365D' } };
+    titleCell.alignment = { vertical: 'middle', horizontal: 'center' };
+    summarySheet.getRow(1).height = 30;
+
+    // We pushed headers to row 2
+    summarySheet.getRow(2).values = ['Metric', 'Value'];
+    
+    summarySheet.addRow({ metric: 'Generated On', value: format(new Date(), 'dd MMM yyyy HH:mm') });
     if (data.assets) summarySheet.addRow({ metric: 'Total Assets Exported', value: data.assets.length });
     if (data.tickets) summarySheet.addRow({ metric: 'Total Tickets Exported', value: data.tickets.length });
     if (data.maintenance) summarySheet.addRow({ metric: 'Maintenance Logs Exported', value: data.maintenance.length });
     if (data.stock) summarySheet.addRow({ metric: 'Stock Movements Exported', value: data.stock.length });
     if (data.audit) summarySheet.addRow({ metric: 'Audit Logs Exported', value: data.audit.length });
+
+    styleSheet(summarySheet, 2);
   }
 
   // Assets Sheet
@@ -52,6 +90,7 @@ export async function exportToExcel(data: any, options: { filename: string, incl
         price: a.price || 0
       });
     });
+    styleSheet(sheet, 1);
   }
 
   // Tickets Sheet
@@ -78,6 +117,7 @@ export async function exportToExcel(data: any, options: { filename: string, incl
         created_at: t.created_at ? format(new Date(t.created_at), 'dd MMM yyyy HH:mm') : '-',
       });
     });
+    styleSheet(sheet, 1);
   }
 
   // Stock Sheet
@@ -102,6 +142,7 @@ export async function exportToExcel(data: any, options: { filename: string, incl
         notes: s.notes,
       });
     });
+    styleSheet(sheet, 1);
   }
 
   const buffer = await workbook.xlsx.writeBuffer();
@@ -111,17 +152,23 @@ export async function exportToExcel(data: any, options: { filename: string, incl
 
 export function exportToPDF(data: any, options: { filename: string, includeSummary?: boolean }) {
   const doc = new jsPDF('landscape');
+  
+  // Add Thai Font
+  doc.addFileToVFS('THSarabunNew.ttf', thSarabunNewBase64);
+  doc.addFont('THSarabunNew.ttf', 'THSarabunNew', 'normal');
+  doc.setFont('THSarabunNew');
+
   const primaryColor: [number, number, number] = [27, 54, 93]; // RPM Navy Blue
 
   let currentY = 15;
 
   // Title
-  doc.setFontSize(20);
+  doc.setFontSize(24);
   doc.setTextColor(primaryColor[0], primaryColor[1], primaryColor[2]);
   doc.text('RPM IT Inventory System Report', 14, currentY);
   currentY += 10;
   
-  doc.setFontSize(10);
+  doc.setFontSize(14);
   doc.setTextColor(100);
   doc.text(`Generated on: ${format(new Date(), 'dd MMM yyyy HH:mm')}`, 14, currentY);
   currentY += 15;
@@ -158,8 +205,8 @@ export function exportToPDF(data: any, options: { filename: string, includeSumma
       startY: currentY + 5,
       head: [['Code', 'Name', 'Category', 'Status', 'Location', 'Assigned User']],
       body: assetBody,
-      headStyles: { fillColor: primaryColor },
-      styles: { fontSize: 8 },
+      headStyles: { fillColor: primaryColor, font: 'THSarabunNew', fontSize: 14 },
+      styles: { font: 'THSarabunNew', fontSize: 12 },
     });
     currentY = (doc as any).lastAutoTable.finalY + 15;
     firstTable = false;
@@ -185,8 +232,8 @@ export function exportToPDF(data: any, options: { filename: string, includeSumma
       startY: currentY + 5,
       head: [['Ticket #', 'Issue', 'Status', 'Priority', 'Asset Code', 'Date']],
       body: ticketBody,
-      headStyles: { fillColor: primaryColor },
-      styles: { fontSize: 8 },
+      headStyles: { fillColor: primaryColor, font: 'THSarabunNew', fontSize: 14 },
+      styles: { font: 'THSarabunNew', fontSize: 12 },
     });
     currentY = (doc as any).lastAutoTable.finalY + 15;
     firstTable = false;
@@ -212,8 +259,8 @@ export function exportToPDF(data: any, options: { filename: string, includeSumma
       startY: currentY + 5,
       head: [['Date', 'Item', 'Type', 'Qty', 'Reference', 'Notes']],
       body: stockBody,
-      headStyles: { fillColor: primaryColor },
-      styles: { fontSize: 8 },
+      headStyles: { fillColor: primaryColor, font: 'THSarabunNew', fontSize: 14 },
+      styles: { font: 'THSarabunNew', fontSize: 12 },
     });
     currentY = (doc as any).lastAutoTable.finalY + 15;
     firstTable = false;
