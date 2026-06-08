@@ -80,13 +80,13 @@ export default function AIAssistant() {
           {/* Input Area */}
           <form onSubmit={handleSubmit} className="p-3 bg-white border-t flex gap-2">
             <Input
-              value={input}
+              value={input || ''}
               onChange={handleInputChange}
               placeholder="พิมพ์คำถามของคุณที่นี่..."
               className="flex-1 bg-gray-50"
               disabled={isLoading}
             />
-            <Button type="submit" size="icon" disabled={isLoading || !input.trim()}>
+            <Button type="submit" size="icon" disabled={isLoading || !input?.trim()}>
               <Send className="w-4 h-4" />
             </Button>
           </form>
