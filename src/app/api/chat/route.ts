@@ -109,5 +109,5 @@ export async function POST(req: Request) {
     maxTokens: 2000, // Limit max tokens to avoid OpenRouter credit check errors
   });
 
-  return result.toDataStreamResponse();
+  return result.toAIStreamResponse();
 }
