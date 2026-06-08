@@ -107,5 +107,5 @@ export async function POST(req: Request) {
     maxSteps: 3, // Allow the model to call tools up to 3 times before returning text
   });
 
-  return result.toDataStreamResponse();
+  return result.toUIMessageStreamResponse();
 }
