@@ -27,9 +27,9 @@ export default function RootLayout({
       <body className={`${inter.className} bg-background text-foreground transition-colors duration-300`}>
         <Providers>
           <Toaster position="top-right" />
-          <div className="flex min-h-screen">
+          <div className="flex min-h-screen w-full">
             <Sidebar />
-            <div className="flex-1 flex flex-col md:ml-64">
+            <div className="flex-1 flex flex-col md:ml-64 min-w-0">
               {/* Global Top Header for Desktop */}
               <header className="hidden md:flex h-16 items-center justify-end px-8 border-b border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 sticky top-0 z-30 transition-colors duration-300">
                 <div className="flex items-center gap-2">
