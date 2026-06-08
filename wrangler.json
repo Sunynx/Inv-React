@@ -1,5 +1,5 @@
 {
   "name": "rpm-inv",
-  "pages_build_output_dir": "out",
+  "pages_build_output_dir": ".vercel/output/static",
   "compatibility_date": "2024-05-01"
 }
