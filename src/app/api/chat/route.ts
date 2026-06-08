@@ -22,7 +22,7 @@ export async function POST(req: Request) {
       apiKey: process.env.OPENROUTER_API_KEY,
     });
 
-    const result = streamText({
+    const result = await streamText({
       model: openrouter('openrouter/free'),
       system: `คุณคือผู้ช่วย AI อัจฉริยะสำหรับระบบ RPM IT Inventory 
 หน้าที่ของคุณคือช่วยตอบคำถาม วิเคราะห์ข้อมูล และสรุปข้อมูลให้กับผู้ใช้งาน (พนักงาน IT หรือผู้ดูแลระบบ)
