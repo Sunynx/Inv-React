@@ -2,7 +2,7 @@ const fs = require('fs');
 
 async function downloadFont() {
   try {
-    const url = 'https://raw.githubusercontent.com/googlefonts/noto-fonts/main/hinted/ttf/NotoSansThai/NotoSansThai-Regular.ttf';
+    const url = 'https://raw.githubusercontent.com/google/fonts/main/ofl/sarabun/Sarabun-Regular.ttf';
     console.log('Downloading from:', url);
     const response = await fetch(url);
     if (!response.ok) {

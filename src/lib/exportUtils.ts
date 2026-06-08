@@ -3,7 +3,7 @@ import { saveAs } from 'file-saver';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import { format } from 'date-fns';
-import { thSarabunNewBase64 as notoSansThaiBase64 } from './fonts/thSarabunNewBase64';
+import { thSarabunNewBase64 as sarabunBase64 } from './fonts/thSarabunNewBase64';
 
 export async function exportToExcel(data: any, options: { filename: string, includeSummary?: boolean }) {
   const workbook = new ExcelJS.Workbook();
@@ -154,9 +154,9 @@ export function exportToPDF(data: any, options: { filename: string, includeSumma
   const doc = new jsPDF('landscape');
   
   // Add Thai Font
-  doc.addFileToVFS('NotoSansThai.ttf', notoSansThaiBase64);
-  doc.addFont('NotoSansThai.ttf', 'NotoSansThai', 'normal');
-  doc.setFont('NotoSansThai');
+  doc.addFileToVFS('Sarabun.ttf', sarabunBase64);
+  doc.addFont('Sarabun.ttf', 'Sarabun', 'normal');
+  doc.setFont('Sarabun');
 
   const primaryColor: [number, number, number] = [27, 54, 93]; // RPM Navy Blue
 
@@ -205,8 +205,8 @@ export function exportToPDF(data: any, options: { filename: string, includeSumma
       startY: currentY + 5,
       head: [['Code', 'Name', 'Category', 'Status', 'Location', 'Assigned User']],
       body: assetBody,
-      headStyles: { fillColor: primaryColor, font: 'NotoSansThai', fontSize: 14 },
-      styles: { font: 'NotoSansThai', fontSize: 12 },
+      headStyles: { fillColor: primaryColor, font: 'Sarabun', fontSize: 14 },
+      styles: { font: 'Sarabun', fontSize: 12 },
     });
     currentY = (doc as any).lastAutoTable.finalY + 15;
     firstTable = false;
@@ -232,8 +232,8 @@ export function exportToPDF(data: any, options: { filename: string, includeSumma
       startY: currentY + 5,
       head: [['Ticket #', 'Issue', 'Status', 'Priority', 'Asset Code', 'Date']],
       body: ticketBody,
-      headStyles: { fillColor: primaryColor, font: 'NotoSansThai', fontSize: 14 },
-      styles: { font: 'NotoSansThai', fontSize: 12 },
+      headStyles: { fillColor: primaryColor, font: 'Sarabun', fontSize: 14 },
+      styles: { font: 'Sarabun', fontSize: 12 },
     });
     currentY = (doc as any).lastAutoTable.finalY + 15;
     firstTable = false;
@@ -259,8 +259,8 @@ export function exportToPDF(data: any, options: { filename: string, includeSumma
       startY: currentY + 5,
       head: [['Date', 'Item', 'Type', 'Qty', 'Reference', 'Notes']],
       body: stockBody,
-      headStyles: { fillColor: primaryColor, font: 'NotoSansThai', fontSize: 14 },
-      styles: { font: 'NotoSansThai', fontSize: 12 },
+      headStyles: { fillColor: primaryColor, font: 'Sarabun', fontSize: 14 },
+      styles: { font: 'Sarabun', fontSize: 12 },
     });
     currentY = (doc as any).lastAutoTable.finalY + 15;
     firstTable = false;
