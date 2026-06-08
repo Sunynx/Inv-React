@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { useChat } from '@ai-sdk/react';
+import { useChat } from 'ai/react';
 import { MessageCircle, X, Send, Bot, User, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -9,12 +9,12 @@ import { Input } from '@/components/ui/input';
 export default function AIAssistant() {
   const [isOpen, setIsOpen] = useState(false);
   const [localInput, setLocalInput] = useState('');
-  const { messages, sendMessage, isLoading } = useChat();
+  const { messages, append, isLoading } = useChat();
 
   const handleFormSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!localInput.trim()) return;
-    sendMessage({ role: 'user', content: localInput });
+    append({ role: 'user', content: localInput });
     setLocalInput('');
   };
 
