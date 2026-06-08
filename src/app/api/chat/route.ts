@@ -3,17 +3,19 @@ import { streamText, tool } from 'ai';
 import { z } from 'zod';
 import { supabase } from '@/lib/supabase';
 
-// Use OpenRouter via the OpenAI SDK provider
-const openrouter = createOpenAI({
-  baseURL: 'https://openrouter.ai/api/v1',
-  apiKey: process.env.OPENROUTER_API_KEY,
-});
+// Will be initialized inside POST handler to ensure Cloudflare env vars are loaded
 
 export const maxDuration = 30;
 export const runtime = 'edge';
 
 export async function POST(req: Request) {
   const { messages } = await req.json();
+
+  // Initialize inside the handler to ensure Cloudflare environment variables are accessible at runtime
+  const openrouter = createOpenAI({
+    baseURL: 'https://openrouter.ai/api/v1',
+    apiKey: process.env.OPENROUTER_API_KEY,
+  });
 
   const result = streamText({
     model: openrouter('openrouter/free'),
