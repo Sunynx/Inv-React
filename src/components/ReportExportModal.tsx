@@ -11,10 +11,12 @@ import { exportToExcel, exportToPDF } from '@/lib/exportUtils';
 import toast from 'react-hot-toast';
 import { format } from 'date-fns';
 
+const DEFAULT_DATA_TYPES = ['assets', 'tickets', 'stock', 'audit'];
+
 export default function ReportExportModal({ 
   isOpen, 
   onClose,
-  initialDataTypes = ['assets', 'tickets', 'stock', 'audit']
+  initialDataTypes = DEFAULT_DATA_TYPES
 }: { 
   isOpen: boolean; 
   onClose: () => void;
@@ -28,15 +30,17 @@ export default function ReportExportModal({
   const [includeSummary, setIncludeSummary] = useState(true);
 
   // Reset state when modal opens
+  const initialDataTypesStr = initialDataTypes?.join(',') || '';
+  
   useEffect(() => {
     if (isOpen) {
-      setDataTypes(initialDataTypes);
+      setDataTypes(initialDataTypes || DEFAULT_DATA_TYPES);
       setFormatType('excel');
       setStartDate('');
       setEndDate('');
       setIncludeSummary(true);
     }
-  }, [isOpen, initialDataTypes]);
+  }, [isOpen, initialDataTypesStr]);
 
   const toggleDataType = (type: string) => {
     if (dataTypes.includes(type)) {
