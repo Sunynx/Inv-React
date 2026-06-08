@@ -13,10 +13,10 @@ export async function POST(req: Request) {
     const { messages } = await req.json();
 
     if (!process.env.OPENROUTER_API_KEY) {
-      throw new Error("OPENROUTER_API_KEY is not configured in Cloudflare Environment Variables.");
+      throw new Error("OPENROUTER_API_KEY is not configured in Environment Variables.");
     }
 
-    // Initialize inside the handler to ensure Cloudflare environment variables are accessible at runtime
+    // Initialize inside the handler to ensure environment variables are accessible at runtime
     const openrouter = createOpenAI({
       baseURL: 'https://openrouter.ai/api/v1',
       apiKey: process.env.OPENROUTER_API_KEY,
