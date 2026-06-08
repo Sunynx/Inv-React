@@ -5,9 +5,8 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Search, Plus, MoreHorizontal, Edit, Trash2, CheckCircle2, AlertCircle, Clock, Ban, Download, Printer } from 'lucide-react';
 import { QRCodeSVG } from 'qrcode.react';
 import toast from 'react-hot-toast';
-import ExcelJS from 'exceljs';
-import { saveAs } from 'file-saver';
 import AssetSheet from '@/components/AssetSheet';
+import ReportExportModal from '@/components/ReportExportModal';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card } from '@/components/ui/card';
@@ -31,6 +30,7 @@ export default function AssetsPage() {
   const [isSheetOpen, setIsSheetOpen] = useState(false);
   const [sheetMode, setSheetMode] = useState<'view'|'edit'>('view');
   const [selectedAssetId, setSelectedAssetId] = useState<string | undefined>(undefined);
+  const [isExportModalOpen, setIsExportModalOpen] = useState(false);
 
   const { data: assets = [], isLoading } = useQuery({
     queryKey: ['assets'],
@@ -72,53 +72,6 @@ export default function AssetsPage() {
   });
 
   const countByStatus = (s: string) => assets.filter(a => a.status === s).length;
-
-  const handleExport = async () => {
-    const workbook = new ExcelJS.Workbook();
-    const worksheet = workbook.addWorksheet('Assets');
-
-    worksheet.columns = [
-      { header: 'Asset Name', key: 'name', width: 30 },
-      { header: 'Asset Code', key: 'asset_code', width: 20 },
-      { header: 'Category', key: 'category', width: 20 },
-      { header: 'Department', key: 'department', width: 25 },
-      { header: 'Location', key: 'location', width: 20 },
-      { header: 'Assignee', key: 'assignee', width: 20 },
-      { header: 'Status', key: 'status', width: 15 }
-    ];
-
-    filteredAssets.forEach(a => {
-      worksheet.addRow({
-        name: a.name,
-        asset_code: a.asset_code,
-        category: a.categories?.name || '-',
-        department: a.departments?.name || '-',
-        location: a.location || '-',
-        assignee: a.assigned_user || '-',
-        status: a.status
-      });
-    });
-
-    const headerRow = worksheet.getRow(1);
-    headerRow.font = { bold: true, color: { argb: 'FFFFFFFF' } };
-    headerRow.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF1E3A8A' } };
-    headerRow.alignment = { vertical: 'middle', horizontal: 'center' };
-
-    worksheet.eachRow((row) => {
-      row.eachCell((cell) => {
-        cell.border = {
-          top: { style: 'thin' }, left: { style: 'thin' },
-          bottom: { style: 'thin' }, right: { style: 'thin' }
-        };
-      });
-    });
-
-    worksheet.autoFilter = 'A1:G1';
-
-    const buffer = await workbook.xlsx.writeBuffer();
-    const data = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
-    saveAs(data, 'IT_Assets_Export.xlsx');
-  };
 
   const columns: ColumnDef<any>[] = [
     {
@@ -212,7 +165,6 @@ export default function AssetsPage() {
       </div>
 
       <Card className="shadow-sm border-border/60 rounded-xl overflow-hidden bg-card border-0 transition-colors duration-300 print:hidden">
-        {/* Toolbar */}
         <div className="p-4 border-b border-gray-100 flex flex-col md:flex-row items-center justify-between gap-4">
           <Tabs.Root value={filterTab} onValueChange={setFilterTab} className="w-full md:w-auto">
             <Tabs.List className="flex gap-1 flex-wrap">
@@ -234,7 +186,7 @@ export default function AssetsPage() {
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
               <Input placeholder="Search name, code, location..." className="pl-9 h-9 bg-gray-50 border-gray-200 text-sm" value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} />
             </div>
-            <Button variant="outline" size="sm" className="h-9 shrink-0" onClick={handleExport}>
+            <Button variant="outline" size="sm" className="h-9 shrink-0" onClick={() => setIsExportModalOpen(true)}>
               <Download className="w-4 h-4 mr-1.5" /> Export
             </Button>
             <Button variant="outline" size="sm" className="h-9 shrink-0" onClick={() => window.print()}>
@@ -264,14 +216,19 @@ export default function AssetsPage() {
         isOpen={isSheetOpen} 
         onClose={() => {
           setIsSheetOpen(false);
-          setSelectedAssetId(null);
+          setSelectedAssetId(undefined);
         }} 
-        assetId={selectedAssetId || undefined} 
+        assetId={selectedAssetId} 
         mode={sheetMode}
         onEdit={() => setSheetMode('edit')}
       />
+      
+      <ReportExportModal 
+        isOpen={isExportModalOpen} 
+        onClose={() => setIsExportModalOpen(false)} 
+        initialDataTypes={['assets']}
+      />
 
-      {/* Printable QR Code Labels */}
       <div className="hidden print:block print:w-full print:bg-white print:text-black">
         <h2 className="text-2xl font-bold mb-6 text-center">Asset QR Labels</h2>
         <div className="grid grid-cols-4 gap-6 place-items-center">

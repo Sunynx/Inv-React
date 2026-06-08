@@ -2,7 +2,7 @@
 import { useState } from 'react';
 import { supabase } from '@/lib/supabase';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { Search, Plus, MoreHorizontal, Edit, Trash2, CheckCircle2, AlertCircle, Clock, Wrench, Ban } from 'lucide-react';
+import { Search, Plus, MoreHorizontal, Edit, Trash2, CheckCircle2, AlertCircle, Clock, Wrench, Ban, Download } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -10,6 +10,7 @@ import { Card } from '@/components/ui/card';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import * as Tabs from '@radix-ui/react-tabs';
 import TicketModal from '@/components/TicketModal';
+import ReportExportModal from '@/components/ReportExportModal';
 import { format } from 'date-fns';
 import { DataTable } from '@/components/DataTable';
 import { ColumnDef } from '@tanstack/react-table';
@@ -41,6 +42,7 @@ export default function TicketsPage() {
 
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedTicket, setSelectedTicket] = useState<any | null>(null);
+  const [isExportModalOpen, setIsExportModalOpen] = useState(false);
 
   const { data: tickets = [], isLoading } = useQuery({
     queryKey: ['repair_tickets'],
@@ -205,6 +207,9 @@ export default function TicketsPage() {
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
               <Input placeholder="Search issue or asset..." className="pl-9 h-9 bg-gray-50 border-gray-200 text-sm" value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} />
             </div>
+            <Button variant="outline" size="sm" className="h-9 shrink-0" onClick={() => setIsExportModalOpen(true)}>
+              <Download className="w-4 h-4 mr-1.5" /> Export
+            </Button>
             <Button size="sm" className="h-9 shrink-0 bg-primary hover:bg-primary/90 text-primary-foreground" onClick={() => { setSelectedTicket(null); setIsModalOpen(true); }}>
               <Plus className="w-4 h-4 mr-1.5" /> New Ticket
             </Button>
@@ -217,6 +222,11 @@ export default function TicketsPage() {
       </Card>
 
       <TicketModal isOpen={isModalOpen} onClose={() => { setIsModalOpen(false); refreshData(); }} ticketId={selectedTicket?.id} />
+      <ReportExportModal 
+        isOpen={isExportModalOpen} 
+        onClose={() => setIsExportModalOpen(false)} 
+        initialDataTypes={['tickets']}
+      />
     </div>
   );
 }

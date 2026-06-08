@@ -3,8 +3,7 @@ import { useState } from 'react';
 import { supabase } from '@/lib/supabase';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Search, Plus, ArrowDownToLine, ArrowUpFromLine, CheckCircle2, AlertTriangle, MoreHorizontal, Download } from 'lucide-react';
-import ExcelJS from 'exceljs';
-import { saveAs } from 'file-saver';
+import ReportExportModal from '@/components/ReportExportModal';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card } from '@/components/ui/card';
@@ -60,52 +59,7 @@ export default function StockPage() {
   const countLow = items.filter(i => i.quantity <= (i.min_stock || 0)).length;
   const countActive = items.filter(i => i.status === 'Active').length;
 
-  const handleExport = async () => {
-    const workbook = new ExcelJS.Workbook();
-    const worksheet = workbook.addWorksheet('Stock');
-
-    worksheet.columns = [
-      { header: 'Item Name', key: 'name', width: 35 },
-      { header: 'SKU', key: 'sku', width: 20 },
-      { header: 'Category', key: 'category', width: 20 },
-      { header: 'Status', key: 'status', width: 15 },
-      { header: 'In Stock', key: 'quantity', width: 15 },
-      { header: 'Unit', key: 'unit', width: 15 },
-      { header: 'Minimum Quantity', key: 'min_stock', width: 20 }
-    ];
-
-    filteredItems.forEach(i => {
-      worksheet.addRow({
-        name: i.name,
-        sku: i.sku || '-',
-        category: i.categories?.name || '-',
-        status: i.status,
-        quantity: i.quantity,
-        unit: i.unit,
-        min_stock: i.min_stock
-      });
-    });
-
-    const headerRow = worksheet.getRow(1);
-    headerRow.font = { bold: true, color: { argb: 'FFFFFFFF' } };
-    headerRow.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF1E3A8A' } };
-    headerRow.alignment = { vertical: 'middle', horizontal: 'center' };
-
-    worksheet.eachRow((row) => {
-      row.eachCell((cell) => {
-        cell.border = {
-          top: { style: 'thin' }, left: { style: 'thin' },
-          bottom: { style: 'thin' }, right: { style: 'thin' }
-        };
-      });
-    });
-
-    worksheet.autoFilter = 'A1:G1';
-
-    const buffer = await workbook.xlsx.writeBuffer();
-    const data = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
-    saveAs(data, 'IT_Stock_Export.xlsx');
-  };
+  const [isExportModalOpen, setIsExportModalOpen] = useState(false);
 
   const refreshData = () => {
     queryClient.invalidateQueries({ queryKey: ['stock_items'] });
@@ -216,7 +170,7 @@ export default function StockPage() {
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
               <Input placeholder="Search..." className="pl-9 h-9 bg-gray-50 border-gray-200 text-sm" value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} />
             </div>
-            <Button variant="outline" size="sm" className="h-9 shrink-0" onClick={handleExport}>
+            <Button variant="outline" size="sm" className="h-9 shrink-0" onClick={() => setIsExportModalOpen(true)}>
               <Download className="w-4 h-4 mr-1.5" /> Export
             </Button>
             <Button size="sm" className="h-9 shrink-0 bg-primary hover:bg-primary/90 text-primary-foreground" onClick={() => { setSelectedItemId(undefined); setIsItemModalOpen(true); }}>
@@ -234,6 +188,11 @@ export default function StockPage() {
       {selectedTxItem && (
         <StockTxModal isOpen={isTxModalOpen} onClose={() => { setIsTxModalOpen(false); refreshData(); }} itemId={selectedTxItem.id} itemName={selectedTxItem.name} currentQty={selectedTxItem.quantity} type={txType} />
       )}
+      <ReportExportModal 
+        isOpen={isExportModalOpen} 
+        onClose={() => setIsExportModalOpen(false)} 
+        initialDataTypes={['stock']}
+      />
     </div>
   );
 }
