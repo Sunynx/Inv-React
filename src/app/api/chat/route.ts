@@ -105,6 +105,7 @@ export async function POST(req: Request) {
       }),
     },
     maxSteps: 3, // Allow the model to call tools up to 3 times before returning text
+    maxTokens: 2000, // Limit max tokens to avoid OpenRouter credit check errors
   });
 
   return result.toUIMessageStreamResponse();
