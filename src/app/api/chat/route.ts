@@ -15,7 +15,7 @@ export async function POST(req: Request) {
   const { messages } = await req.json();
 
   const result = streamText({
-    model: openrouter('google/gemini-2.5-flash'),
+    model: openrouter('openrouter/free'),
     system: `คุณคือผู้ช่วย AI อัจฉริยะสำหรับระบบ RPM IT Inventory 
 หน้าที่ของคุณคือช่วยตอบคำถาม วิเคราะห์ข้อมูล และสรุปข้อมูลให้กับผู้ใช้งาน (พนักงาน IT หรือผู้ดูแลระบบ)
 คุณสามารถดึงข้อมูลจากฐานข้อมูล (Database) เพื่อมาตอบคำถามได้อย่างแม่นยำ

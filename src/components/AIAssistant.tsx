@@ -9,7 +9,7 @@ import { Input } from '@/components/ui/input';
 export default function AIAssistant() {
   const [isOpen, setIsOpen] = useState(false);
   const [localInput, setLocalInput] = useState('');
-  const { messages, append, isLoading } = useChat();
+  const { messages, append, isLoading, error } = useChat();
 
   const handleFormSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -62,18 +62,27 @@ export default function AIAssistant() {
                     {m.role === 'user' ? <User className="w-4 h-4" /> : <Bot className="w-4 h-4" />}
                   </div>
                   <div className={`p-3 rounded-2xl text-sm ${m.role === 'user' ? 'bg-primary text-primary-foreground rounded-tr-none' : 'bg-white border shadow-sm rounded-tl-none'}`}>
-                    {m.content || (
-                      m.toolInvocations?.map(tool => (
-                         <div key={tool.toolCallId} className="text-xs italic text-gray-500">
-                           {tool.state === 'result' ? `✅ ค้นหาข้อมูล ${tool.toolName} สำเร็จ` : `🔍 กำลังค้นหาข้อมูลจากระบบ...`}
-                         </div>
-                      ))
-                    )}
+                    {m.content && <div className="whitespace-pre-wrap">{m.content}</div>}
+                    {m.toolInvocations?.map(tool => (
+                       <div key={tool.toolCallId} className="text-xs italic text-gray-500">
+                         {tool.state === 'result' ? `✅ ค้นหาข้อมูล ${tool.toolName} สำเร็จ` : `🔍 กำลังค้นหาข้อมูลจากระบบ...`}
+                       </div>
+                    ))}
                   </div>
                 </div>
               ))
             )}
-            {isLoading && messages[messages.length - 1]?.role === 'user' && (
+            {error && (
+              <div className="flex gap-3 max-w-[85%] self-start">
+                 <div className="w-8 h-8 rounded-full bg-red-100 text-red-600 flex items-center justify-center shrink-0">
+                   <X className="w-4 h-4" />
+                 </div>
+                 <div className="p-3 rounded-2xl bg-red-50 border border-red-100 text-sm text-red-600 rounded-tl-none">
+                   เกิดข้อผิดพลาดในการเชื่อมต่อ (Error: {error.message || 'Unknown'})
+                 </div>
+              </div>
+            )}
+            {isLoading && !error && messages[messages.length - 1]?.role === 'user' && (
                <div className="flex gap-3 max-w-[85%] self-start">
                   <div className="w-8 h-8 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center shrink-0">
                     <Bot className="w-4 h-4" />
