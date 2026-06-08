@@ -409,7 +409,7 @@ export default function AssetSheet({ isOpen, onClose, assetId, mode = 'edit', on
   // EDIT MODE
   return (
     <Sheet open={isOpen} onOpenChange={(open) => !open && onClose()}>
-      <SheetContent className="!w-full sm:!w-[50vw] sm:!max-w-[50vw] p-0 flex flex-col bg-background text-foreground overflow-hidden border-l border-border shadow-2xl transition-colors duration-300">
+      <SheetContent className="!w-full sm:!w-[50vw] sm:!max-w-[50vw] p-0 flex flex-col bg-background text-foreground overflow-y-auto border-l border-border shadow-2xl transition-colors duration-300">
         <SheetHeader className="p-6 pb-4 border-b border-border">
           <SheetTitle className="text-xl font-semibold text-foreground">{assetId ? 'Edit Asset' : 'Add New Asset'}</SheetTitle>
         </SheetHeader>
