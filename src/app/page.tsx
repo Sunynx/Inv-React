@@ -229,7 +229,7 @@ export default function Dashboard() {
 
       {/* Tabs System */}
       <Tabs.Root defaultValue="overview" className="flex flex-col gap-6">
-        <Tabs.List className="flex space-x-1 bg-secondary/30 p-1 rounded-md w-fit border border-border/50">
+        <Tabs.List className="flex flex-wrap gap-1 bg-secondary/30 p-1 rounded-md w-full sm:w-fit border border-border/50">
           <Tabs.Trigger value="overview" className="px-4 py-1.5 text-sm font-medium rounded-sm text-muted-foreground hover:text-foreground data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm data-[state=active]:border data-[state=active]:border-border/50 transition-all outline-none">
             Overview
           </Tabs.Trigger>
