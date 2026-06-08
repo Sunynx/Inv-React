@@ -8,7 +8,15 @@ import { Input } from '@/components/ui/input';
 
 export default function AIAssistant() {
   const [isOpen, setIsOpen] = useState(false);
-  const { messages, input, setInput, handleInputChange, handleSubmit, isLoading } = useChat();
+  const [localInput, setLocalInput] = useState('');
+  const { messages, append, isLoading } = useChat();
+
+  const handleFormSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!localInput.trim()) return;
+    append({ role: 'user', content: localInput });
+    setLocalInput('');
+  };
 
   return (
     <>
@@ -78,15 +86,15 @@ export default function AIAssistant() {
           </div>
 
           {/* Input Area */}
-          <form onSubmit={handleSubmit} className="p-3 bg-white border-t flex gap-2">
+          <form onSubmit={handleFormSubmit} className="p-3 bg-white border-t flex gap-2">
             <Input
-              value={input || ''}
-              onChange={(e) => setInput(e.target.value)}
+              value={localInput}
+              onChange={(e) => setLocalInput(e.target.value)}
               placeholder="พิมพ์คำถามของคุณที่นี่..."
               className="flex-1 bg-gray-50"
               disabled={isLoading}
             />
-            <Button type="submit" size="icon" disabled={isLoading || !input?.trim()}>
+            <Button type="submit" size="icon" disabled={isLoading || !localInput.trim()}>
               <Send className="w-4 h-4" />
             </Button>
           </form>
