@@ -9,12 +9,12 @@ import { Input } from '@/components/ui/input';
 export default function AIAssistant() {
   const [isOpen, setIsOpen] = useState(false);
   const [localInput, setLocalInput] = useState('');
-  const { messages, append, isLoading } = useChat();
+  const { messages, sendMessage, isLoading } = useChat();
 
   const handleFormSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!localInput.trim()) return;
-    append({ role: 'user', content: localInput });
+    sendMessage({ role: 'user', content: localInput });
     setLocalInput('');
   };
 
