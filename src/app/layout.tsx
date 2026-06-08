@@ -5,6 +5,7 @@ import Sidebar from '@/components/Sidebar';
 import Notifications from '@/components/Notifications';
 import ThemeToggle from '@/components/ThemeToggle';
 import Providers from '@/components/Providers';
+import AIAssistant from '@/components/AIAssistant';
 import { Toaster } from 'react-hot-toast';
 import { cn } from "@/lib/utils";
 
@@ -42,6 +43,7 @@ export default function RootLayout({
               </main>
             </div>
           </div>
+          <AIAssistant />
         </Providers>
       </body>
     </html>
