@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
-import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
+
 import { supabase } from '@/lib/supabase';
 import { exportToExcel, exportToPDF } from '@/lib/exportUtils';
 import toast from 'react-hot-toast';
@@ -146,16 +146,26 @@ export default function ReportExportModal({
           {/* Format Selection */}
           <div className="space-y-3">
             <Label className="text-sm font-semibold">Export Format</Label>
-            <RadioGroup value={formatType} onValueChange={(v: 'excel' | 'pdf') => setFormatType(v)} className="flex gap-4">
-              <div className="flex items-center space-x-2 border p-3 rounded-md flex-1 cursor-pointer bg-white" onClick={() => setFormatType('excel')}>
-                <RadioGroupItem value="excel" id="excel" />
-                <Label htmlFor="excel" className="cursor-pointer flex-1">Excel (.xlsx)</Label>
+            <div className="flex gap-4">
+              <div 
+                className={`flex items-center space-x-2 border p-3 rounded-md flex-1 cursor-pointer transition-colors ${formatType === 'excel' ? 'border-primary bg-primary/5' : 'bg-white'}`} 
+                onClick={() => setFormatType('excel')}
+              >
+                <div className={`w-4 h-4 rounded-full border flex items-center justify-center ${formatType === 'excel' ? 'border-primary' : 'border-gray-300'}`}>
+                  {formatType === 'excel' && <div className="w-2 h-2 rounded-full bg-primary" />}
+                </div>
+                <Label className="cursor-pointer flex-1">Excel (.xlsx)</Label>
               </div>
-              <div className="flex items-center space-x-2 border p-3 rounded-md flex-1 cursor-pointer bg-white" onClick={() => setFormatType('pdf')}>
-                <RadioGroupItem value="pdf" id="pdf" />
-                <Label htmlFor="pdf" className="cursor-pointer flex-1">PDF Document</Label>
+              <div 
+                className={`flex items-center space-x-2 border p-3 rounded-md flex-1 cursor-pointer transition-colors ${formatType === 'pdf' ? 'border-primary bg-primary/5' : 'bg-white'}`} 
+                onClick={() => setFormatType('pdf')}
+              >
+                <div className={`w-4 h-4 rounded-full border flex items-center justify-center ${formatType === 'pdf' ? 'border-primary' : 'border-gray-300'}`}>
+                  {formatType === 'pdf' && <div className="w-2 h-2 rounded-full bg-primary" />}
+                </div>
+                <Label className="cursor-pointer flex-1">PDF Document</Label>
               </div>
-            </RadioGroup>
+            </div>
           </div>
 
           {/* Data Types */}
