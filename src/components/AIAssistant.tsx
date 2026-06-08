@@ -8,7 +8,7 @@ import { Input } from '@/components/ui/input';
 
 export default function AIAssistant() {
   const [isOpen, setIsOpen] = useState(false);
-  const { messages, input, handleInputChange, handleSubmit, isLoading } = useChat();
+  const { messages, input, setInput, handleInputChange, handleSubmit, isLoading } = useChat();
 
   return (
     <>
@@ -81,7 +81,7 @@ export default function AIAssistant() {
           <form onSubmit={handleSubmit} className="p-3 bg-white border-t flex gap-2">
             <Input
               value={input || ''}
-              onChange={handleInputChange}
+              onChange={(e) => setInput(e.target.value)}
               placeholder="พิมพ์คำถามของคุณที่นี่..."
               className="flex-1 bg-gray-50"
               disabled={isLoading}
