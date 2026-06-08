@@ -123,7 +123,7 @@ export default function WarrantyPage() {
         </CardContent>
       </Card>
 
-      <Card className="overflow-hidden">
+      <Card className="overflow-x-auto">
         <Table>
           <TableHeader className="bg-muted/50">
             <TableRow>

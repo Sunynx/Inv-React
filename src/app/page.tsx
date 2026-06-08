@@ -455,7 +455,7 @@ export default function Dashboard() {
                 <Button variant="outline" size="sm" onClick={() => router.push('/tickets')}>View All</Button>
               </CardHeader>
               <CardContent>
-                <div className="border border-border/60 rounded-md overflow-hidden">
+                <div className="border border-border/60 rounded-md overflow-x-auto">
                   <table className="w-full text-sm text-left">
                     <thead className="bg-muted/50 border-b border-border/60 text-muted-foreground">
                       <tr>

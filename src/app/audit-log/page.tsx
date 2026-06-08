@@ -91,7 +91,7 @@ export default function AuditLogPage() {
         </CardContent>
       </Card>
 
-      <Card className="overflow-hidden shadow-sm border-border/60">
+      <Card className="overflow-x-auto shadow-sm border-border/60">
         <Table>
           <TableHeader className="bg-muted/50 border-b border-border/60">
             <TableRow>
