@@ -1,20 +1,86 @@
 'use client';
 
-import { useState } from 'react';
-import { useChat } from 'ai/react';
+import { useState, useRef, useEffect } from 'react';
 import { MessageCircle, X, Send, Bot, User, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 
+interface Message {
+  id: string;
+  role: 'user' | 'assistant' | 'system' | 'tool';
+  content: string;
+  name?: string;
+  toolInvocations?: { toolCallId: string; toolName: string; state: 'result' }[];
+}
+
 export default function AIAssistant() {
   const [isOpen, setIsOpen] = useState(false);
   const [localInput, setLocalInput] = useState('');
-  const { messages, append, isLoading, error } = useChat();
+  const [messages, setMessages] = useState<Message[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<Error | null>(null);
+  const messagesEndRef = useRef<HTMLDivElement>(null);
+
+  const scrollToBottom = () => {
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  };
+
+  useEffect(() => {
+    scrollToBottom();
+  }, [messages, isLoading, error]);
+
+  const append = async (message: Message) => {
+    const newMessages = [...messages, message];
+    setMessages(newMessages);
+    setIsLoading(true);
+    setError(null);
+
+    try {
+      const response = await fetch('/api/chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ 
+          messages: newMessages.map(m => ({ role: m.role, content: m.content })) 
+        }),
+      });
+
+      if (!response.ok) {
+        const errText = await response.text();
+        let parsedErr = errText;
+        try {
+           parsedErr = JSON.parse(errText).error || errText;
+        } catch(e) {}
+        throw new Error(parsedErr);
+      }
+
+      const data = await response.json();
+      
+      let toolInvocations: any[] = [];
+      if (data.usedTools && data.usedTools.length > 0) {
+         toolInvocations = data.usedTools.map((t: string, i: number) => ({
+             toolCallId: `tool-${i}`,
+             toolName: t,
+             state: 'result'
+         }));
+      }
+
+      setMessages(prev => [...prev, {
+         id: Math.random().toString(),
+         role: 'assistant',
+         content: data.message?.content || '',
+         toolInvocations: toolInvocations.length > 0 ? toolInvocations : undefined
+      }]);
+    } catch (err: any) {
+      setError(err);
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   const handleFormSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!localInput.trim()) return;
-    append({ role: 'user', content: localInput });
+    append({ id: Math.random().toString(), role: 'user', content: localInput });
     setLocalInput('');
   };
 
@@ -64,8 +130,8 @@ export default function AIAssistant() {
                   <div className={`p-3 rounded-2xl text-sm ${m.role === 'user' ? 'bg-primary text-primary-foreground rounded-tr-none' : 'bg-white border shadow-sm rounded-tl-none'}`}>
                     {m.content && <div className="whitespace-pre-wrap">{m.content}</div>}
                     {m.toolInvocations?.map(tool => (
-                       <div key={tool.toolCallId} className="text-xs italic text-gray-500">
-                         {tool.state === 'result' ? `✅ ค้นหาข้อมูล ${tool.toolName} สำเร็จ` : `🔍 กำลังค้นหาข้อมูลจากระบบ...`}
+                       <div key={tool.toolCallId} className="text-xs italic text-gray-500 mt-2 p-2 bg-white/50 rounded-md">
+                         ✅ ค้นหาข้อมูล {tool.toolName} สำเร็จ
                        </div>
                     ))}
                   </div>
@@ -92,6 +158,7 @@ export default function AIAssistant() {
                   </div>
                </div>
             )}
+            <div ref={messagesEndRef} />
           </div>
 
           {/* Input Area */}

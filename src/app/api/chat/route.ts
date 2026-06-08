@@ -1,30 +1,43 @@
-import { createOpenAI } from '@ai-sdk/openai';
-import { streamText, tool } from 'ai';
-import { z } from 'zod';
 import { supabase } from '@/lib/supabase';
 
-// Will be initialized inside POST handler to ensure Cloudflare env vars are loaded
+// Helper function to execute local tools
+async function executeTool(name: string, args: any) {
+  if (name === 'getAssetsSummary') {
+    const { searchQuery, status } = args;
+    let query = supabase.from('assets').select(`*, categories(name)`);
+    if (status) query = query.eq('status', status);
+    if (searchQuery) query = query.or(`name.ilike.%${searchQuery}%,asset_code.ilike.%${searchQuery}%`);
+    const { data, error } = await query.limit(20);
+    if (error) return { error: error.message };
+    if (!searchQuery && !status && data) {
+      const active = data.filter(a => a.status === 'ใช้งาน').length;
+      return { total: data.length, active, sample_data: data.slice(0, 5) };
+    }
+    return { results: data };
+  } else if (name === 'getRepairTickets') {
+    const { status, priority } = args;
+    let query = supabase.from('repair_tickets').select(`*, assets(name, asset_code)`);
+    if (status) query = query.eq('status', status);
+    if (priority) query = query.eq('priority', priority);
+    const { data, error } = await query.order('created_at', { ascending: false }).limit(10);
+    if (error) return { error: error.message };
+    return { tickets: data };
+  } else if (name === 'getStockLevels') {
+    const { onlyLowStock, searchQuery } = args;
+    let query = supabase.from('stock_items').select('*');
+    if (searchQuery) query = query.ilike('name', `%${searchQuery}%`);
+    const { data, error } = await query;
+    if (error) return { error: error.message };
+    if (onlyLowStock && data) return { low_stock_items: data.filter(item => item.quantity <= (item.min_stock || 0)) };
+    return { items: data?.slice(0, 15) };
+  }
+  return { error: `Tool ${name} not found` };
+}
 
 export const maxDuration = 30;
 export const runtime = 'edge';
 
-export async function POST(req: Request) {
-  try {
-    const { messages } = await req.json();
-
-    if (!process.env.OPENROUTER_API_KEY) {
-      throw new Error("OPENROUTER_API_KEY is not configured in Cloudflare Environment Variables.");
-    }
-
-    // Initialize inside the handler to ensure Cloudflare environment variables are accessible at runtime
-    const openrouter = createOpenAI({
-      baseURL: 'https://openrouter.ai/api/v1',
-      apiKey: process.env.OPENROUTER_API_KEY,
-    });
-
-    const result = await streamText({
-      model: openrouter('openrouter/free'),
-      system: `คุณคือผู้ช่วย AI อัจฉริยะสำหรับระบบ RPM IT Inventory 
+const systemPrompt = `คุณคือผู้ช่วย AI อัจฉริยะสำหรับระบบ RPM IT Inventory 
 หน้าที่ของคุณคือช่วยตอบคำถาม วิเคราะห์ข้อมูล และสรุปข้อมูลให้กับผู้ใช้งาน (พนักงาน IT หรือผู้ดูแลระบบ)
 คุณสามารถดึงข้อมูลจากฐานข้อมูล (Database) เพื่อมาตอบคำถามได้อย่างแม่นยำ
 
@@ -34,89 +47,123 @@ export async function POST(req: Request) {
 ฐานข้อมูลมี 3 ส่วนหลักๆ คือ:
 1. Assets (สินทรัพย์/อุปกรณ์ IT)
 2. Repair Tickets (ประวัติการแจ้งซ่อม)
-3. Stock Items (สต๊อกอะไหล่/วัสดุสิ้นเปลือง)`,
-      messages,
-      tools: {
-        getAssetsSummary: tool({
-          description: 'ดึงข้อมูลสรุปจำนวนสินทรัพย์ (Assets) แบ่งตามหมวดหมู่และสถานะ หรือค้นหาอุปกรณ์',
-          parameters: z.object({
-            searchQuery: z.string().optional().describe('คำค้นหาชื่ออุปกรณ์หรือรหัส (ถ้ามี)'),
-            status: z.string().optional().describe('สถานะที่ต้องการกรอง เช่น "ใช้งาน", "สำรอง", "ส่งซ่อม"'),
-          }),
-          execute: async ({ searchQuery, status }) => {
-            let query = supabase.from('assets').select(`*, categories(name)`);
-            
-            if (status) {
-              query = query.eq('status', status);
-            }
-            if (searchQuery) {
-              query = query.or(`name.ilike.%${searchQuery}%,asset_code.ilike.%${searchQuery}%`);
-            }
-            
-            const { data, error } = await query.limit(20);
-            if (error) return { error: error.message };
-            
-            // Return summary if no specific search
-            if (!searchQuery && !status && data) {
-               const active = data.filter(a => a.status === 'ใช้งาน').length;
-               return { total: data.length, active, sample_data: data.slice(0, 5) };
-            }
-            
-            return { results: data };
-          },
-        }),
-        
-        getRepairTickets: tool({
-          description: 'ดึงข้อมูลประวัติการแจ้งซ่อม (Repair Tickets) เพื่อดูปัญหา หรือสถานะการซ่อม',
-          parameters: z.object({
-            status: z.string().optional().describe('สถานะการซ่อม เช่น "แจ้งซ่อม", "กำลังดำเนินการ", "ซ่อมสำเร็จ"'),
-            priority: z.string().optional().describe('ความสำคัญ เช่น "High", "Medium", "Low"'),
-          }),
-          execute: async ({ status, priority }) => {
-            let query = supabase.from('repair_tickets').select(`*, assets(name, asset_code)`);
-            
-            if (status) {
-              query = query.eq('status', status);
-            }
-            if (priority) {
-              query = query.eq('priority', priority);
-            }
-            
-            const { data, error } = await query.order('created_at', { ascending: false }).limit(10);
-            if (error) return { error: error.message };
-            return { tickets: data };
-          },
-        }),
+3. Stock Items (สต๊อกอะไหล่/วัสดุสิ้นเปลือง)`;
 
-        getStockLevels: tool({
-          description: 'ดึงข้อมูลระดับสต๊อกอะไหล่ (Stock Items) ว่ามีอะไรใกล้หมด หรือมีจำนวนเท่าไหร่',
-          parameters: z.object({
-            onlyLowStock: z.boolean().optional().describe('ถ้าเป็น true จะดึงเฉพาะอะไหล่ที่ใกล้หมด (ต่ำกว่า min_stock)'),
-            searchQuery: z.string().optional().describe('คำค้นหาชื่ออะไหล่'),
-          }),
-          execute: async ({ onlyLowStock, searchQuery }) => {
-            let query = supabase.from('stock_items').select('*');
-            
-            if (searchQuery) {
-               query = query.ilike('name', `%${searchQuery}%`);
-            }
-            
-            const { data, error } = await query;
-            if (error) return { error: error.message };
-            
-            if (onlyLowStock && data) {
-               return { low_stock_items: data.filter(item => item.quantity <= (item.min_stock || 0)) };
-            }
-            
-            return { items: data?.slice(0, 15) };
-          },
-        }),
-      },
-      maxSteps: 3, // Allow the model to call tools up to 3 times before returning text
-      maxTokens: 2000, // Limit max tokens to avoid OpenRouter credit check errors
+const tools = [
+  {
+    type: "function",
+    function: {
+      name: "getAssetsSummary",
+      description: "ดึงข้อมูลสรุปจำนวนสินทรัพย์ (Assets) แบ่งตามหมวดหมู่และสถานะ หรือค้นหาอุปกรณ์",
+      parameters: {
+        type: "object",
+        properties: {
+          searchQuery: { type: "string", description: "คำค้นหาชื่ออุปกรณ์หรือรหัส (ถ้ามี)" },
+          status: { type: "string", description: "สถานะที่ต้องการกรอง เช่น 'ใช้งาน', 'สำรอง', 'ส่งซ่อม'" }
+        }
+      }
+    }
+  },
+  {
+    type: "function",
+    function: {
+      name: "getRepairTickets",
+      description: "ดึงข้อมูลประวัติการแจ้งซ่อม (Repair Tickets) เพื่อดูปัญหา หรือสถานะการซ่อม",
+      parameters: {
+        type: "object",
+        properties: {
+          status: { type: "string", description: "สถานะการซ่อม เช่น 'แจ้งซ่อม', 'กำลังดำเนินการ', 'ซ่อมสำเร็จ'" },
+          priority: { type: "string", description: "ความสำคัญ เช่น 'High', 'Medium', 'Low'" }
+        }
+      }
+    }
+  },
+  {
+    type: "function",
+    function: {
+      name: "getStockLevels",
+      description: "ดึงข้อมูลระดับสต๊อกอะไหล่ (Stock Items) ว่ามีอะไรใกล้หมด หรือมีจำนวนเท่าไหร่",
+      parameters: {
+        type: "object",
+        properties: {
+          onlyLowStock: { type: "boolean", description: "ถ้าเป็น true จะดึงเฉพาะอะไหล่ที่ใกล้หมด (ต่ำกว่า min_stock)" },
+          searchQuery: { type: "string", description: "คำค้นหาชื่ออะไหล่" }
+        }
+      }
+    }
+  }
+];
+
+export async function POST(req: Request) {
+  try {
+    const { messages } = await req.json();
+
+    if (!process.env.OPENROUTER_API_KEY) {
+      throw new Error("OPENROUTER_API_KEY is not configured in Cloudflare Environment Variables.");
+    }
+
+    const apiMessages = [{ role: "system", content: systemPrompt }, ...messages.map((m: any) => ({
+      role: m.role,
+      content: m.content
+    }))];
+
+    let currentMessages = [...apiMessages];
+    let maxToolCalls = 3; 
+    let finalResponse = null;
+    let usedTools: string[] = [];
+
+    while (maxToolCalls > 0) {
+      maxToolCalls--;
+      const res = await fetch("https://openrouter.ai/api/v1/chat/completions", {
+        method: "POST",
+        headers: {
+          "Authorization": `Bearer ${process.env.OPENROUTER_API_KEY}`,
+          "Content-Type": "application/json",
+          "HTTP-Referer": "https://rpm-inv.pages.dev",
+          "X-Title": "RPM IT Inventory"
+        },
+        body: JSON.stringify({
+          model: "openrouter/free",
+          messages: currentMessages,
+          tools: tools,
+          tool_choice: "auto"
+        })
+      });
+
+      if (!res.ok) {
+        const errText = await res.text();
+        throw new Error(`OpenRouter API error: ${res.status} ${errText}`);
+      }
+
+      const data = await res.json();
+      const message = data.choices[0].message;
+
+      currentMessages.push(message);
+
+      if (message.tool_calls && message.tool_calls.length > 0) {
+        for (const toolCall of message.tool_calls) {
+          const args = JSON.parse(toolCall.function.arguments || "{}");
+          const toolResult = await executeTool(toolCall.function.name, args);
+          usedTools.push(toolCall.function.name);
+          
+          currentMessages.push({
+            role: "tool",
+            tool_call_id: toolCall.id,
+            name: toolCall.function.name,
+            content: JSON.stringify(toolResult)
+          });
+        }
+        continue;
+      }
+
+      finalResponse = message;
+      break;
+    }
+
+    return Response.json({ 
+      message: finalResponse,
+      usedTools
     });
-
-    return result.toDataStreamResponse();
   } catch (error: any) {
     console.error("Chat API Error:", error);
     return new Response(JSON.stringify({ error: error.message || 'Unknown server error' }), {
