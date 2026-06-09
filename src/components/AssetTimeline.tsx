@@ -8,10 +8,11 @@ export default function AssetTimeline({ assetId }: { assetId: string }) {
   const { data: timelineEvents, isLoading } = useQuery({
     queryKey: ['asset_timeline', assetId],
     queryFn: async () => {
-      const [ticketsRes, transfersRes, assetRes] = await Promise.all([
+      const [ticketsRes, transfersRes, assetRes, auditRes] = await Promise.all([
         supabase.from('repair_tickets').select('*').eq('asset_id', assetId),
         supabase.from('asset_transfers').select('*').eq('asset_id', assetId),
-        supabase.from('assets').select('created_at, created_by').eq('id', assetId).single()
+        supabase.from('assets').select('created_at, created_by').eq('id', assetId).single(),
+        supabase.from('audit_log').select('*').eq('asset_id', assetId)
       ]);
 
       const events: any[] = [];
@@ -64,6 +65,34 @@ export default function AssetTimeline({ assetId }: { assetId: string }) {
             description: `From: ${tr.from_location || 'Unknown'} → To: ${tr.to_location}`,
             icon: ArrowRightLeft,
             color: 'bg-purple-500'
+          });
+        });
+      }
+
+      if (auditRes.data) {
+        auditRes.data.forEach(log => {
+          let icon = Shield;
+          let color = 'bg-gray-500';
+          
+          if (log.action.includes('สร้าง') || log.action.includes('เพิ่ม')) {
+            icon = Box;
+            color = 'bg-emerald-500';
+          } else if (log.action.includes('แก้ไข')) {
+            icon = Wrench;
+            color = 'bg-blue-500';
+          } else if (log.action.includes('ลบ') || log.action.includes('เบิก')) {
+            icon = Shield;
+            color = 'bg-orange-500';
+          }
+
+          events.push({
+            id: `audit_${log.id}`,
+            date: new Date(log.created_at),
+            type: 'audit',
+            title: log.action,
+            description: `${log.details} (โดย: ${log.performed_by || 'System'})`,
+            icon: icon,
+            color: color
           });
         });
       }

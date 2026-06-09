@@ -65,7 +65,7 @@ CREATE TABLE IF NOT EXISTS licenses (
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
--- 7. Maintenance Schedules Table (Missing)
+-- 7. Maintenance Schedules Table
 CREATE TABLE IF NOT EXISTS maintenance_schedules (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     asset_id UUID REFERENCES assets(id) ON DELETE CASCADE,
@@ -73,6 +73,21 @@ CREATE TABLE IF NOT EXISTS maintenance_schedules (
     scheduled_date DATE NOT NULL,
     status TEXT DEFAULT 'รอดำเนินการ',
     notes TEXT,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- 8. Procurement (PR/PO) Table
+CREATE TABLE IF NOT EXISTS procurement (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    document_number TEXT UNIQUE NOT NULL,
+    title TEXT NOT NULL,
+    type TEXT DEFAULT 'PR',
+    status TEXT DEFAULT 'รอดำเนินการ',
+    supplier TEXT,
+    items JSONB DEFAULT '[]'::jsonb,
+    metadata JSONB DEFAULT '{}'::jsonb,
+    total_amount NUMERIC DEFAULT 0,
+    expected_delivery DATE,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
@@ -85,6 +100,7 @@ ALTER TABLE repair_tickets ENABLE ROW LEVEL SECURITY;
 ALTER TABLE stock_items ENABLE ROW LEVEL SECURITY;
 ALTER TABLE licenses ENABLE ROW LEVEL SECURITY;
 ALTER TABLE maintenance_schedules ENABLE ROW LEVEL SECURITY;
+ALTER TABLE procurement ENABLE ROW LEVEL SECURITY;
 
 CREATE POLICY "Allow All" ON departments FOR ALL USING (true);
 CREATE POLICY "Allow All" ON categories FOR ALL USING (true);
@@ -93,3 +109,17 @@ CREATE POLICY "Allow All" ON repair_tickets FOR ALL USING (true);
 CREATE POLICY "Allow All" ON stock_items FOR ALL USING (true);
 CREATE POLICY "Allow All" ON licenses FOR ALL USING (true);
 CREATE POLICY "Allow All" ON maintenance_schedules FOR ALL USING (true);
+CREATE POLICY "Allow All" ON procurement FOR ALL USING (true);
+
+-- 9. Audit Log (ประวัติการแก้ไข)
+CREATE TABLE IF NOT EXISTS audit_log (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    asset_id UUID REFERENCES assets(id) ON DELETE SET NULL,
+    action TEXT NOT NULL,
+    details TEXT,
+    performed_by TEXT DEFAULT 'Admin',
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+ALTER TABLE audit_log ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "Allow All" ON audit_log FOR ALL USING (true);

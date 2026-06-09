@@ -40,9 +40,10 @@ export default function AuditLogPage() {
   }
 
   const filteredLogs = logs.filter(l => {
-    const matchSearch = l.table_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                        l.user_id?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                        JSON.stringify(l.details || {}).toLowerCase().includes(searchTerm.toLowerCase());
+    const matchSearch = l.action?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                        l.performed_by?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                        l.details?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                        l.asset_id?.toLowerCase().includes(searchTerm.toLowerCase());
     const matchAction = filterAction === 'all' || l.action === filterAction;
     
     return matchSearch && matchAction;
@@ -83,9 +84,14 @@ export default function AuditLogPage() {
               value={filterAction} onChange={e => setFilterAction(e.target.value)}
             >
               <option value="all">All Actions</option>
-              <option value="INSERT">INSERT</option>
-              <option value="UPDATE">UPDATE</option>
-              <option value="DELETE">DELETE</option>
+              <option value="สร้างอุปกรณ์ใหม่">สร้างอุปกรณ์ใหม่</option>
+              <option value="แก้ไขอุปกรณ์">แก้ไขอุปกรณ์</option>
+              <option value="ลบอุปกรณ์">ลบอุปกรณ์</option>
+              <option value="เพิ่มรูปภาพ">เพิ่มรูปภาพ</option>
+              <option value="ลบรูปภาพ">ลบรูปภาพ</option>
+              <option value="เพิ่มวัสดุคลัง">เพิ่มวัสดุคลัง</option>
+              <option value="แก้ไขวัสดุคลัง">แก้ไขวัสดุคลัง</option>
+              <option value="เบิกจ่ายวัสดุ">เบิกจ่ายวัสดุ</option>
             </select>
           </div>
         </CardContent>
@@ -97,9 +103,9 @@ export default function AuditLogPage() {
             <TableRow>
               <SortableTableHead label="Timestamp" sortKey="created_at" currentSortKey={sortConfig.key} currentDirection={sortConfig.direction} onRequestSort={requestSort} />
               <SortableTableHead label="Action" sortKey="action" currentSortKey={sortConfig.key} currentDirection={sortConfig.direction} onRequestSort={requestSort} />
-              <SortableTableHead label="Target" sortKey="table_name" currentSortKey={sortConfig.key} currentDirection={sortConfig.direction} onRequestSort={requestSort} />
-              <SortableTableHead label="User" sortKey="user_id" currentSortKey={sortConfig.key} currentDirection={sortConfig.direction} onRequestSort={requestSort} />
+              <SortableTableHead label="User" sortKey="performed_by" currentSortKey={sortConfig.key} currentDirection={sortConfig.direction} onRequestSort={requestSort} />
               <TableHead>Details</TableHead>
+              <TableHead>Asset ID</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -115,21 +121,20 @@ export default function AuditLogPage() {
                   </TableCell>
                   <TableCell>
                     <span className={`inline-flex px-2 py-0.5 rounded-full text-[11px] font-semibold ${
-                      log.action === 'INSERT' ? 'bg-emerald-100 text-emerald-700' :
-                      log.action === 'UPDATE' ? 'bg-blue-100 text-blue-700' :
-                      log.action === 'DELETE' ? 'bg-destructive/10 text-destructive' :
+                      log.action.includes('สร้าง') || log.action.includes('เพิ่ม') ? 'bg-emerald-100 text-emerald-700' :
+                      log.action.includes('แก้ไข') ? 'bg-blue-100 text-blue-700' :
+                      log.action.includes('ลบ') || log.action.includes('เบิก') ? 'bg-orange-100 text-orange-700' :
                       'bg-gray-100 text-gray-700'
                     }`}>
                       {log.action}
                     </span>
                   </TableCell>
-                  <TableCell>
-                    <div className="font-medium">{log.table_name}</div>
-                    <div className="text-xs text-muted-foreground font-mono">{log.record_id?.substring(0,8)}...</div>
+                  <TableCell className="text-muted-foreground">{log.performed_by || 'System'}</TableCell>
+                  <TableCell className="max-w-md truncate text-xs text-muted-foreground">
+                    {log.details}
                   </TableCell>
-                  <TableCell className="text-muted-foreground">{log.user_id || 'System'}</TableCell>
-                  <TableCell className="max-w-md truncate text-xs text-muted-foreground font-mono">
-                    {JSON.stringify(log.details)}
+                  <TableCell className="text-xs text-muted-foreground font-mono">
+                    {log.asset_id ? log.asset_id.substring(0,8) + '...' : '-'}
                   </TableCell>
                 </TableRow>
               ))

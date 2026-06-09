@@ -5,7 +5,7 @@ import { useState } from 'react';
 import { 
   LayoutDashboard, Box, QrCode, ScanLine, Wrench, Shield, 
   ArrowRightLeft, Key, CalendarClock, Package, FileBarChart, 
-  History, Settings, ChevronRight, Menu
+  History, Settings, ChevronRight, Menu, ShoppingCart
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Playfair_Display } from 'next/font/google';
@@ -40,6 +40,7 @@ const menuGroups = [
       { name: 'Transfers', href: '/transfers', icon: ArrowRightLeft },
       { name: 'Licenses', href: '/licenses', icon: Key },
       { name: 'Stock', href: '/stock', icon: Package },
+      { name: 'Procurement', href: '/procurement', icon: ShoppingCart },
     ]
   },
   {
@@ -59,12 +60,12 @@ export default function Sidebar() {
   const SidebarContent = () => (
     <div className="flex flex-col h-full bg-[#1b365d] text-white/90">
       {/* Brand Header */}
-      <div className="h-24 flex items-center px-6 border-b border-white/10 shrink-0">
+      <div className="h-24 flex items-center justify-center border-b border-white/10 shrink-0">
         <div className="flex items-center gap-3">
-          <div className={cn("text-4xl tracking-tighter text-white", playfair.className)}>
+          <div className={cn("text-5xl tracking-tighter text-white", playfair.className)}>
             rpm
           </div>
-          <div className="flex flex-col border-l border-white/30 pl-3 leading-tight tracking-[0.15em] text-[8px] font-medium text-white uppercase opacity-90">
+          <div className="flex flex-col border-l border-white/30 pl-3 leading-tight tracking-[0.15em] text-[9px] font-medium text-white uppercase opacity-90">
             <span>Royal</span>
             <span>Phuket</span>
             <span>Marina</span>
@@ -75,11 +76,11 @@ export default function Sidebar() {
       {/* Navigation */}
       <nav className="flex-1 overflow-y-auto py-4 px-3 custom-scrollbar">
         {menuGroups.map((group, idx) => (
-          <div key={idx} className="mb-6">
-            <h3 className="px-3 mb-2 text-xs font-semibold text-white/40 uppercase tracking-wider">
+          <div key={idx} className="mb-4">
+            <h3 className="px-3 mb-1.5 text-[11px] font-semibold text-white/40 uppercase tracking-wider">
               {group.title}
             </h3>
-            <ul className="space-y-1">
+            <ul className="space-y-0.5">
               {group.links.map((link) => {
                 const Icon = link.icon;
                 const isActive = pathname === link.href;
@@ -89,7 +90,7 @@ export default function Sidebar() {
                       href={link.href}
                       onClick={() => setOpen(false)}
                       className={cn(
-                        "flex items-center justify-between px-3 py-2 rounded-md text-sm font-medium transition-colors",
+                        "flex items-center justify-between px-3 py-1.5 rounded-md text-sm font-medium transition-colors",
                         isActive 
                           ? "bg-white/15 text-white shadow-sm" 
                           : "text-white/60 hover:bg-white/10 hover:text-white"
@@ -112,12 +113,11 @@ export default function Sidebar() {
       {/* User Profile Area (Footer) */}
       <div className="p-4 border-t border-white/10 shrink-0">
         <div className="flex items-center gap-3 px-2 py-2 rounded-md hover:bg-white/10 cursor-pointer transition-colors">
-          <div className="w-8 h-8 rounded-full bg-white/20 border border-white/30 flex items-center justify-center text-white font-bold text-xs">
-            AD
+          <div className="w-8 h-8 rounded-full bg-white/20 border border-white/30 flex items-center justify-center text-white font-bold text-xs shrink-0">
+            IT
           </div>
-          <div className="flex-1 min-w-0">
-            <p className="text-sm font-medium text-white truncate">Admin User</p>
-            <p className="text-xs text-white/60 truncate">admin@rpm.com</p>
+          <div className="flex-1 min-w-0 flex items-center h-full">
+            <p className="text-sm font-medium text-white tracking-wider">IT Admin</p>
           </div>
         </div>
       </div>
