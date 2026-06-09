@@ -14,7 +14,7 @@ const aiTools = {
       asset_code: z.string().describe('รหัสอุปกรณ์ (Asset Code) เช่น PC-001'),
       title: z.string().describe('หัวข้อปัญหา หรือสรุปอาการสั้นๆ'),
       description: z.string().describe('รายละเอียดอาการเสีย'),
-      priority: z.enum(['Low', 'Medium', 'High']).describe('ความสำคัญ'),
+      priority: z.string().describe('ความสำคัญ (Low, Medium, High)'),
     }),
     execute: async ({ asset_code, title, description, priority }) => {
       // Find asset UUID from asset_code
@@ -82,67 +82,67 @@ export async function POST(req: Request) {
     const { messages } = await req.json();
     let resultText = '';
 
-    // Provider 1: Try OpenRouter
-    try {
-      if (!process.env.OPENROUTER_API_KEY) {
-        throw new Error("OPENROUTER_API_KEY is missing");
-      }
-      
-      const openrouter = createOpenAI({
-        baseURL: 'https://openrouter.ai/api/v1',
-        apiKey: process.env.OPENROUTER_API_KEY,
-      });
+    // Extract system message
+    const systemMessage = messages.find((m: any) => m.role === 'system')?.content;
+    const rawChatMessages = messages.filter((m: any) => m.role !== 'system');
 
-      const result = await generateText({
-        model: openrouter('google/gemini-2.5-flash'),
-        messages,
-        maxTokens: 3000,
-        temperature: 0.3,
-        tools: aiTools,
-        maxSteps: 3, // Allow loop for tool execution
-      });
-      resultText = result.text;
-    } catch (openRouterError) {
-      console.warn("OpenRouter failed, falling back to Google Generative AI:", openRouterError);
-      
-      // Provider 2: Fallback to Google Generative AI
+    // Flatten multi-turn history into a single user message to prevent strict schema errors
+    let flattenedContent = "";
+    for (let i = 0; i < rawChatMessages.length - 1; i++) {
+       const m = rawChatMessages[i];
+       flattenedContent += `${m.role === 'user' ? 'User' : 'Assistant'}: ${m.content}\n\n`;
+    }
+    const lastMessage = rawChatMessages[rawChatMessages.length - 1];
+    if (flattenedContent) {
+       flattenedContent = `[ประวัติการสนทนาก่อนหน้า]\n${flattenedContent}\n[คำถามล่าสุด]\nUser: ${lastMessage.content}`;
+    } else {
+       flattenedContent = lastMessage.content;
+    }
+
+    const safeMessages = [ { role: 'user' as const, content: flattenedContent } ];
+
+    const providers = [];
+    if (process.env.OPENROUTER_API_KEY) {
+      const openrouter = createOpenAI({ baseURL: 'https://openrouter.ai/api/v1', apiKey: process.env.OPENROUTER_API_KEY });
+      providers.push({ name: 'OpenRouter', model: openrouter('google/gemini-2.5-flash') });
+    }
+    if (process.env.GROQ_API_KEY) {
+      const groq = createOpenAI({ baseURL: 'https://api.groq.com/openai/v1', apiKey: process.env.GROQ_API_KEY });
+      providers.push({ name: 'Groq', model: groq('llama-3.3-70b-versatile') });
+    }
+    if (process.env.GOOGLE_GENERATIVE_AI_API_KEY) {
+      providers.push({ name: 'Google', model: google('gemini-2.5-flash') });
+    }
+
+    if (providers.length === 0) {
+      throw new Error("No API keys configured. Please add OPENROUTER_API_KEY, GROQ_API_KEY, or GOOGLE_GENERATIVE_AI_API_KEY.");
+    }
+
+    let providerErrors: string[] = [];
+
+    for (const provider of providers) {
       try {
-        if (!process.env.GOOGLE_GENERATIVE_AI_API_KEY) {
-          throw new Error("GOOGLE_GENERATIVE_AI_API_KEY is missing");
-        }
-
-        const fallbackResult = await generateText({
-          model: google('gemini-2.5-flash'),
-          messages,
+        console.log(`Trying provider: ${provider.name}`);
+        const result = await generateText({
+          model: provider.model,
+          system: systemMessage,
+          messages: safeMessages,
           maxTokens: 3000,
           temperature: 0.3,
           tools: aiTools,
           maxSteps: 3,
         });
-        resultText = fallbackResult.text;
-      } catch (googleError) {
-        console.warn("Google API failed, falling back to Groq:", googleError);
-
-        // Provider 3: Fallback to Groq
-        if (!process.env.GROQ_API_KEY) {
-          throw new Error("GROQ_API_KEY is missing and all previous providers failed.");
-        }
-
-        const groq = createOpenAI({
-          baseURL: 'https://api.groq.com/openai/v1',
-          apiKey: process.env.GROQ_API_KEY,
-        });
-
-        const groqResult = await generateText({
-          model: groq('llama-3.3-70b-versatile'),
-          messages,
-          maxTokens: 3000,
-          temperature: 0.3,
-          tools: aiTools,
-          maxSteps: 3,
-        });
-        resultText = groqResult.text;
+        
+        resultText = result.text;
+        break; // Success! Break the loop
+      } catch (err: any) {
+        console.warn(`${provider.name} failed:`, err.message);
+        providerErrors.push(`[${provider.name}] ${err.message}`);
       }
+    }
+
+    if (!resultText) {
+      throw new Error(`ระบบ AI ทั้งหมดขัดข้อง:\n${providerErrors.join('\n')}`);
     }
 
     return new Response(JSON.stringify({

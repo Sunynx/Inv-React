@@ -8,6 +8,7 @@ import Providers from '@/components/Providers';
 import AIAssistant from '@/components/AIAssistant';
 import { Toaster } from 'react-hot-toast';
 import { cn } from "@/lib/utils";
+import { Analytics } from "@vercel/analytics/next";
 
 const geist = Geist({subsets:['latin'],variable:'--font-sans'});
 
@@ -45,6 +46,7 @@ export default function RootLayout({
           </div>
           <AIAssistant />
         </Providers>
+        <Analytics />
       </body>
     </html>
   );

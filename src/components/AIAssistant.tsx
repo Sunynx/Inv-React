@@ -5,7 +5,7 @@ import { Bot, X, Send, Loader2, MessageSquare, Download, FileText } from 'lucide
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { supabase } from '@/lib/supabase';
-import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
+import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, LineChart, Line, CartesianGrid } from 'recharts';
 
 const COLORS = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899'];
 
@@ -50,6 +50,41 @@ function AIChartRenderer({ data }: { data: any }) {
             </Pie>
             <Tooltip />
           </PieChart>
+        </ResponsiveContainer>
+      </div>
+    );
+  }
+  
+  if (data.type === 'donut') {
+    return (
+      <div className="w-full h-48 my-4 bg-white p-2 rounded-lg border shadow-sm">
+        <h4 className="text-xs font-semibold text-center mb-2">{data.title}</h4>
+        <ResponsiveContainer width="100%" height="100%">
+          <PieChart>
+            <Pie data={data.data} dataKey="value" nameKey="name" cx="50%" cy="50%" innerRadius={35} outerRadius={55} label>
+              {data.data.map((entry: any, index: number) => (
+                <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+              ))}
+            </Pie>
+            <Tooltip />
+          </PieChart>
+        </ResponsiveContainer>
+      </div>
+    );
+  }
+
+  if (data.type === 'line') {
+    return (
+      <div className="w-full h-48 my-4 bg-white p-2 rounded-lg border shadow-sm">
+        <h4 className="text-xs font-semibold text-center mb-2">{data.title}</h4>
+        <ResponsiveContainer width="100%" height="100%">
+          <LineChart data={data.data}>
+            <CartesianGrid strokeDasharray="3 3" vertical={false} opacity={0.5} />
+            <XAxis dataKey="name" fontSize={10} tickFormatter={(val) => val.length > 5 ? val.substring(0,5)+'...' : val} />
+            <YAxis fontSize={10} />
+            <Tooltip />
+            <Line type="monotone" dataKey="value" stroke="#8b5cf6" strokeWidth={3} dot={{ r: 4 }} activeDot={{ r: 6 }} />
+          </LineChart>
         </ResponsiveContainer>
       </div>
     );
@@ -122,7 +157,7 @@ export default function AIAssistant() {
         }
       }
       // Render normal text with bold support
-      return <span key={index} className="whitespace-pre-wrap leading-relaxed">{
+      return <span key={index} className="whitespace-pre-wrap leading-relaxed break-words block">{
          part.split(/(\*\*.*?\*\*)/g).map((p, idx) => 
            p.startsWith('**') && p.endsWith('**') 
              ? <strong key={idx} className="font-semibold text-blue-900">{p.slice(2, -2)}</strong> 
@@ -242,7 +277,7 @@ ${highRiskAssets || 'ไม่มีอุปกรณ์ที่มีคว�
   ]
 }
 \`\`\`
-รองรับ type: "bar" และ "pie"
+รองรับ type: "bar", "pie", "donut", "line"
 คุณสามารถอธิบายเพิ่มเติมใต้กราฟได้ปกติ แต่โค้ดกราฟต้องอยู่ใน block \`\`\`chart เท่านั้น
 
 --- การออกรายงานอัตโนมัติ (Automated Reports) ---
@@ -280,7 +315,7 @@ ${highRiskAssets || 'ไม่มีอุปกรณ์ที่มีคว�
       const reply = data.choices?.[0]?.message?.content || 'ไม่สามารถตอบคำถามได้';
       setChatMessages(prev => [...prev, { role: 'ai', text: reply }]);
     } catch (e: any) {
-      setChatMessages(prev => [...prev, { role: 'ai', text: `เกิดข้อผิดพลาดในการเชื่อมต่อ (Error: ${e.message})` }]);
+      setChatMessages(prev => [...prev, { role: 'ai', text: `🚨 **เกิดข้อผิดพลาดจากระบบ AI**\n${e.message}` }]);
     } finally {
       setIsAiLoading(false);
     }
@@ -362,7 +397,7 @@ ${highRiskAssets || 'ไม่มีอุปกรณ์ที่มีคว�
                   </div>
                 )}
                 
-                <div className={`p-3 rounded-2xl max-w-[85%] text-sm shadow-sm ${
+                <div className={`p-3 rounded-2xl max-w-[85%] text-sm shadow-sm break-words overflow-hidden ${
                   msg.role === 'user' 
                     ? 'bg-blue-600 text-white rounded-br-none' 
                     : 'bg-white border text-gray-700 rounded-tl-none'

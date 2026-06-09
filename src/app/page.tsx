@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button';
 import * as Tabs from '@radix-ui/react-tabs';
 import { 
   AreaChart, Area, XAxis, YAxis, CartesianGrid, ResponsiveContainer,
-  BarChart, Bar, PieChart, Pie, Cell, LabelList
+  BarChart, Bar, PieChart, Pie, Cell, LabelList, LineChart, Line
 } from 'recharts';
 import { ChartContainer, ChartTooltip, ChartTooltipContent, ChartLegend, ChartLegendContent } from "@/components/ui/chart";
 import { 
@@ -767,7 +767,7 @@ ${stockStr || 'ไม่มีข้อมูล'}
                       nameKey="safeId"
                       cx="50%"
                       cy="50%"
-                      innerRadius={0}
+                      innerRadius={60}
                       outerRadius={90}
                       paddingAngle={2}
                       label={({percent}: any) => percent ? `${(percent * 100).toFixed(0)}%` : null}
@@ -831,6 +831,30 @@ ${stockStr || 'ไม่มีข้อมูล'}
                       <LabelList dataKey="value" position="top" fontSize={10} fill="#6b7280" formatter={(val: number) => `฿${val.toLocaleString()}`} />
                     </Bar>
                   </BarChart>
+                </ChartContainer>
+              </CardContent>
+            </Card>
+
+            {/* Line Chart: Asset Trend */}
+            <Card className="md:col-span-3 shadow-sm border-border/60">
+              <CardHeader>
+                <CardTitle className="text-base font-semibold">Asset Acquisition Trend (Line Chart)</CardTitle>
+                <p className="text-sm text-muted-foreground mt-1">Monthly trend of new assets added to the inventory.</p>
+              </CardHeader>
+              <CardContent>
+                <ChartContainer 
+                  config={{
+                    added: { label: "Assets Added", color: "#3b82f6" }
+                  }}
+                  className="h-[300px] w-full"
+                >
+                  <LineChart data={chartData} margin={{ top: 10, right: 30, left: 10, bottom: 0 }}>
+                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e5e7eb" />
+                    <XAxis dataKey="name" tick={{ fontSize: 12 }} />
+                    <YAxis tick={{ fontSize: 12 }} />
+                    <ChartTooltip content={<ChartTooltipContent />} cursor={false} />
+                    <Line type="monotone" dataKey="added" stroke="var(--color-added)" strokeWidth={3} dot={{ r: 4 }} activeDot={{ r: 6 }} />
+                  </LineChart>
                 </ChartContainer>
               </CardContent>
             </Card>
