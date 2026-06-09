@@ -108,8 +108,8 @@ export async function exportToExcel(data: any, options: { filename: string, incl
     sheet.getRow(1).font = { bold: true };
     data.tickets.forEach((t: any) => {
       sheet.addRow({
-        ticket_number: t.ticket_number,
-        issue_description: t.issue_description,
+        ticket_number: t.id ? t.id.substring(0, 8) : '-',
+        issue_description: t.description || t.title,
         status: t.status,
         priority: t.priority,
         asset_code: t.assets?.asset_code || '-',
@@ -220,8 +220,8 @@ export function exportToPDF(data: any, options: { filename: string, includeSumma
     doc.text(`Repair Tickets (${data.tickets.length})`, 14, currentY);
     
     const ticketBody = data.tickets.map((t: any) => [
-      t.ticket_number || '-',
-      t.issue_description || '-',
+      t.id ? t.id.substring(0, 8) : '-',
+      t.description || t.title || '-',
       t.status || '-',
       t.priority || '-',
       t.assets?.asset_code || '-',

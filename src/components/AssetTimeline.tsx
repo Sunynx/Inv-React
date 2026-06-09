@@ -35,7 +35,7 @@ export default function AssetTimeline({ assetId }: { assetId: string }) {
             date: new Date(t.created_at),
             type: 'repair',
             title: 'Repair Ticket Created',
-            description: `Issue: ${t.issue_description} - Status: ${t.status}`,
+            description: `Issue: ${t.description || t.title} - Status: ${t.status}`,
             icon: Wrench,
             color: 'bg-amber-500'
           });

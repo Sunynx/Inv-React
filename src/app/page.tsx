@@ -101,7 +101,7 @@ export default function Dashboard() {
       })).filter(c => c.value > 0);
 
       // Tickets by Priority
-      const pendingTickets = tickets.filter(t => t.status !== 'ซ่อมสำเร็จ' && t.status !== 'ยกเลิก');
+      const pendingTickets = tickets.filter(t => t.status !== 'เสร็จสิ้น' && t.status !== 'ยกเลิก');
       const priorityCount: Record<string, number> = { 'ต่ำ': 0, 'ปานกลาง': 0, 'สูง': 0, 'ด่วนมาก': 0 };
       pendingTickets.forEach(t => {
         if (t.priority && priorityCount[t.priority] !== undefined) {
@@ -476,14 +476,14 @@ export default function Dashboard() {
                             <td className="px-4 py-3">
                               <div className="flex items-center gap-2">
                                 <div className={`w-2 h-2 rounded-full ${
-                                  r.status === 'ซ่อมสำเร็จ' ? 'bg-emerald-500' :
+                                  r.status === 'เสร็จสิ้น' ? 'bg-emerald-500' :
                                   r.status === 'ยกเลิก' ? 'bg-gray-400' : 'bg-amber-500'
                                 }`} />
                                 <span className="font-medium text-foreground">{r.status}</span>
                               </div>
                             </td>
                             <td className="px-4 py-3 text-muted-foreground">{r.assets?.name || '-'}</td>
-                            <td className="px-4 py-3 truncate max-w-[200px]">{r.issue_description}</td>
+                            <td className="px-4 py-3 truncate max-w-[200px]">{r.description || r.title}</td>
                             <td className="px-4 py-3 text-right text-muted-foreground">
                               {format(new Date(r.created_at), 'dd MMM yyyy')}
                             </td>
@@ -664,18 +664,18 @@ export default function Dashboard() {
                       ).join('\n');
 
                       const licensesStr = licenses.map(l => 
-                        `- ${l.software_name} (Key: ${l.license_key||'-'}) | วันหมดอายุ: ${l.expiration_date||'-'} | สถานะ: ${l.status||'-'}`
+                        `- ${l.name} (Key: ${l.license_key||'-'}) | วันหมดอายุ: ${l.expiry_date||'-'} | สถานะ: ${l.status||'-'}`
                       ).join('\n');
 
                       const maintenanceStr = maintenance.map(m => 
-                        `- ${m.maintenance_type} สำหรับ ${m.assets?.name||'อุปกรณ์'} | กำหนดการ: ${m.scheduled_date||'-'} | สถานะ: ${m.status||'-'} | หมายเหตุ: ${m.notes||'-'}`
+                        `- ${m.title} สำหรับ ${m.assets?.name||'อุปกรณ์'} | กำหนดการ: ${m.next_due_at||'-'} | สถานะ: ${m.status||'-'} | หมายเหตุ: ${m.description||'-'}`
                       ).join('\n');
 
                       const stockStr = stock.map(s => 
                         `- ${s.name} | คงเหลือ: ${s.quantity} ${s.unit} (ขั้นต่ำ: ${s.min_stock||0})`
                       ).join('\n');
 
-                      const recentIssues = repairs.length > 0 ? repairs.map(t => `- ${t.assets?.name || 'อุปกรณ์'}: ${t.issue_description} (สถานะ: ${t.status})`).join('\n') : 'ไม่มี';
+                      const recentIssues = repairs.length > 0 ? repairs.map(t => `- ${t.assets?.name || 'อุปกรณ์'}: ${t.description || t.title} (สถานะ: ${t.status})`).join('\n') : 'ไม่มี';
                       const deptStr = departments.slice(0, 5).map(d => `${d.name} (${d.assetCount} รายการ, มูลค่า ฿${d.totalValue.toLocaleString()})`).join(', ');
                       const priorityStr = priorityStats.map(p => `${p.name}: ${p.value}`).join(', ');
 
@@ -712,19 +712,13 @@ ${stockStr || 'ไม่มีข้อมูล'}
                         { role: 'user', content: q }
                       ];
 
-                      const res = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+                      const res = await fetch('/api/chat', {
                         method: 'POST',
                         headers: {
-                          'Authorization': `Bearer ${process.env.NEXT_PUBLIC_OPENROUTER_API_KEY}`,
-                          'HTTP-Referer': window.location.origin,
-                          'X-Title': 'IT Inventory System',
                           'Content-Type': 'application/json'
                         },
                         body: JSON.stringify({
-                          model: 'google/gemini-2.5-flash',
-                          messages: apiMessages,
-                          max_tokens: 3000,
-                          temperature: 0.3
+                          messages: apiMessages
                         })
                       });
                       const data = await res.json();

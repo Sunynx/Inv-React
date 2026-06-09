@@ -51,7 +51,7 @@ export default function LicensesPage() {
   };
 
   const filteredLicenses = records.filter(l => {
-    const matchSearch = l.software_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    const matchSearch = l.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
                         l.license_key?.toLowerCase().includes(searchTerm.toLowerCase()) ||
                         l.assets?.name?.toLowerCase().includes(searchTerm.toLowerCase());
     const matchStatus = filterStatus === 'all' || l.status === filterStatus;
@@ -64,9 +64,9 @@ export default function LicensesPage() {
 
   const columns: ColumnDef<any>[] = [
     {
-      accessorKey: 'software_name',
+      accessorKey: 'name',
       header: 'Software',
-      cell: ({ row }) => <span className="font-medium text-primary">{row.original.software_name}</span>
+      cell: ({ row }) => <span className="font-medium text-primary">{row.original.name}</span>
     },
     {
       accessorKey: 'license_key',
@@ -99,9 +99,9 @@ export default function LicensesPage() {
         const status = row.original.status;
         return (
           <span className={`inline-flex px-2 py-0.5 rounded-full text-[11px] font-semibold ${
-            status === 'ใช้งานอยู่' ? 'bg-green-100 text-green-700' :
-            status === 'ว่าง' ? 'bg-blue-100 text-blue-700' :
-            status === 'หมดอายุ' ? 'bg-red-100 text-red-700' :
+            status === 'active' ? 'bg-green-100 text-green-700' :
+            status === 'cancelled' ? 'bg-gray-100 text-gray-700' :
+            status === 'expired' ? 'bg-red-100 text-red-700' :
             'bg-gray-100 text-gray-700'
           }`}>
             {status || 'Unknown'}
@@ -110,11 +110,11 @@ export default function LicensesPage() {
       }
     },
     {
-      accessorKey: 'expiration_date',
+      accessorKey: 'expiry_date',
       header: 'Expires',
       cell: ({ row }) => (
         <span className="text-muted-foreground">
-          {row.original.expiration_date ? format(new Date(row.original.expiration_date), 'dd MMM yyyy') : 'No Expiry'}
+          {row.original.expiry_date ? format(new Date(row.original.expiry_date), 'dd MMM yyyy') : 'No Expiry'}
         </span>
       )
     },
@@ -173,9 +173,9 @@ export default function LicensesPage() {
               value={filterStatus} onChange={e => setFilterStatus(e.target.value)}
             >
               <option value="all">All Status</option>
-              <option value="Active">Active (ใช้งาน)</option>
-              <option value="Expired">Expired (หมดอายุ)</option>
-              <option value="Inactive">Inactive (ยกเลิก)</option>
+              <option value="active">Active</option>
+              <option value="expired">Expired</option>
+              <option value="cancelled">Cancelled</option>
             </select>
           </div>
         </CardContent>

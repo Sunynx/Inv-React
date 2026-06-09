@@ -16,23 +16,18 @@ import { DataTable } from '@/components/DataTable';
 import { ColumnDef } from '@tanstack/react-table';
 
 const statusConfig: Record<string, { icon: any; className: string }> = {
-  'แจ้งซ่อม': { icon: AlertCircle, className: 'text-amber-600 bg-amber-50 border-amber-200/50' },
+  'เปิด': { icon: AlertCircle, className: 'text-amber-600 bg-amber-50 border-amber-200/50' },
   'กำลังดำเนินการ': { icon: Wrench, className: 'text-blue-600 bg-blue-50 border-blue-200/50' },
-  'รออะไหล่': { icon: Clock, className: 'text-orange-600 bg-orange-50 border-orange-200/50' },
-  'ซ่อมสำเร็จ': { icon: CheckCircle2, className: 'text-emerald-600 bg-emerald-50 border-emerald-200/50' },
-  'ส่งซ่อมภายนอก': { icon: Wrench, className: 'text-purple-600 bg-purple-50 border-purple-200/50' },
+  'รอะไหล่': { icon: Clock, className: 'text-orange-600 bg-orange-50 border-orange-200/50' },
+  'เสร็จสิ้น': { icon: CheckCircle2, className: 'text-emerald-600 bg-emerald-50 border-emerald-200/50' },
   'ยกเลิก': { icon: Ban, className: 'text-gray-500 bg-gray-50 border-gray-200/50' },
 };
 
 const priorityConfig: Record<string, string> = {
   'ต่ำ': 'bg-gray-100 text-gray-600',
-  'ปานกลาง': 'bg-blue-100 text-blue-700',
+  'ปกติ': 'bg-blue-100 text-blue-700',
   'สูง': 'bg-red-100 text-red-700',
-  'ด่วนมาก': 'bg-red-200 text-red-800',
-  'Low': 'bg-gray-100 text-gray-600',
-  'Medium': 'bg-blue-100 text-blue-700',
-  'High': 'bg-red-100 text-red-700',
-  'Critical': 'bg-red-200 text-red-800',
+  'เร่งด่วน': 'bg-red-200 text-red-800',
 };
 
 export default function TicketsPage() {
@@ -75,7 +70,8 @@ export default function TicketsPage() {
   };
 
   const filteredTickets = tickets.filter(t => {
-    const matchSearch = t.issue_description?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    const matchSearch = t.description?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                        t.title?.toLowerCase().includes(searchTerm.toLowerCase()) ||
                         t.assets?.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
                         t.assets?.asset_code?.toLowerCase().includes(searchTerm.toLowerCase());
     let matchTab = true;
@@ -104,11 +100,11 @@ export default function TicketsPage() {
       }
     },
     {
-      accessorKey: 'issue_description',
+      accessorKey: 'description',
       header: 'Issue',
       cell: ({ row }) => (
-        <div className="max-w-[200px] truncate text-sm text-muted-foreground" title={row.original.issue_description}>
-          {row.original.issue_description}
+        <div className="max-w-[200px] truncate text-sm text-muted-foreground" title={row.original.description || row.original.title}>
+          {row.original.title} - {row.original.description}
         </div>
       )
     },
@@ -191,9 +187,9 @@ export default function TicketsPage() {
             <Tabs.List className="flex gap-1 flex-wrap">
               {[
                 { value: 'all', label: 'All', count: tickets.length },
-                { value: 'แจ้งซ่อม', label: 'แจ้งซ่อม', count: countByStatus('แจ้งซ่อม') },
+                { value: 'เปิด', label: 'เปิด', count: countByStatus('เปิด') },
                 { value: 'กำลังดำเนินการ', label: 'กำลังดำเนินการ', count: countByStatus('กำลังดำเนินการ') },
-                { value: 'ซ่อมสำเร็จ', label: 'ซ่อมสำเร็จ', count: countByStatus('ซ่อมสำเร็จ') },
+                { value: 'เสร็จสิ้น', label: 'เสร็จสิ้น', count: countByStatus('เสร็จสิ้น') },
               ].map(tab => (
                 <Tabs.Trigger key={tab.value} value={tab.value} className="px-3 py-1.5 text-sm font-medium text-gray-500 hover:text-gray-900 data-[state=active]:text-gray-900 data-[state=active]:bg-gray-100 rounded-md transition-colors flex items-center gap-2">
                   {tab.label} <span className="bg-gray-200 text-gray-600 px-1.5 py-0.5 rounded-full text-[10px] font-semibold">{tab.count}</span>

@@ -29,8 +29,8 @@ export default function Notifications() {
       
       const { data: tickets } = await supabase
         .from('repair_tickets')
-        .select('id, issue_description, created_at, status')
-        .in('status', ['รอคิว', 'กำลังซ่อม'])
+        .select('id, title, description, created_at, status')
+        .in('status', ['เปิด', 'กำลังดำเนินการ'])
         .lt('created_at', twoDaysAgo.toISOString());
         
       if (tickets) {
@@ -39,7 +39,7 @@ export default function Notifications() {
             id: `ticket_${t.id}`,
             type: 'ticket',
             title: 'Pending Ticket Alert',
-            message: `Ticket #${t.id.substring(0,6)} has been pending for over 2 days.`,
+            message: `Ticket #${t.id.substring(0,6)} (${t.title}) has been pending for over 2 days.`,
             link: '/tickets',
             icon: Wrench,
             color: 'text-amber-500',
@@ -92,10 +92,10 @@ export default function Notifications() {
       // 4. Expiring Licenses
       const { data: licenses } = await supabase
         .from('licenses')
-        .select('id, software_name, expiration_date')
-        .not('expiration_date', 'is', null)
-        .lt('expiration_date', thirtyDaysFromNow.toISOString())
-        .gt('expiration_date', now.toISOString());
+        .select('id, name, expiry_date')
+        .not('expiry_date', 'is', null)
+        .lt('expiry_date', thirtyDaysFromNow.toISOString())
+        .gt('expiry_date', now.toISOString());
 
       if (licenses) {
         licenses.forEach(l => {
@@ -103,7 +103,7 @@ export default function Notifications() {
             id: `license_${l.id}`,
             type: 'license',
             title: 'License Expiring Soon',
-            message: `${l.software_name} license expires on ${l.expiration_date}.`,
+            message: `${l.name} license expires on ${l.expiry_date}.`,
             link: '/licenses',
             icon: Key,
             color: 'text-amber-500',
@@ -118,23 +118,23 @@ export default function Notifications() {
       
       const { data: maintenance } = await supabase
         .from('maintenance_schedules')
-        .select('id, maintenance_type, scheduled_date, status, assets(name)')
-        .neq('status', 'เสร็จสิ้น')
-        .neq('status', 'ยกเลิก')
-        .lt('scheduled_date', sevenDaysFromNow.toISOString());
+        .select('id, title, next_due_at, status, assets(name)')
+        .neq('status', 'completed')
+        .neq('status', 'cancelled')
+        .lt('next_due_at', sevenDaysFromNow.toISOString());
 
       if (maintenance) {
         maintenance.forEach(m => {
-          const isOverdue = new Date(m.scheduled_date) < now;
+          const isOverdue = new Date(m.next_due_at) < now;
           notes.push({
             id: `pm_${m.id}`,
             type: 'maintenance',
             title: isOverdue ? 'Overdue Maintenance' : 'Upcoming Maintenance',
-            message: `${m.maintenance_type} for ${m.assets?.name || 'Asset'} ${isOverdue ? 'was due' : 'is due'} on ${m.scheduled_date}.`,
+            message: `${m.title} for ${m.assets?.name || 'Asset'} ${isOverdue ? 'was due' : 'is due'} on ${m.next_due_at}.`,
             link: '/maintenance',
             icon: CalendarClock,
             color: isOverdue ? 'text-red-500' : 'text-blue-500',
-            date: new Date(m.scheduled_date)
+            date: new Date(m.next_due_at)
           });
         });
       }

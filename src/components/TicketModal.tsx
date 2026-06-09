@@ -51,7 +51,7 @@ export default function TicketModal({ isOpen, onClose, ticketId }: { isOpen: boo
       if (ticketId && ticketData) {
         setFormData(ticketData);
       } else if (!ticketId) {
-        setFormData({ status: 'แจ้งซ่อม', priority: 'ปานกลาง' });
+        setFormData({ status: 'เปิด', priority: 'ปกติ' });
       }
     } else {
       setFormData({});
@@ -60,7 +60,7 @@ export default function TicketModal({ isOpen, onClose, ticketId }: { isOpen: boo
 
   const saveMutation = useMutation({
     mutationFn: async (payload: any) => {
-      if (payload.status === 'ซ่อมสำเร็จ' || payload.status === 'ยกเลิก') {
+      if (payload.status === 'เสร็จสิ้น' || payload.status === 'ยกเลิก') {
         if (!payload.resolved_at) payload.resolved_at = new Date().toISOString();
       } else {
         payload.resolved_at = null;
@@ -141,10 +141,14 @@ export default function TicketModal({ isOpen, onClose, ticketId }: { isOpen: boo
             </div>
 
             <div className="space-y-2">
-              <Label>Issue Description (อาการที่เสีย) *</Label>
+              <Label>Title (หัวข้อการแจ้งซ่อม) *</Label>
+              <Input required name="title" value={formData.title || ''} onChange={handleChange} />
+            </div>
+
+            <div className="space-y-2">
+              <Label>Description (รายละเอียดอาการที่เสีย)</Label>
               <textarea 
-                required
-                name="issue_description" value={formData.issue_description || ''} onChange={handleChange} rows={3} 
+                name="description" value={formData.description || ''} onChange={handleChange} rows={3} 
                 className="flex min-h-[80px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
               />
             </div>
@@ -156,9 +160,9 @@ export default function TicketModal({ isOpen, onClose, ticketId }: { isOpen: boo
                   <SelectTrigger><SelectValue placeholder="Select Priority..." /></SelectTrigger>
                   <SelectContent>
                     <SelectItem value="ต่ำ">ต่ำ (Low)</SelectItem>
-                    <SelectItem value="ปานกลาง">ปานกลาง (Medium)</SelectItem>
+                    <SelectItem value="ปกติ">ปกติ (Medium)</SelectItem>
                     <SelectItem value="สูง">สูง (High)</SelectItem>
-                    <SelectItem value="ด่วนมาก">ด่วนมาก (Critical)</SelectItem>
+                    <SelectItem value="เร่งด่วน">เร่งด่วน (Critical)</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -168,36 +172,20 @@ export default function TicketModal({ isOpen, onClose, ticketId }: { isOpen: boo
                 <Select value={formData.status || 'รอการตรวจสอบ'} onValueChange={(v) => handleSelectChange('status', v)}>
                   <SelectTrigger><SelectValue placeholder="Select Status..." /></SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="รอการตรวจสอบ">รอการตรวจสอบ (Pending)</SelectItem>
+                    <SelectItem value="เปิด">เปิด (Pending)</SelectItem>
                     <SelectItem value="กำลังดำเนินการ">กำลังดำเนินการ (In Progress)</SelectItem>
-                    <SelectItem value="รออะไหล่">รออะไหล่ (Waiting for parts)</SelectItem>
-                    <SelectItem value="ส่งซ่อมภายนอก">ส่งซ่อมภายนอก (External Repair)</SelectItem>
-                    <SelectItem value="ซ่อมสำเร็จ">ซ่อมสำเร็จ (Resolved)</SelectItem>
+                    <SelectItem value="รอะไหล่">รอะไหล่ (Waiting for parts)</SelectItem>
+                    <SelectItem value="เสร็จสิ้น">เสร็จสิ้น (Resolved)</SelectItem>
                     <SelectItem value="ยกเลิก">ยกเลิก (Cancelled)</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
 
               <div className="space-y-2">
-                <Label>Reported By (ผู้แจ้งซ่อม)</Label>
-                <Input name="reported_by" value={formData.reported_by || ''} onChange={handleChange} />
-              </div>
-
-              <div className="space-y-2">
-                <Label>Assigned To (ช่าง/ผู้รับผิดชอบ)</Label>
-                <Input name="assigned_to" value={formData.assigned_to || ''} onChange={handleChange} />
+                <Label>Cost (ค่าซ่อม)</Label>
+                <Input type="number" name="cost" value={formData.cost || ''} onChange={handleChange} />
               </div>
             </div>
-
-            {(formData.status === 'ซ่อมสำเร็จ' || formData.status === 'ยกเลิก' || ticketId) && (
-              <div className="space-y-2 pt-4 border-t">
-                <Label>Resolution Notes (รายละเอียดการแก้ไข)</Label>
-                <textarea 
-                  name="resolution_notes" value={formData.resolution_notes || ''} onChange={handleChange} rows={3} 
-                  className="flex min-h-[80px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
-                />
-              </div>
-            )}
 
             <div className="space-y-2 pt-4 border-t">
               <Label className="text-blue-600 font-semibold">Use Parts from Stock (เบิกอะไหล่)</Label>

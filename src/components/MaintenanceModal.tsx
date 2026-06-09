@@ -39,7 +39,7 @@ export default function MaintenanceModal({ isOpen, onClose, recordId }: { isOpen
       if (recordId && recordData) {
         setFormData(recordData);
       } else if (!recordId) {
-        setFormData({ status: 'รอคิว', maintenance_type: 'PM (Preventive Maintenance)' });
+        setFormData({ status: 'pending', frequency: 'monthly' });
       }
     } else {
       setFormData({});
@@ -102,33 +102,44 @@ export default function MaintenanceModal({ isOpen, onClose, recordId }: { isOpen
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label>Type (ประเภท)</Label>
-                <Select value={formData.maintenance_type || 'PM (Preventive Maintenance)'} onValueChange={(v) => handleSelectChange('maintenance_type', v)}>
-                  <SelectTrigger><SelectValue placeholder="Select Type..." /></SelectTrigger>
+                <Label>Title (หัวข้อ/ประเภท) *</Label>
+                <Input required name="title" value={formData.title || ''} onChange={handleChange} placeholder="e.g. Preventive Maintenance" />
+              </div>
+
+              <div className="space-y-2">
+                <Label>Frequency (ความถี่)</Label>
+                <Select value={formData.frequency || 'monthly'} onValueChange={(v) => handleSelectChange('frequency', v)}>
+                  <SelectTrigger><SelectValue placeholder="Select Frequency..." /></SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="PM (Preventive Maintenance)">PM (Preventive Maintenance)</SelectItem>
-                    <SelectItem value="CM (Corrective Maintenance)">CM (Corrective Maintenance)</SelectItem>
-                    <SelectItem value="Cleaning">Cleaning (ทำความสะอาด)</SelectItem>
+                    <SelectItem value="daily">Daily</SelectItem>
+                    <SelectItem value="weekly">Weekly</SelectItem>
+                    <SelectItem value="monthly">Monthly</SelectItem>
+                    <SelectItem value="quarterly">Quarterly</SelectItem>
+                    <SelectItem value="yearly">Yearly</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
 
               <div className="space-y-2">
                 <Label>Scheduled Date (วันที่กำหนด)</Label>
-                <Input type="date" required name="scheduled_date" value={formData.scheduled_date || ''} onChange={handleChange} />
+                <Input type="date" required name="next_due_at" value={formData.next_due_at || ''} onChange={handleChange} />
               </div>
 
               <div className="space-y-2">
                 <Label>Status (สถานะ)</Label>
-                <Select value={formData.status || 'รอคิว'} onValueChange={(v) => handleSelectChange('status', v)}>
+                <Select value={formData.status || 'pending'} onValueChange={(v) => handleSelectChange('status', v)}>
                   <SelectTrigger><SelectValue placeholder="Select Status..." /></SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="รอคิว">รอคิว (Pending)</SelectItem>
-                    <SelectItem value="กำลังดำเนินการ">กำลังดำเนินการ (In Progress)</SelectItem>
-                    <SelectItem value="เสร็จสิ้น">เสร็จสิ้น (Completed)</SelectItem>
-                    <SelectItem value="ยกเลิก">ยกเลิก (Cancelled)</SelectItem>
+                    <SelectItem value="pending">รอคิว (Pending)</SelectItem>
+                    <SelectItem value="completed">เสร็จสิ้น (Completed)</SelectItem>
+                    <SelectItem value="cancelled">ยกเลิก (Cancelled)</SelectItem>
                   </SelectContent>
                 </Select>
+              </div>
+
+              <div className="space-y-2">
+                <Label>Cost (ค่าใช้จ่าย)</Label>
+                <Input type="number" name="cost" value={formData.cost || ''} onChange={handleChange} />
               </div>
 
               <div className="space-y-2">
@@ -138,9 +149,9 @@ export default function MaintenanceModal({ isOpen, onClose, recordId }: { isOpen
             </div>
 
             <div className="space-y-2 pt-4 border-t">
-              <Label>Notes (รายละเอียด/หมายเหตุ)</Label>
+              <Label>Description (รายละเอียด/หมายเหตุ)</Label>
               <textarea 
-                name="notes" value={formData.notes || ''} onChange={handleChange} rows={3} 
+                name="description" value={formData.description || ''} onChange={handleChange} rows={3} 
                 className="flex min-h-[80px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
               />
             </div>

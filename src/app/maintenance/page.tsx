@@ -27,7 +27,7 @@ export default function MaintenancePage() {
       const { data, error } = await supabase
         .from('maintenance_schedules')
         .select(`*, assets ( name, asset_code )`)
-        .order('scheduled_date', { ascending: true });
+        .order('next_due_at', { ascending: true });
       if (error) throw error;
       return data || [];
     }
@@ -52,12 +52,13 @@ export default function MaintenancePage() {
   };
 
   const filteredRecords = records.filter(r => {
-    const matchSearch = r.notes?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    const matchSearch = r.description?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                        r.title?.toLowerCase().includes(searchTerm.toLowerCase()) ||
                         r.assets?.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
                         r.assets?.asset_code?.toLowerCase().includes(searchTerm.toLowerCase());
     const matchStatus = filterStatus === 'all' || r.status === filterStatus;
-    const matchType = filterType === 'all' || r.maintenance_type === filterType;
-    return matchSearch && matchStatus && matchType;
+    const matchFrequency = filterType === 'all' || r.frequency === filterType;
+    return matchSearch && matchStatus && matchFrequency;
   });
 
   const refreshData = () => {
@@ -79,16 +80,16 @@ export default function MaintenancePage() {
       }
     },
     {
-      accessorKey: 'maintenance_type',
-      header: 'Type',
-      cell: ({ row }) => <span className="text-muted-foreground">{row.original.maintenance_type}</span>
+      accessorKey: 'title',
+      header: 'Title',
+      cell: ({ row }) => <span className="text-muted-foreground">{row.original.title}</span>
     },
     {
-      accessorKey: 'scheduled_date',
+      accessorKey: 'next_due_at',
       header: 'Scheduled Date',
       cell: ({ row }) => (
         <span>
-          {row.original.scheduled_date ? format(new Date(row.original.scheduled_date), 'dd MMM yyyy') : '-'}
+          {row.original.next_due_at ? format(new Date(row.original.next_due_at), 'dd MMM yyyy') : '-'}
         </span>
       )
     },
@@ -99,9 +100,8 @@ export default function MaintenancePage() {
         const status = row.original.status;
         return (
           <span className={`inline-flex px-2 py-0.5 rounded-full text-[11px] font-semibold ${
-            status === 'เสร็จสิ้น' ? 'bg-green-100 text-green-700' :
-            status === 'กำลังดำเนินการ' ? 'bg-blue-100 text-blue-700' :
-            status === 'ยกเลิก' ? 'bg-gray-100 text-gray-700' :
+            status === 'completed' ? 'bg-green-100 text-green-700' :
+            status === 'cancelled' ? 'bg-gray-100 text-gray-700' :
             'bg-amber-100 text-amber-700'
           }`}>
             {status || 'Unknown'}
@@ -169,22 +169,21 @@ export default function MaintenancePage() {
               value={filterStatus} onChange={e => setFilterStatus(e.target.value)}
             >
               <option value="all">All Status</option>
-              <option value="รอรับการบำรุงรักษา">รอรับการบำรุงรักษา (Pending)</option>
-              <option value="เสร็จสิ้น">เสร็จสิ้น (Completed)</option>
-              <option value="เลยกำหนด">เลยกำหนด (Overdue)</option>
-              <option value="ยกเลิก">ยกเลิก (Cancelled)</option>
+              <option value="pending">Pending</option>
+              <option value="completed">Completed</option>
+              <option value="cancelled">Cancelled</option>
             </select>
 
             <select 
               className="flex h-9 w-[150px] items-center justify-between rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm transition-colors focus:outline-none focus:ring-1 focus:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
               value={filterType} onChange={e => setFilterType(e.target.value)}
             >
-              <option value="all">All Types</option>
-              <option value="ทำความสะอาด (Cleaning)">ทำความสะอาด (Cleaning)</option>
-              <option value="อัพเดทซอฟต์แวร์ (Software Update)">อัพเดทซอฟต์แวร์ (Software Update)</option>
-              <option value="ตรวจเช็คสภาพ (Inspection)">ตรวจเช็คสภาพ (Inspection)</option>
-              <option value="เปลี่ยนอะไหล่ตามรอบ (Parts Replacement)">เปลี่ยนอะไหล่ตามรอบ (Parts Replacement)</option>
-              <option value="อื่นๆ (Other)">อื่นๆ (Other)</option>
+              <option value="all">All Frequencies</option>
+              <option value="daily">Daily</option>
+              <option value="weekly">Weekly</option>
+              <option value="monthly">Monthly</option>
+              <option value="quarterly">Quarterly</option>
+              <option value="yearly">Yearly</option>
             </select>
           </div>
         </CardContent>

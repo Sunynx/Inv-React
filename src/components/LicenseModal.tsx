@@ -39,7 +39,7 @@ export default function LicenseModal({ isOpen, onClose, recordId }: { isOpen: bo
       if (recordId && recordData) {
         setFormData(recordData);
       } else if (!recordId) {
-        setFormData({ status: 'ใช้งานอยู่', assigned_date: new Date().toISOString().split('T')[0] });
+        setFormData({ status: 'active', start_date: new Date().toISOString().split('T')[0], type: 'Software' });
       }
     } else {
       setFormData({});
@@ -108,7 +108,7 @@ export default function LicenseModal({ isOpen, onClose, recordId }: { isOpen: bo
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label>Software Name (ชื่อซอฟต์แวร์) *</Label>
-                <Input required name="software_name" value={formData.software_name || ''} onChange={handleChange} placeholder="e.g. MS Office 2021" />
+                <Input required name="name" value={formData.name || ''} onChange={handleChange} placeholder="e.g. MS Office 2021" />
               </div>
 
               <div className="space-y-2">
@@ -118,25 +118,34 @@ export default function LicenseModal({ isOpen, onClose, recordId }: { isOpen: bo
               
               <div className="space-y-2">
                 <Label>Assigned Date (วันที่ติดตั้ง/เริ่มใช้)</Label>
-                <Input type="date" name="assigned_date" value={formData.assigned_date || ''} onChange={handleChange} />
+                <Input type="date" name="start_date" value={formData.start_date || ''} onChange={handleChange} />
               </div>
 
               <div className="space-y-2">
                 <Label>Expiration Date (วันหมดอายุ)</Label>
-                <Input type="date" name="expiration_date" value={formData.expiration_date || ''} onChange={handleChange} />
+                <Input type="date" name="expiry_date" value={formData.expiry_date || ''} onChange={handleChange} />
               </div>
 
               <div className="space-y-2">
                 <Label>Status (สถานะ)</Label>
-                <Select value={formData.status || 'ใช้งานอยู่'} onValueChange={(v) => handleSelectChange('status', v)}>
+                <Select value={formData.status || 'active'} onValueChange={(v) => handleSelectChange('status', v)}>
                   <SelectTrigger><SelectValue placeholder="Select Status..." /></SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="ใช้งานอยู่">ใช้งานอยู่ (Active)</SelectItem>
-                    <SelectItem value="หมดอายุ">หมดอายุ (Expired)</SelectItem>
-                    <SelectItem value="ว่าง">ว่าง (Available)</SelectItem>
-                    <SelectItem value="ยกเลิก">ยกเลิก (Revoked)</SelectItem>
+                    <SelectItem value="active">ใช้งานอยู่ (Active)</SelectItem>
+                    <SelectItem value="expired">หมดอายุ (Expired)</SelectItem>
+                    <SelectItem value="cancelled">ยกเลิก (Cancelled)</SelectItem>
                   </SelectContent>
                 </Select>
+              </div>
+              
+              <div className="space-y-2">
+                <Label>Vendor (ผู้ขาย/เจ้าของ)</Label>
+                <Input name="vendor" value={formData.vendor || ''} onChange={handleChange} />
+              </div>
+              
+              <div className="space-y-2">
+                <Label>Assigned To (ผู้ถือครอง)</Label>
+                <Input name="assigned_to" value={formData.assigned_to || ''} onChange={handleChange} />
               </div>
             </div>
 
