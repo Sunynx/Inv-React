@@ -95,7 +95,7 @@ export default function ReportExportModal({
 
       // Fetch Stock
       if (dataTypes.includes('stock')) {
-        let q = supabase.from('stock_history').select('*, stock_items(name)');
+        let q = supabase.from('stock_transactions').select('*, stock_items(name)');
         if (start) q = q.gte('created_at', start);
         if (endISO) q = q.lte('created_at', endISO);
         promises.push(
@@ -108,7 +108,7 @@ export default function ReportExportModal({
 
       // Fetch Audit Logs
       if (dataTypes.includes('audit')) {
-        let q = supabase.from('audit_logs').select('*').order('created_at', { ascending: false });
+        let q = supabase.from('audit_log').select('*').order('created_at', { ascending: false });
         if (start) q = q.gte('created_at', start);
         if (endISO) q = q.lte('created_at', endISO);
         promises.push(

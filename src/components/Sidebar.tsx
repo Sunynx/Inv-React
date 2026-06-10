@@ -5,7 +5,7 @@ import { useState } from 'react';
 import { 
   LayoutDashboard, Box, QrCode, ScanLine, Wrench, Shield, 
   ArrowRightLeft, Key, CalendarClock, Package, FileBarChart, 
-  History, Settings, ChevronRight, Menu, ShoppingCart
+  History, Settings, ChevronRight, Menu, ShoppingCart, ClipboardList
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Playfair_Display } from 'next/font/google';
@@ -38,6 +38,7 @@ const menuGroups = [
     title: 'Operations',
     links: [
       { name: 'Transfers', href: '/transfers', icon: ArrowRightLeft },
+      { name: 'Checkouts', href: '/checkouts', icon: ClipboardList },
       { name: 'Licenses', href: '/licenses', icon: Key },
       { name: 'Stock', href: '/stock', icon: Package },
       { name: 'Procurement', href: '/procurement', icon: ShoppingCart },

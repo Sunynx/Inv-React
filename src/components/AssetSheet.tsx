@@ -4,7 +4,7 @@ import { supabase } from '@/lib/supabase';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import toast from 'react-hot-toast';
 import { v4 as uuidv4 } from 'uuid';
-import { Camera, Upload, X, CheckCircle2, AlertCircle, Clock, Ban, ChevronLeft, ChevronRight, Edit } from 'lucide-react';
+import { Camera, Upload, X, CheckCircle2, AlertCircle, Clock, Ban, ChevronLeft, ChevronRight, Edit, FileText, FileSpreadsheet, Paperclip } from 'lucide-react';
 import SignatureCanvas from 'react-signature-canvas';
 import { useRef } from 'react';
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
@@ -18,8 +18,9 @@ const statusConfig: Record<string, { icon: any; className: string }> = {
   'ใช้งาน': { icon: CheckCircle2, className: 'text-emerald-600 bg-emerald-50 border-emerald-200/50' },
   'ส่งซ่อม': { icon: AlertCircle, className: 'text-red-600 bg-red-50 border-red-200/50' },
   'สำรอง': { icon: Clock, className: 'text-amber-600 bg-amber-50 border-amber-200/50' },
-  'แทงจำหน่าย': { icon: Ban, className: 'text-gray-500 bg-gray-50 border-gray-200/50' },
-  'สูญหาย': { icon: Ban, className: 'text-gray-500 bg-gray-50 border-gray-200/50' },
+  'ส่งคืน': { icon: Clock, className: 'text-blue-500 bg-blue-50 border-blue-200/50' },
+  'ชำรุด': { icon: Ban, className: 'text-orange-500 bg-orange-50 border-orange-200/50' },
+  'จำหน่าย': { icon: Ban, className: 'text-gray-500 bg-gray-50 border-gray-200/50' },
 };
 
 const DetailItem = ({ label, value }: { label: string, value: any }) => {
@@ -105,6 +106,26 @@ export default function AssetSheet({ isOpen, onClose, assetId, mode = 'edit', on
         thumbnail_url: newImages.length > 0 ? newImages[0] : null
       });
       toast.success('Image uploaded');
+    } catch (err: any) { toast.error('Upload error: ' + err.message); }
+    finally { setUploading(false); }
+  };
+
+  const handleDocumentUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    try {
+      setUploading(true);
+      const file = e.target.files?.[0];
+      if (!file) return;
+      const fileExt = file.name.split('.').pop();
+      const fileName = `docs/${uuidv4()}.${fileExt}`;
+      const { error: uploadError } = await supabase.storage.from('asset-images').upload(fileName, file);
+      if (uploadError) throw uploadError;
+      const { data } = supabase.storage.from('asset-images').getPublicUrl(fileName);
+      
+      setFormData({ 
+        ...formData, 
+        reference_url: data.publicUrl
+      });
+      toast.success('Document uploaded');
     } catch (err: any) { toast.error('Upload error: ' + err.message); }
     finally { setUploading(false); }
   };
@@ -361,8 +382,9 @@ export default function AssetSheet({ isOpen, onClose, assetId, mode = 'edit', on
                   {formData.reference_url && (
                     <div className="space-y-2">
                       <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider border-b pb-1">Reference Document</h3>
-                      <a href={formData.reference_url} target="_blank" rel="noreferrer" className="inline-flex items-center text-sm text-blue-600 hover:text-blue-800 hover:underline">
-                        View Reference Document
+                      <a href={formData.reference_url} target="_blank" rel="noreferrer" className="inline-flex items-center gap-2 text-sm text-blue-600 hover:text-blue-800 hover:bg-blue-50 p-2 rounded-md border border-blue-100 transition-colors">
+                        {formData.reference_url.endsWith('.xlsx') || formData.reference_url.endsWith('.xls') ? <FileSpreadsheet size={18} className="text-green-600" /> : <FileText size={18} className="text-red-500" />}
+                        <span className="font-medium">ดูเอกสารอ้างอิง</span>
                       </a>
                     </div>
                   )}
@@ -489,8 +511,9 @@ export default function AssetSheet({ isOpen, onClose, assetId, mode = 'edit', on
                           <SelectItem value="ใช้งาน">ใช้งาน (Active)</SelectItem>
                           <SelectItem value="ส่งซ่อม">ส่งซ่อม (Repair)</SelectItem>
                           <SelectItem value="สำรอง">สำรอง (Spare)</SelectItem>
-                          <SelectItem value="สูญหาย">สูญหาย (Lost)</SelectItem>
-                          <SelectItem value="แทงจำหน่าย">แทงจำหน่าย (Disposed)</SelectItem>
+                          <SelectItem value="ส่งคืน">ส่งคืน (Returned)</SelectItem>
+                          <SelectItem value="ชำรุด">ชำรุด (Damaged)</SelectItem>
+                          <SelectItem value="จำหน่าย">จำหน่าย (Disposed)</SelectItem>
                         </SelectContent>
                       </Select>
                     </div>
@@ -717,8 +740,31 @@ export default function AssetSheet({ isOpen, onClose, assetId, mode = 'edit', on
                   </div>
 
                   <div className="space-y-1.5">
-                    <Label className="text-xs font-semibold text-gray-700">Reference Document URL</Label>
-                    <Input type="url" name="reference_url" value={formData.reference_url || ''} onChange={handleChange} className="h-9 shadow-sm bg-white" placeholder="https://" />
+                    <Label className="text-xs font-semibold text-gray-700">Reference Document (PDF / XLSX)</Label>
+                    <div className="flex flex-col gap-3 mt-1">
+                      {formData.reference_url ? (
+                        <div className="flex items-center justify-between bg-blue-50/50 border border-blue-100 p-3 rounded-md">
+                          <div className="flex items-center gap-2 text-sm">
+                            {formData.reference_url.endsWith('.xlsx') || formData.reference_url.endsWith('.xls') ? <FileSpreadsheet size={20} className="text-green-600" /> : <FileText size={20} className="text-red-500" />}
+                            <a href={formData.reference_url} target="_blank" rel="noreferrer" className="text-blue-600 font-medium hover:underline truncate max-w-[200px]">
+                              {formData.reference_url.split('/').pop() || 'เอกสารอ้างอิง'}
+                            </a>
+                          </div>
+                          <button type="button" onClick={() => setFormData({ ...formData, reference_url: null })} className="p-1.5 text-red-500 hover:bg-red-50 rounded-md transition-colors" title="ลบไฟล์">
+                            <X size={16} />
+                          </button>
+                        </div>
+                      ) : (
+                        <label className="cursor-pointer flex items-center justify-center w-full bg-gray-50/50 border-2 border-dashed border-gray-300 rounded-lg px-4 py-6 hover:bg-gray-50 hover:border-gray-400 transition-all">
+                          <div className="flex flex-col items-center gap-2">
+                            <Upload size={24} className="text-gray-400" />
+                            <div className="text-sm font-medium text-gray-600">{uploading ? 'กำลังอัปโหลด...' : 'คลิกเพื่อแนบไฟล์เอกสาร'}</div>
+                            <div className="text-xs text-gray-400">รองรับ PDF, XLSX, XLS</div>
+                          </div>
+                          <input type="file" accept=".pdf,.xlsx,.xls" className="hidden" onChange={handleDocumentUpload} disabled={uploading} />
+                        </label>
+                      )}
+                    </div>
                   </div>
                 </div>
               </div>

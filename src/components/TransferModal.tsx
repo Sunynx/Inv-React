@@ -36,22 +36,14 @@ export default function TransferModal({ isOpen, onClose, recordId }: { isOpen: b
     enabled: isOpen && !!recordId
   });
 
-  const { data: existingSignature } = useQuery({
-    queryKey: ['transfer_signature', recordId],
-    queryFn: async () => {
-      if (!recordId) return null;
-      const { data } = await supabase.from('signatures').select('*').eq('reference_id', recordId).eq('reference_type', 'asset_transfers').maybeSingle();
-      return data;
-    },
-    enabled: isOpen && !!recordId
-  });
+
 
   useEffect(() => {
     if (isOpen) {
       if (recordId && recordData) {
         setFormData(recordData);
       } else if (!recordId) {
-        setFormData({ transfer_date: new Date().toISOString().split('T')[0], status: 'รอดำเนินการ' });
+        setFormData({ transfer_date: new Date().toISOString().split('T')[0] });
       }
     } else {
       setFormData({});
@@ -60,6 +52,10 @@ export default function TransferModal({ isOpen, onClose, recordId }: { isOpen: b
 
   const saveMutation = useMutation({
     mutationFn: async (payload: any) => {
+      if (sigCanvas.current && !sigCanvas.current.isEmpty()) {
+        payload.signature_url = sigCanvas.current.toDataURL();
+      }
+      
       let targetId = recordId;
 
       if (recordId) {
@@ -71,18 +67,8 @@ export default function TransferModal({ isOpen, onClose, recordId }: { isOpen: b
         targetId = data?.id;
       }
 
-      if (payload.asset_id && payload.to_location && payload.status === 'เสร็จสมบูรณ์') {
-        await supabase.from('assets').update({ location: payload.to_location, assigned_user: payload.signed_by || payload.authorized_by }).eq('id', payload.asset_id);
-      }
-
-      if (payload.status === 'เสร็จสมบูรณ์' && sigCanvas.current && !sigCanvas.current.isEmpty() && targetId) {
-        const sigData = sigCanvas.current.toDataURL();
-        await supabase.from('signatures').insert([{
-          reference_type: 'asset_transfers',
-          reference_id: targetId,
-          signature_data: sigData,
-          signed_by: payload.signed_by || payload.authorized_by || 'Unknown'
-        }]);
+      if (payload.asset_id && payload.to_location) {
+        await supabase.from('assets').update({ location: payload.to_location, assigned_user: payload.transferred_by }).eq('id', payload.asset_id);
       }
     },
     onSuccess: () => {
@@ -153,21 +139,8 @@ export default function TransferModal({ isOpen, onClose, recordId }: { isOpen: b
               </div>
 
               <div className="space-y-2">
-                <Label>Authorized By (ผู้อนุมัติ/ผู้ดำเนินการ)</Label>
-                <Input name="authorized_by" value={formData.authorized_by || ''} onChange={handleChange} />
-              </div>
-
-              <div className="space-y-2">
-                <Label>Status (สถานะ)</Label>
-                <Select value={formData.status || 'รอดำเนินการ'} onValueChange={(v) => handleSelectChange('status', v)}>
-                  <SelectTrigger><SelectValue placeholder="Status" /></SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="รอดำเนินการ">รอดำเนินการ (Pending)</SelectItem>
-                    <SelectItem value="อนุมัติแล้ว">อนุมัติแล้ว (Approved)</SelectItem>
-                    <SelectItem value="เสร็จสมบูรณ์">เสร็จสมบูรณ์ (Completed)</SelectItem>
-                    <SelectItem value="ปฏิเสธ">ปฏิเสธ (Rejected)</SelectItem>
-                  </SelectContent>
-                </Select>
+                <Label>Transferred By (ผู้ดำเนินการ)</Label>
+                <Input name="transferred_by" value={formData.transferred_by || ''} onChange={handleChange} />
               </div>
             </div>
 
@@ -175,19 +148,17 @@ export default function TransferModal({ isOpen, onClose, recordId }: { isOpen: b
               <Label>Reason / Notes (เหตุผลการโอนย้าย)</Label>
               <textarea 
                 required
-                name="reason" value={formData.reason || ''} onChange={handleChange} rows={3} 
+                name="notes" value={formData.notes || ''} onChange={handleChange} rows={3} 
                 className="flex min-h-[80px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
               />
             </div>
 
-            {formData.status === 'เสร็จสมบูรณ์' && (
               <div className="space-y-3 pt-4 border-t">
                 <Label className="text-blue-600 font-semibold">Digital Signature (ลายเซ็นผู้รับมอบอุปกรณ์)</Label>
                 
-                {existingSignature ? (
+                {formData.signature_url ? (
                   <div className="border rounded-md bg-muted/30 p-4 flex flex-col items-center">
-                    <img src={existingSignature.signature_data} alt="Signature" className="h-24 object-contain" />
-                    <p className="text-xs text-muted-foreground mt-2">Signed by: {existingSignature.signed_by}</p>
+                    <img src={formData.signature_url} alt="Signature" className="h-24 object-contain" />
                   </div>
                 ) : (
                   <>
@@ -202,14 +173,9 @@ export default function TransferModal({ isOpen, onClose, recordId }: { isOpen: b
                         Clear Signature
                       </Button>
                     </div>
-                    <div className="space-y-2">
-                      <Label>Signed By (ชื่อผู้เซ็นรับ)</Label>
-                      <Input name="signed_by" value={formData.signed_by || ''} onChange={handleChange} required />
-                    </div>
                   </>
                 )}
               </div>
-            )}
 
             <div className="flex justify-end gap-3 pt-6 border-t mt-8">
               <Button type="button" variant="outline" onClick={onClose}>Cancel</Button>

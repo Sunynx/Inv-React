@@ -17,6 +17,7 @@ import { format } from 'date-fns';
 import { Input } from '@/components/ui/input';
 import { useRouter } from 'next/navigation';
 import toast from 'react-hot-toast';
+import { syncNotifications } from '@/lib/syncNotifications';
 
 export default function Dashboard() {
   const [globalSearch, setGlobalSearch] = useState('');
@@ -35,6 +36,11 @@ export default function Dashboard() {
   useEffect(() => {
     scrollToBottom();
   }, [chatMessages, isAiLoading]);
+
+  useEffect(() => {
+    // Sync notifications automatically when dashboard loads
+    syncNotifications();
+  }, []);
 
   const { data: dashboardData, isLoading } = useQuery({
     queryKey: ['dashboard_data'],
@@ -58,12 +64,26 @@ export default function Dashboard() {
       const s = assets.filter(x => x.status === 'สำรอง').length;
       
       const now = new Date();
-      const lastMonth = new Date(now.getFullYear(), now.getMonth() - 1, now.getDate());
-      const totalLastMonth = assets.filter(x => new Date(x.created_at) < lastMonth).length;
-      const diff = t - totalLastMonth;
-      const pct = totalLastMonth > 0 ? (diff / totalLastMonth) * 100 : 100;
+      const oneWeekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
       
-      const statsObj = { total: t, active: a, repair: r, spare: s, fromLastMonth: parseFloat(pct.toFixed(1)) };
+      const newAssetsThisWeek = assets.filter(x => new Date(x.created_at) >= oneWeekAgo).length;
+      const newTicketsThisWeek = tickets.filter(t => new Date(t.created_at) >= oneWeekAgo).length;
+      
+      const activeRate = t > 0 ? Math.round((a / t) * 100) : 0;
+      const spareRate = t > 0 ? Math.round((s / t) * 100) : 0;
+      const repairRate = t > 0 ? Math.round((r / t) * 100) : 0;
+
+      const statsObj = { 
+        total: t, 
+        active: a, 
+        repair: r, 
+        spare: s,
+        newAssetsThisWeek,
+        newTicketsThisWeek,
+        activeRate,
+        spareRate,
+        repairRate
+      };
 
       // Chart Data
       const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
@@ -78,7 +98,7 @@ export default function Dashboard() {
         }).length;
         const retiredInMonth = assets.filter(x => {
           const assetDate = new Date(x.created_at);
-          return assetDate.getMonth() === d.getMonth() && assetDate.getFullYear() === d.getFullYear() && (x.status === 'สูญหาย' || x.status === 'แทงจำหน่าย');
+          return assetDate.getMonth() === d.getMonth() && assetDate.getFullYear() === d.getFullYear() && (x.status === 'ชำรุด' || x.status === 'จำหน่าย');
         }).length;
         realData.push({ name: monthYear, added: addedInMonth, retired: retiredInMonth });
       }
@@ -102,7 +122,7 @@ export default function Dashboard() {
 
       // Tickets by Priority
       const pendingTickets = tickets.filter(t => t.status !== 'เสร็จสิ้น' && t.status !== 'ยกเลิก');
-      const priorityCount: Record<string, number> = { 'ต่ำ': 0, 'ปานกลาง': 0, 'สูง': 0, 'ด่วนมาก': 0 };
+      const priorityCount: Record<string, number> = { 'ต่ำ': 0, 'ปกติ': 0, 'สูง': 0, 'เร่งด่วน': 0 };
       pendingTickets.forEach(t => {
         if (t.priority && priorityCount[t.priority] !== undefined) {
           priorityCount[t.priority]++;
@@ -139,7 +159,7 @@ export default function Dashboard() {
         if (!a.warranty_expiry) return null;
         const expDate = new Date(a.warranty_expiry);
         const daysLeft = Math.ceil((expDate.getTime() - now.getTime()) / (1000 * 3600 * 24));
-        if (daysLeft <= 30 && a.status !== 'แทงจำหน่าย' && a.status !== 'สูญหาย') {
+        if (daysLeft <= 30 && a.status !== 'จำหน่าย' && a.status !== 'ชำรุด') {
           return { ...a, daysLeft, expDate };
         }
         return null;
@@ -255,17 +275,17 @@ export default function Dashboard() {
                     <p className="text-sm font-medium text-muted-foreground flex items-center gap-2">
                       <HardDrive size={14} /> Total Assets
                     </p>
-                    <p className="text-3xl font-bold">{isLoading ? '...' : stats.total}</p>
-                    <p className="text-xs text-muted-foreground">Since Last week</p>
+                    <p className="text-3xl font-bold">{isLoading ? '...' : stats?.total}</p>
+                    <p className="text-xs text-muted-foreground">Overall system assets</p>
                   </div>
                   <div className="p-2 bg-primary/10 text-primary rounded-full">
                     <Activity size={18} />
                   </div>
                 </div>
                 <div className="flex items-center justify-between text-sm">
-                  <span className="text-muted-foreground">Details</span>
+                  <span className="text-muted-foreground">New this week</span>
                   <span className="flex items-center text-emerald-600 font-medium">
-                    15.54% <TrendingUp size={14} className="ml-1" />
+                    +{stats?.newAssetsThisWeek || 0} <TrendingUp size={14} className="ml-1" />
                   </span>
                 </div>
               </CardContent>
@@ -279,14 +299,14 @@ export default function Dashboard() {
                     <p className="text-sm font-medium text-muted-foreground flex items-center gap-2">
                       <Shield size={14} /> Active Assets
                     </p>
-                    <p className="text-3xl font-bold">{isLoading ? '...' : stats.active}</p>
-                    <p className="text-xs text-muted-foreground">Since Last week</p>
+                    <p className="text-3xl font-bold">{isLoading ? '...' : stats?.active}</p>
+                    <p className="text-xs text-muted-foreground">Currently deployed</p>
                   </div>
                 </div>
                 <div className="flex items-center justify-between text-sm">
-                  <span className="text-muted-foreground">Details</span>
-                  <span className="flex items-center text-emerald-600 font-medium">
-                    10.2% <TrendingUp size={14} className="ml-1" />
+                  <span className="text-muted-foreground">Active Rate</span>
+                  <span className="flex items-center text-blue-600 font-medium">
+                    {stats?.activeRate || 0}%
                   </span>
                 </div>
               </CardContent>
@@ -300,14 +320,14 @@ export default function Dashboard() {
                     <p className="text-sm font-medium text-muted-foreground flex items-center gap-2">
                       <Wrench size={14} /> In Repair
                     </p>
-                    <p className="text-3xl font-bold">{isLoading ? '...' : stats.repair}</p>
-                    <p className="text-xs text-muted-foreground">Since Last week</p>
+                    <p className="text-3xl font-bold">{isLoading ? '...' : stats?.repair}</p>
+                    <p className="text-xs text-muted-foreground">Currently down</p>
                   </div>
                 </div>
                 <div className="flex items-center justify-between text-sm">
-                  <span className="text-muted-foreground">Details</span>
+                  <span className="text-muted-foreground">New tickets (7d)</span>
                   <span className="flex items-center text-red-600 font-medium">
-                    4.1% <TrendingDown size={14} className="ml-1" />
+                    +{stats?.newTicketsThisWeek || 0} <AlertCircle size={14} className="ml-1" />
                   </span>
                 </div>
               </CardContent>
@@ -321,14 +341,14 @@ export default function Dashboard() {
                     <p className="text-sm font-medium text-muted-foreground flex items-center gap-2">
                       <Box size={14} /> Spare Units
                     </p>
-                    <p className="text-3xl font-bold">{isLoading ? '...' : stats.spare}</p>
-                    <p className="text-xs text-muted-foreground">Since Last week</p>
+                    <p className="text-3xl font-bold">{isLoading ? '...' : stats?.spare}</p>
+                    <p className="text-xs text-muted-foreground">Ready to deploy</p>
                   </div>
                 </div>
                 <div className="flex items-center justify-between text-sm">
-                  <span className="text-muted-foreground">Details</span>
+                  <span className="text-muted-foreground">Spare Ratio</span>
                   <span className="flex items-center text-emerald-600 font-medium">
-                    2.5% <TrendingUp size={14} className="ml-1" />
+                    {stats?.spareRate || 0}% 
                   </span>
                 </div>
               </CardContent>
@@ -419,9 +439,9 @@ export default function Dashboard() {
                 ) : (
                   <ChartContainer 
                     config={{
-                      'ด่วนมาก': { label: 'Critical', color: '#ef4444' },
+                      'เร่งด่วน': { label: 'Critical', color: '#ef4444' },
                       'สูง': { label: 'High', color: '#f97316' },
-                      'ปานกลาง': { label: 'Medium', color: '#eab308' },
+                      'ปกติ': { label: 'Medium', color: '#eab308' },
                       'ต่ำ': { label: 'Low', color: '#3b82f6' }
                     }}
                     className="h-[250px] w-full"
@@ -639,75 +659,7 @@ export default function Dashboard() {
                     setIsAiLoading(true);
 
                     try {
-                      // Fetch full database context just-in-time
-                      const [
-                        allAssetsRes,
-                        licensesRes,
-                        maintenanceRes,
-                        stockRes
-                      ] = await Promise.all([
-                        supabase.from('assets').select('*, departments(name), categories(name)'),
-                        supabase.from('licenses').select('*'),
-                        supabase.from('maintenance_schedules').select('*, assets(name)'),
-                        supabase.from('stock_items').select('*')
-                      ]);
-
-                      const allAssets = allAssetsRes.data || [];
-                      const licenses = licensesRes.data || [];
-                      const maintenance = maintenanceRes.data || [];
-                      const stock = stockRes.data || [];
-
-                      const assetsFullStr = allAssets.map(a => 
-                        `- [${a.asset_code||'-'}] ${a.name||'-'} (แผนก: ${a.departments?.name||'-'}, หมวด: ${a.categories?.name||'-'}) ` +
-                        `| สถานะ: ${a.status||'-'} | สถานที่: ${a.location||'-'} | ผู้ถือครอง: ${a.assigned_user||'-'} | IP: ${a.ip_address||'-'} ` +
-                        `| สเปค: ${[a.model, a.cpu, a.ram, a.storage].filter(Boolean).join(', ')||'-'} | ราคา: ฿${a.price||0}`
-                      ).join('\n');
-
-                      const licensesStr = licenses.map(l => 
-                        `- ${l.name} (Key: ${l.license_key||'-'}) | วันหมดอายุ: ${l.expiry_date||'-'} | สถานะ: ${l.status||'-'}`
-                      ).join('\n');
-
-                      const maintenanceStr = maintenance.map(m => 
-                        `- ${m.title} สำหรับ ${m.assets?.name||'อุปกรณ์'} | กำหนดการ: ${m.next_due_at||'-'} | สถานะ: ${m.status||'-'} | หมายเหตุ: ${m.description||'-'}`
-                      ).join('\n');
-
-                      const stockStr = stock.map(s => 
-                        `- ${s.name} | คงเหลือ: ${s.quantity} ${s.unit} (ขั้นต่ำ: ${s.min_stock||0})`
-                      ).join('\n');
-
-                      const recentIssues = repairs.length > 0 ? repairs.map(t => `- ${t.assets?.name || 'อุปกรณ์'}: ${t.description || t.title} (สถานะ: ${t.status})`).join('\n') : 'ไม่มี';
-                      const deptStr = departments.slice(0, 5).map(d => `${d.name} (${d.assetCount} รายการ, มูลค่า ฿${d.totalValue.toLocaleString()})`).join(', ');
-                      const priorityStr = priorityStats.map(p => `${p.name}: ${p.value}`).join(', ');
-
-                      const systemPrompt = `คุณคือ AI Inventory Assistant ผู้ช่วยส่วนตัวสำหรับระบบจัดการทรัพย์สินไอที (IT Asset Management) ขององค์กร
-หน้าที่ของคุณคือตอบคำถามด้วยข้อมูลจากฐานข้อมูลทั้งหมดอย่างแม่นยำ เป็นมิตร และกระชับ
-
---- สถิติภาพรวม ---
-- ทรัพย์สินทั้งหมด: ${stats.total} รายการ (ใช้งานอยู่ ${stats.active}, ส่งซ่อม ${stats.repair}, สำรอง ${stats.spare})
-- 5 แผนกที่มีทรัพย์สินเยอะสุด: ${deptStr || '-'}
-- งานซ่อมแยกตามความสำคัญ: ${priorityStr || '-'}
-- รายการซ่อมล่าสุด:\n${recentIssues}
-
---- ข้อมูลในฐานข้อมูลทั้งหมด (สำหรับใช้ค้นหาและตอบคำถามเชิงลึก) ---
-1. รายการทรัพย์สิน (Assets) พร้อมรายละเอียด สเปค ผู้ถือครอง สถานที่ และราคา:
-${assetsFullStr || 'ไม่มีข้อมูล'}
-
-2. ลิขสิทธิ์ซอฟต์แวร์ (Licenses):
-${licensesStr || 'ไม่มีข้อมูล'}
-
-3. รอบซ่อมบำรุง (Maintenance):
-${maintenanceStr || 'ไม่มีข้อมูล'}
-
-4. รายการสต๊อกอะไหล่ (Stock Items):
-${stockStr || 'ไม่มีข้อมูล'}
-
-คำแนะนำในการตอบ:
-1. ตอบเป็นภาษาไทย ใช้ Bullet point หรือ Emoji เพื่อให้อ่านง่าย
-2. หากผู้ใช้ถามถึงอุปกรณ์ รายชื่อพนักงานที่ถือครอง สเปค ไอพีแอดเดรส (IP) ราคา หรือสต๊อกอะไหล่ ให้ค้นหาจากข้อมูลด้านบนแล้วตอบให้ตรงประเด็นที่สุด
-3. หากคำถามอยู่นอกเหนือจากข้อมูลที่มี ให้ตอบสุภาพว่า "ตรวจสอบจากฐานข้อมูลแล้ว ไม่พบข้อมูลดังกล่าวครับ"`;
-
                       const apiMessages = [
-                        { role: 'system', content: systemPrompt },
                         ...chatMessages.map(m => ({ role: m.role === 'ai' ? 'assistant' : 'user', content: m.text })),
                         { role: 'user', content: q }
                       ];

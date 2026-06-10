@@ -50,7 +50,7 @@ export default function StockItemSheet({ isOpen, onClose, itemId }: { isOpen: bo
       if (itemId && itemData) {
         setFormData(itemData);
       } else if (!itemId) {
-        setFormData({ quantity: 0, min_stock: 0, unit: 'ชิ้น', status: 'Active' });
+        setFormData({ quantity: 0, min_stock: 0, unit: 'ชิ้น' });
       }
     } else {
       setFormData({});
@@ -122,16 +122,6 @@ export default function StockItemSheet({ isOpen, onClose, itemId }: { isOpen: bo
                     </SelectTrigger>
                     <SelectContent>
                       {categories.map(c => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="space-y-1.5">
-                  <Label className="text-xs font-semibold text-gray-700">Status</Label>
-                  <Select value={formData.status || 'Active'} onValueChange={(v) => handleSelectChange('status', v)}>
-                    <SelectTrigger className="h-9 shadow-sm bg-white"><SelectValue placeholder="Status..." /></SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="Active">Active</SelectItem>
-                      <SelectItem value="Inactive">Inactive</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>

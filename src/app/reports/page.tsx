@@ -20,8 +20,8 @@ export default function ReportsPage() {
       ] = await Promise.all([
         supabase.from('assets').select('*', { count: 'exact', head: true }),
         supabase.from('repair_tickets').select('*', { count: 'exact', head: true }),
-        supabase.from('stock_history').select('*', { count: 'exact', head: true }),
-        supabase.from('audit_logs').select('*', { count: 'exact', head: true })
+        supabase.from('stock_transactions').select('*', { count: 'exact', head: true }),
+        supabase.from('audit_log').select('*', { count: 'exact', head: true })
       ]);
       setSummary({ 
         assets: aCount || 0, 

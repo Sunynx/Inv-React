@@ -21,6 +21,22 @@ import {
 } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
 import { ArrowUpDown, ArrowUp, ArrowDown, Download } from 'lucide-react';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
+  Pagination,
+  PaginationContent,
+  PaginationEllipsis,
+  PaginationItem,
+  PaginationLink,
+  PaginationNext,
+  PaginationPrevious,
+} from "@/components/ui/pagination";
 
 export function exportDataToCSV(data: any[], columns: any[], filename = 'export.csv') {
   if (!data || data.length === 0) return;
@@ -149,13 +165,37 @@ export function DataTable<TData, TValue>({
         </Table>
       </div>
 
-      <div className="flex items-center justify-between text-sm text-muted-foreground bg-card p-3 rounded-md border shadow-sm transition-colors duration-300">
-        <div>
-          Showing {table.getState().pagination.pageIndex * table.getState().pagination.pageSize + 1} to{' '}
-          {Math.min((table.getState().pagination.pageIndex + 1) * table.getState().pagination.pageSize, table.getPreFilteredRowModel().rows.length)} of{' '}
-          {table.getPreFilteredRowModel().rows.length} entries
+      <div className="flex flex-col sm:flex-row items-center justify-between gap-4 text-sm text-muted-foreground bg-card p-3 rounded-md border shadow-sm transition-colors duration-300">
+        <div className="flex items-center flex-wrap gap-4 flex-shrink-0">
+          <div className="flex items-center gap-2">
+            <span>แสดงหน้าละ</span>
+            <Select
+              value={`${table.getState().pagination.pageSize}`}
+              onValueChange={(value) => {
+                table.setPageSize(Number(value))
+              }}
+            >
+              <SelectTrigger className="h-8 w-[70px] bg-white">
+                <SelectValue placeholder={table.getState().pagination.pageSize} />
+              </SelectTrigger>
+              <SelectContent side="top">
+                {[10, 15, 20, 30, 50, 100].map((pageSize) => (
+                  <SelectItem key={pageSize} value={`${pageSize}`}>
+                    {pageSize}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <span>รายการ</span>
+          </div>
+          <div>
+            แสดงผล {table.getState().pagination.pageIndex * table.getState().pagination.pageSize + 1} ถึง{' '}
+            {Math.min((table.getState().pagination.pageIndex + 1) * table.getState().pagination.pageSize, table.getPreFilteredRowModel().rows.length)} จากทั้งหมด{' '}
+            {table.getPreFilteredRowModel().rows.length} รายการ
+          </div>
         </div>
-        <div className="flex items-center space-x-2">
+        
+        <div className="flex flex-col sm:flex-row items-center gap-4 w-full sm:w-auto">
           <Button
             variant="outline"
             size="sm"
@@ -164,25 +204,53 @@ export function DataTable<TData, TValue>({
           >
             <Download className="mr-2 h-3 w-3" /> Export CSV
           </Button>
-          <div className="h-4 w-px bg-gray-200 mx-2 hidden sm:block"></div>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => table.previousPage()}
-            disabled={!table.getCanPreviousPage()}
-            className="h-8"
-          >
-            Previous
-          </Button>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => table.nextPage()}
-            disabled={!table.getCanNextPage()}
-            className="h-8"
-          >
-            Next
-          </Button>
+
+          <Pagination className="mx-0 w-auto">
+            <PaginationContent>
+              <PaginationItem>
+                <PaginationPrevious 
+                  href="#"
+                  onClick={(e) => { e.preventDefault(); if (table.getCanPreviousPage()) table.previousPage(); }} 
+                  className={`h-8 px-2 ${!table.getCanPreviousPage() ? "pointer-events-none opacity-50" : "cursor-pointer"}`}
+                />
+              </PaginationItem>
+              
+              {Array.from({ length: table.getPageCount() }).map((_, i) => {
+                const currentPage = table.getState().pagination.pageIndex;
+                const pageCount = table.getPageCount();
+                
+                if (pageCount <= 5 || i === 0 || i === pageCount - 1 || (i >= currentPage - 1 && i <= currentPage + 1)) {
+                  return (
+                    <PaginationItem key={i} className="hidden sm:inline-block">
+                      <PaginationLink 
+                        href="#"
+                        isActive={currentPage === i}
+                        onClick={(e) => { e.preventDefault(); table.setPageIndex(i); }}
+                        className="cursor-pointer h-8 w-8"
+                      >
+                        {i + 1}
+                      </PaginationLink>
+                    </PaginationItem>
+                  );
+                } else if (i === currentPage - 2 || i === currentPage + 2) {
+                  return (
+                    <PaginationItem key={i} className="hidden sm:inline-block">
+                      <PaginationEllipsis />
+                    </PaginationItem>
+                  );
+                }
+                return null;
+              })}
+
+              <PaginationItem>
+                <PaginationNext 
+                  href="#"
+                  onClick={(e) => { e.preventDefault(); if (table.getCanNextPage()) table.nextPage(); }} 
+                  className={`h-8 px-2 ${!table.getCanNextPage() ? "pointer-events-none opacity-50" : "cursor-pointer"}`}
+                />
+              </PaginationItem>
+            </PaginationContent>
+          </Pagination>
         </div>
       </div>
     </div>

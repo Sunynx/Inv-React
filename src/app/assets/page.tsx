@@ -11,6 +11,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card } from '@/components/ui/card';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import * as Tabs from '@radix-ui/react-tabs';
 import { DataTable } from '@/components/DataTable';
 import { ColumnDef } from '@tanstack/react-table';
@@ -19,14 +20,16 @@ const statusConfig: Record<string, { icon: any; className: string }> = {
   'ใช้งาน': { icon: CheckCircle2, className: 'text-emerald-600 bg-emerald-50 border-emerald-200/50' },
   'ส่งซ่อม': { icon: AlertCircle, className: 'text-red-600 bg-red-50 border-red-200/50' },
   'สำรอง': { icon: Clock, className: 'text-amber-600 bg-amber-50 border-amber-200/50' },
-  'แทงจำหน่าย': { icon: Ban, className: 'text-gray-500 bg-gray-50 border-gray-200/50' },
-  'สูญหาย': { icon: Ban, className: 'text-gray-500 bg-gray-50 border-gray-200/50' },
+  'ส่งคืน': { icon: Clock, className: 'text-blue-500 bg-blue-50 border-blue-200/50' },
+  'ชำรุด': { icon: Ban, className: 'text-orange-500 bg-orange-50 border-orange-200/50' },
+  'จำหน่าย': { icon: Ban, className: 'text-gray-500 bg-gray-50 border-gray-200/50' },
 };
 
 export default function AssetsPage() {
   const queryClient = useQueryClient();
   const [searchTerm, setSearchTerm] = useState('');
   const [filterTab, setFilterTab] = useState('all');
+  const [sortBy, setSortBy] = useState('newest');
   const [isSheetOpen, setIsSheetOpen] = useState(false);
   const [sheetMode, setSheetMode] = useState<'view'|'edit'>('view');
   const [selectedAssetId, setSelectedAssetId] = useState<string | undefined>(undefined);
@@ -37,7 +40,7 @@ export default function AssetsPage() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from('assets')
-        .select(`id, name, asset_code, status, location, assigned_user, thumbnail_url, category_id, department_id, departments(name), categories(name)`)
+        .select(`id, name, asset_code, status, location, assigned_user, thumbnail_url, category_id, department_id, created_at, updated_at, departments(name), categories(name)`)
         .order('created_at', { ascending: false });
       if (error) throw error;
       return data || [];
@@ -69,6 +72,19 @@ export default function AssetsPage() {
     let matchTab = true;
     if (filterTab !== 'all') matchTab = a.status === filterTab;
     return matchSearch && matchTab;
+  }).sort((a, b) => {
+    if (sortBy === 'newest') {
+      return new Date(b.created_at || 0).getTime() - new Date(a.created_at || 0).getTime();
+    }
+    if (sortBy === 'oldest') {
+      return new Date(a.created_at || 0).getTime() - new Date(b.created_at || 0).getTime();
+    }
+    if (sortBy === 'recently_edited') {
+      const bTime = new Date(b.updated_at || b.created_at || 0).getTime();
+      const aTime = new Date(a.updated_at || a.created_at || 0).getTime();
+      return bTime - aTime;
+    }
+    return 0;
   });
 
   const countByStatus = (s: string) => assets.filter(a => a.status === s).length;
@@ -76,7 +92,7 @@ export default function AssetsPage() {
   const columns: ColumnDef<any>[] = [
     {
       accessorKey: 'name',
-      header: 'Asset',
+      header: 'ทรัพย์สิน',
       cell: ({ row }) => {
         const asset = row.original;
         return (
@@ -98,27 +114,27 @@ export default function AssetsPage() {
     },
     {
       accessorKey: 'categories.name',
-      header: 'Category',
+      header: 'หมวดหมู่',
       cell: ({ row }) => <span className="bg-muted text-foreground/80 px-2 py-0.5 rounded-full text-xs">{row.original.categories?.name || '-'}</span>
     },
     {
       accessorKey: 'departments.name',
-      header: 'Department',
+      header: 'แผนก',
       cell: ({ row }) => <span className="text-sm text-muted-foreground">{row.original.departments?.name || '-'}</span>
     },
     {
       accessorKey: 'location',
-      header: 'Location',
+      header: 'สถานที่',
       cell: ({ row }) => <span className="text-sm text-muted-foreground">{row.original.location || '-'}</span>
     },
     {
       accessorKey: 'assigned_user',
-      header: 'Assignee',
+      header: 'ผู้รับผิดชอบ',
       cell: ({ row }) => <span className="text-sm text-muted-foreground">{row.original.assigned_user || '-'}</span>
     },
     {
       accessorKey: 'status',
-      header: 'Status',
+      header: 'สถานะ',
       cell: ({ row }) => {
         const config = statusConfig[row.original.status] || { icon: AlertCircle, className: 'text-muted-foreground bg-muted border-border/50' };
         const Icon = config.icon;
@@ -142,11 +158,11 @@ export default function AssetsPage() {
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-40">
               <DropdownMenuItem onClick={(e) => { e.stopPropagation(); setSelectedAssetId(asset.id); setSheetMode('edit'); setIsSheetOpen(true); }}>
-                <Edit className="mr-2 h-4 w-4" /> Edit
+                <Edit className="mr-2 h-4 w-4" /> แก้ไข
               </DropdownMenuItem>
               <DropdownMenuSeparator />
               <DropdownMenuItem onClick={(e) => { e.stopPropagation(); handleDelete(asset.id); }} className="text-red-600">
-                <Trash2 className="mr-2 h-4 w-4" /> Delete
+                <Trash2 className="mr-2 h-4 w-4" /> ลบข้อมูล
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
@@ -159,8 +175,8 @@ export default function AssetsPage() {
     <div className="space-y-6 print:space-y-0 print:m-0 print:p-0">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 pt-2 print:hidden">
         <div>
-          <h1 className="text-2xl font-semibold tracking-tight text-foreground">IT Assets</h1>
-          <p className="text-sm text-muted-foreground mt-1">Manage and track all inventory items</p>
+          <h1 className="text-2xl font-semibold tracking-tight text-foreground">รายการทรัพย์สิน IT</h1>
+          <p className="text-sm text-muted-foreground mt-1">จัดการและติดตามรายการทรัพย์สินทั้งหมดในระบบ</p>
         </div>
       </div>
 
@@ -169,10 +185,13 @@ export default function AssetsPage() {
           <Tabs.Root value={filterTab} onValueChange={setFilterTab} className="w-full md:w-auto">
             <Tabs.List className="flex gap-1 flex-wrap">
               {[
-                { value: 'all', label: 'All', count: assets.length },
+                { value: 'all', label: 'ทั้งหมด', count: assets.length },
                 { value: 'ใช้งาน', label: 'ใช้งาน', count: countByStatus('ใช้งาน') },
                 { value: 'ส่งซ่อม', label: 'ส่งซ่อม', count: countByStatus('ส่งซ่อม') },
                 { value: 'สำรอง', label: 'สำรอง', count: countByStatus('สำรอง') },
+                { value: 'ส่งคืน', label: 'ส่งคืน', count: countByStatus('ส่งคืน') },
+                { value: 'ชำรุด', label: 'ชำรุด', count: countByStatus('ชำรุด') },
+                { value: 'จำหน่าย', label: 'จำหน่าย', count: countByStatus('จำหน่าย') },
               ].map(tab => (
                 <Tabs.Trigger key={tab.value} value={tab.value} className="px-3 py-1.5 text-sm font-medium text-gray-500 hover:text-gray-900 data-[state=active]:text-gray-900 data-[state=active]:bg-gray-100 rounded-md transition-colors flex items-center gap-2">
                   {tab.label} <span className="bg-gray-200 text-gray-600 px-1.5 py-0.5 rounded-full text-[10px] font-semibold">{tab.count}</span>
@@ -184,16 +203,33 @@ export default function AssetsPage() {
           <div className="flex flex-wrap items-center gap-3 w-full md:w-auto mt-3 md:mt-0">
             <div className="relative w-full md:w-64">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
-              <Input placeholder="Search name, code, location..." className="pl-9 h-9 bg-gray-50 border-gray-200 text-sm" value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} />
+              <Input placeholder="ค้นหาชื่อ, รหัส, สถานที่..." className="pl-9 h-9 bg-gray-50 border-gray-200 text-sm" value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} />
+            </div>
+            <div className="w-full md:w-40 shrink-0">
+              <Select value={sortBy} onValueChange={setSortBy}>
+                <SelectTrigger className="h-9 bg-white shadow-sm text-sm w-[150px] flex justify-between">
+                  <span>
+                    {sortBy === 'newest' && 'เพิ่มใหม่ล่าสุด'}
+                    {sortBy === 'recently_edited' && 'แก้ไขล่าสุด'}
+                    {sortBy === 'oldest' && 'เพิ่มเก่าสุด'}
+                    {!sortBy && 'เรียงตาม'}
+                  </span>
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="newest">เพิ่มใหม่ล่าสุด</SelectItem>
+                  <SelectItem value="recently_edited">แก้ไขล่าสุด</SelectItem>
+                  <SelectItem value="oldest">เพิ่มเก่าสุด</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
             <Button variant="outline" size="sm" className="h-9 shrink-0" onClick={() => setIsExportModalOpen(true)}>
-              <Download className="w-4 h-4 mr-1.5" /> Export
+              <Download className="w-4 h-4 mr-1.5" /> ส่งออกข้อมูล
             </Button>
             <Button variant="outline" size="sm" className="h-9 shrink-0" onClick={() => window.print()}>
-              <Printer className="w-4 h-4 mr-1.5" /> Print QR Labels
+              <Printer className="w-4 h-4 mr-1.5" /> พิมพ์ป้าย QR
             </Button>
             <Button size="sm" className="h-9 shrink-0 bg-primary hover:bg-primary/90 text-primary-foreground" onClick={() => { setSelectedAssetId(undefined); setSheetMode('edit'); setIsSheetOpen(true); }}>
-              <Plus className="w-4 h-4 mr-1.5" /> Add Asset
+              <Plus className="w-4 h-4 mr-1.5" /> เพิ่มทรัพย์สิน
             </Button>
           </div>
         </div>

@@ -51,12 +51,11 @@ export default function TransfersPage() {
   };
 
   const filteredRecords = records.filter(r => {
-    const matchSearch = r.reason?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    const matchSearch = r.notes?.toLowerCase().includes(searchTerm.toLowerCase()) ||
                         r.from_location?.toLowerCase().includes(searchTerm.toLowerCase()) ||
                         r.to_location?.toLowerCase().includes(searchTerm.toLowerCase()) ||
                         r.assets?.name?.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchStatus = filterStatus === 'all' || r.status === filterStatus;
-    return matchSearch && matchStatus;
+    return matchSearch;
   });
 
   const refreshData = () => {
@@ -97,26 +96,9 @@ export default function TransfersPage() {
       )
     },
     {
-      accessorKey: 'status',
-      header: 'Status',
-      cell: ({ row }) => {
-        const status = row.original.status;
-        return (
-          <span className={`inline-flex px-2 py-0.5 rounded-full text-[11px] font-semibold ${
-            status === 'เสร็จสมบูรณ์' ? 'bg-green-100 text-green-700' :
-            status === 'อนุมัติแล้ว' ? 'bg-blue-100 text-blue-700' :
-            status === 'ปฏิเสธ' ? 'bg-red-100 text-red-700' :
-            'bg-amber-100 text-amber-700'
-          }`}>
-            {status || 'Unknown'}
-          </span>
-        );
-      }
-    },
-    {
-      accessorKey: 'authorized_by',
-      header: 'Authorized By',
-      cell: ({ row }) => <span className="text-muted-foreground">{row.original.authorized_by || '-'}</span>
+      accessorKey: 'transferred_by',
+      header: 'Transferred By',
+      cell: ({ row }) => <span className="text-muted-foreground">{row.original.transferred_by || '-'}</span>
     },
     {
       id: 'actions',
@@ -163,22 +145,7 @@ export default function TransfersPage() {
             </div>
           </div>
           
-          <div className="flex flex-wrap items-center gap-3">
-            <div className="flex items-center gap-2">
-              <Filter className="h-4 w-4 text-muted-foreground" />
-              <span className="text-sm font-medium text-muted-foreground">Filters:</span>
-            </div>
-            <select 
-              className="flex h-9 w-[150px] items-center justify-between rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm transition-colors focus:outline-none focus:ring-1 focus:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
-              value={filterStatus} onChange={e => setFilterStatus(e.target.value)}
-            >
-              <option value="all">All Status</option>
-              <option value="รอดำเนินการ">รอดำเนินการ (Pending)</option>
-              <option value="อนุมัติแล้ว">อนุมัติแล้ว (Approved)</option>
-              <option value="เสร็จสมบูรณ์">เสร็จสมบูรณ์ (Completed)</option>
-              <option value="ปฏิเสธ">ปฏิเสธ (Rejected)</option>
-            </select>
-          </div>
+          
         </CardContent>
       </Card>
 

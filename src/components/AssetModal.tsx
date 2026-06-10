@@ -202,8 +202,9 @@ export default function AssetModal({ isOpen, onClose, assetId }: { isOpen: boole
                     <SelectItem value="ใช้งาน">ใช้งาน (Active)</SelectItem>
                     <SelectItem value="ส่งซ่อม">ส่งซ่อม (Repairing)</SelectItem>
                     <SelectItem value="สำรอง">สำรอง (Spare)</SelectItem>
-                    <SelectItem value="สูญหาย">สูญหาย (Lost)</SelectItem>
-                    <SelectItem value="แทงจำหน่าย">แทงจำหน่าย (Disposed)</SelectItem>
+                    <SelectItem value="ส่งคืน">ส่งคืน (Returned)</SelectItem>
+                    <SelectItem value="ชำรุด">ชำรุด (Damaged)</SelectItem>
+                    <SelectItem value="จำหน่าย">จำหน่าย (Disposed)</SelectItem>
                   </SelectContent>
                 </Select>
               </div>

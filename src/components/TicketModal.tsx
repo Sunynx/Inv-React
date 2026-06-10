@@ -156,7 +156,7 @@ export default function TicketModal({ isOpen, onClose, ticketId }: { isOpen: boo
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label>Priority (ความสำคัญ)</Label>
-                <Select value={formData.priority || 'ปานกลาง'} onValueChange={(v) => handleSelectChange('priority', v)}>
+                <Select value={formData.priority || 'ปกติ'} onValueChange={(v) => handleSelectChange('priority', v)}>
                   <SelectTrigger><SelectValue placeholder="Select Priority..." /></SelectTrigger>
                   <SelectContent>
                     <SelectItem value="ต่ำ">ต่ำ (Low)</SelectItem>
