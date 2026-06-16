@@ -29,6 +29,8 @@ export default function AssetsPage() {
   const queryClient = useQueryClient();
   const [searchTerm, setSearchTerm] = useState('');
   const [filterTab, setFilterTab] = useState('all');
+  const [filterDepartment, setFilterDepartment] = useState('all');
+  const [filterCategory, setFilterCategory] = useState('all');
   const [sortBy, setSortBy] = useState('newest');
   const [isSheetOpen, setIsSheetOpen] = useState(false);
   const [sheetMode, setSheetMode] = useState<'view'|'edit'>('view');
@@ -66,12 +68,24 @@ export default function AssetsPage() {
   };
 
   const filteredAssets = assets.filter(a => {
-    const matchSearch = a.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                        a.asset_code?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                        a.location?.toLowerCase().includes(searchTerm.toLowerCase());
+    const lowerSearch = searchTerm.toLowerCase();
+    const matchSearch = a.name?.toLowerCase().includes(lowerSearch) ||
+                        a.asset_code?.toLowerCase().includes(lowerSearch) ||
+                        a.location?.toLowerCase().includes(lowerSearch) ||
+                        a.departments?.name?.toLowerCase().includes(lowerSearch) ||
+                        a.categories?.name?.toLowerCase().includes(lowerSearch) ||
+                        a.assigned_user?.toLowerCase().includes(lowerSearch);
+    
     let matchTab = true;
     if (filterTab !== 'all') matchTab = a.status === filterTab;
-    return matchSearch && matchTab;
+    
+    let matchDept = true;
+    if (filterDepartment !== 'all') matchDept = a.departments?.name === filterDepartment;
+
+    let matchCat = true;
+    if (filterCategory !== 'all') matchCat = a.categories?.name === filterCategory;
+
+    return matchSearch && matchTab && matchDept && matchCat;
   }).sort((a, b) => {
     if (sortBy === 'newest') {
       return new Date(b.created_at || 0).getTime() - new Date(a.created_at || 0).getTime();
@@ -88,6 +102,8 @@ export default function AssetsPage() {
   });
 
   const countByStatus = (s: string) => assets.filter(a => a.status === s).length;
+  const uniqueDepartments = Array.from(new Set(assets.map(a => a.departments?.name).filter(Boolean))) as string[];
+  const uniqueCategories = Array.from(new Set(assets.map(a => a.categories?.name).filter(Boolean))) as string[];
 
   const columns: ColumnDef<any>[] = [
     {
@@ -181,9 +197,9 @@ export default function AssetsPage() {
       </div>
 
       <Card className="shadow-sm border-border/60 rounded-xl overflow-hidden bg-card border-0 transition-colors duration-300 print:hidden">
-        <div className="p-4 border-b border-gray-100 flex flex-col md:flex-row items-center justify-between gap-4">
-          <Tabs.Root value={filterTab} onValueChange={setFilterTab} className="w-full md:w-auto">
-            <Tabs.List className="flex gap-1 flex-wrap">
+        <div className="p-4 border-b border-gray-100 flex flex-col gap-4">
+          <Tabs.Root value={filterTab} onValueChange={setFilterTab} className="w-full overflow-x-auto hide-scrollbar">
+            <Tabs.List className="flex gap-1 inline-flex w-max">
               {[
                 { value: 'all', label: 'ทั้งหมด', count: assets.length },
                 { value: 'ใช้งาน', label: 'ใช้งาน', count: countByStatus('ใช้งาน') },
@@ -200,37 +216,67 @@ export default function AssetsPage() {
             </Tabs.List>
           </Tabs.Root>
 
-          <div className="flex flex-wrap items-center gap-3 w-full md:w-auto mt-3 md:mt-0">
-            <div className="relative w-full md:w-64">
+          <div className="flex flex-wrap lg:flex-nowrap items-center justify-between gap-3 w-full">
+            <div className="relative w-full lg:w-64 shrink-0">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
-              <Input placeholder="ค้นหาชื่อ, รหัส, สถานที่..." className="pl-9 h-9 bg-gray-50 border-gray-200 text-sm" value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} />
+              <Input placeholder="ค้นหาชื่อ, รหัส, สถานที่..." className="pl-9 h-9 bg-gray-50 border-gray-200 text-sm w-full" value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} />
             </div>
-            <div className="w-full md:w-40 shrink-0">
-              <Select value={sortBy} onValueChange={setSortBy}>
-                <SelectTrigger className="h-9 bg-white shadow-sm text-sm w-[150px] flex justify-between">
-                  <span>
-                    {sortBy === 'newest' && 'เพิ่มใหม่ล่าสุด'}
-                    {sortBy === 'recently_edited' && 'แก้ไขล่าสุด'}
-                    {sortBy === 'oldest' && 'เพิ่มเก่าสุด'}
-                    {!sortBy && 'เรียงตาม'}
+
+            <div className="flex flex-wrap items-center gap-2 w-full lg:w-auto justify-start lg:justify-end">
+              <Select value={filterDepartment} onValueChange={setFilterDepartment}>
+                <SelectTrigger className="h-9 bg-white shadow-sm text-sm w-[130px] flex justify-between shrink-0">
+                  <span className="truncate">
+                    {filterDepartment === 'all' ? 'ทุกแผนก' : filterDepartment}
                   </span>
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="newest">เพิ่มใหม่ล่าสุด</SelectItem>
-                  <SelectItem value="recently_edited">แก้ไขล่าสุด</SelectItem>
-                  <SelectItem value="oldest">เพิ่มเก่าสุด</SelectItem>
+                  <SelectItem value="all">ทุกแผนก</SelectItem>
+                  {uniqueDepartments.map(dept => <SelectItem key={dept} value={dept}>{dept}</SelectItem>)}
                 </SelectContent>
               </Select>
+
+              <Select value={filterCategory} onValueChange={setFilterCategory}>
+                <SelectTrigger className="h-9 bg-white shadow-sm text-sm w-[130px] flex justify-between shrink-0">
+                  <span className="truncate">
+                    {filterCategory === 'all' ? 'ทุกประเภท' : filterCategory}
+                  </span>
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">ทุกประเภท</SelectItem>
+                  {uniqueCategories.map(cat => <SelectItem key={cat} value={cat}>{cat}</SelectItem>)}
+                </SelectContent>
+              </Select>
+
+              <div className="w-[130px] shrink-0">
+                <Select value={sortBy} onValueChange={setSortBy}>
+                  <SelectTrigger className="h-9 bg-white shadow-sm text-sm w-full flex justify-between">
+                    <span className="truncate">
+                      {sortBy === 'newest' && 'เพิ่มใหม่ล่าสุด'}
+                      {sortBy === 'recently_edited' && 'แก้ไขล่าสุด'}
+                      {sortBy === 'oldest' && 'เพิ่มเก่าสุด'}
+                      {!sortBy && 'เรียงตาม'}
+                    </span>
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="newest">เพิ่มใหม่ล่าสุด</SelectItem>
+                    <SelectItem value="recently_edited">แก้ไขล่าสุด</SelectItem>
+                    <SelectItem value="oldest">เพิ่มเก่าสุด</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              
+              <div className="flex items-center gap-2 shrink-0 ml-auto lg:ml-2">
+                <Button variant="outline" size="sm" className="h-9" onClick={() => setIsExportModalOpen(true)}>
+                  <Download className="w-4 h-4 mr-1.5" /> ส่งออก
+                </Button>
+                <Button variant="outline" size="sm" className="h-9" onClick={() => window.print()}>
+                  <Printer className="w-4 h-4 mr-1.5" /> พิมพ์
+                </Button>
+                <Button size="sm" className="h-9 bg-primary hover:bg-primary/90 text-primary-foreground" onClick={() => { setSelectedAssetId(undefined); setSheetMode('edit'); setIsSheetOpen(true); }}>
+                  <Plus className="w-4 h-4 mr-1.5" /> เพิ่ม
+                </Button>
+              </div>
             </div>
-            <Button variant="outline" size="sm" className="h-9 shrink-0" onClick={() => setIsExportModalOpen(true)}>
-              <Download className="w-4 h-4 mr-1.5" /> ส่งออกข้อมูล
-            </Button>
-            <Button variant="outline" size="sm" className="h-9 shrink-0" onClick={() => window.print()}>
-              <Printer className="w-4 h-4 mr-1.5" /> พิมพ์ป้าย QR
-            </Button>
-            <Button size="sm" className="h-9 shrink-0 bg-primary hover:bg-primary/90 text-primary-foreground" onClick={() => { setSelectedAssetId(undefined); setSheetMode('edit'); setIsSheetOpen(true); }}>
-              <Plus className="w-4 h-4 mr-1.5" /> เพิ่มทรัพย์สิน
-            </Button>
           </div>
         </div>
 

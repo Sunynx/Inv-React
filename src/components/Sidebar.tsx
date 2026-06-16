@@ -5,7 +5,7 @@ import { useState } from 'react';
 import { 
   LayoutDashboard, Box, QrCode, ScanLine, Wrench, Shield, 
   ArrowRightLeft, Key, CalendarClock, Package, FileBarChart, 
-  History, Settings, ChevronRight, Menu, ShoppingCart, ClipboardList
+  History, Settings, ChevronRight, Menu, ShoppingCart, ClipboardList, TrendingUp
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Playfair_Display } from 'next/font/google';
@@ -41,7 +41,13 @@ const menuGroups = [
       { name: 'Checkouts', href: '/checkouts', icon: ClipboardList },
       { name: 'Licenses', href: '/licenses', icon: Key },
       { name: 'Stock', href: '/stock', icon: Package },
-      { name: 'Procurement', href: '/procurement', icon: ShoppingCart },
+    ]
+  },
+  {
+    title: 'Procurement',
+    links: [
+      { name: 'PR Dashboard', href: '/procurement/dashboard', icon: TrendingUp },
+      { name: 'PR List', href: '/procurement', icon: ShoppingCart },
     ]
   },
   {
@@ -59,19 +65,10 @@ export default function Sidebar() {
   const [open, setOpen] = useState(false);
 
   const SidebarContent = () => (
-    <div className="flex flex-col h-full bg-[#1b365d] text-white/90">
+    <div className="flex flex-col h-full bg-[#1e345d] text-white/90">
       {/* Brand Header */}
       <div className="h-24 flex items-center justify-center border-b border-white/10 shrink-0">
-        <div className="flex items-center gap-3">
-          <div className={cn("text-5xl tracking-tighter text-white", playfair.className)}>
-            rpm
-          </div>
-          <div className="flex flex-col border-l border-white/30 pl-3 leading-tight tracking-[0.15em] text-[9px] font-medium text-white uppercase opacity-90">
-            <span>Royal</span>
-            <span>Phuket</span>
-            <span>Marina</span>
-          </div>
-        </div>
+        <img src="/rpm-logo.png" alt="RPM Logo" className="h-12 w-auto object-contain" />
       </div>
 
       {/* Navigation */}
@@ -128,12 +125,12 @@ export default function Sidebar() {
   return (
     <>
       {/* Desktop Sidebar */}
-      <div className="hidden md:flex w-64 bg-[#1b365d] border-r border-[#1b365d] min-h-screen flex-col fixed inset-y-0 left-0 z-40">
+      <div className="hidden md:flex w-64 bg-[#1e345d] border-r border-[#1e345d] min-h-screen flex-col fixed inset-y-0 left-0 z-40">
         <SidebarContent />
       </div>
 
       {/* Mobile Header */}
-      <div className="md:hidden fixed top-0 left-0 right-0 h-16 bg-[#1b365d] z-40 flex items-center px-4 justify-between shadow-md border-b border-white/10">
+      <div className="md:hidden fixed top-0 left-0 right-0 h-16 bg-[#1e345d] z-40 flex items-center px-4 justify-between shadow-md border-b border-white/10">
         <Sheet open={open} onOpenChange={setOpen}>
           <SheetTrigger render={<Button variant="ghost" size="icon" className="text-white hover:bg-white/10 hover:text-white" />}>
             <Menu size={24} />
@@ -148,9 +145,7 @@ export default function Sidebar() {
             <ThemeToggle />
             <Notifications />
           </div>
-          <div className={cn("text-2xl tracking-tighter text-white ml-2", playfair.className)}>
-            rpm
-          </div>
+          <img src="/rpm-logo.png" alt="RPM Logo" className="h-8 w-auto object-contain ml-2" />
         </div>
       </div>
     </>

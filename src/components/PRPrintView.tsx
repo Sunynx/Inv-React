@@ -93,7 +93,7 @@ export default function PRPrintView({ document }: PRPrintViewProps) {
           {/* Header */}
           <div className="flex items-center justify-between mb-2 mt-1">
             <div className="w-40">
-              <img src="/rpm-logo.jpg" alt="RPM Logo" className="h-16 object-contain" />
+              <img src="/rpm-logo.png" alt="RPM Logo" className="h-12 object-contain" />
             </div>
             <div className="text-center flex-1">
               <h1 className="text-xl font-bold underline" style={{ letterSpacing: '0.5px' }}>PURCHASE REQUISITION FORM</h1>

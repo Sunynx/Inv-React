@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Label } from '@/components/ui/label';
-import { Plus, Trash2, Printer, Save, X, FileSpreadsheet } from 'lucide-react';
+import { Plus, Trash2, Printer, Save, X, FileSpreadsheet, Paperclip, Loader2 } from 'lucide-react';
 import { Textarea } from '@/components/ui/textarea';
 import toast from 'react-hot-toast';
 import ExcelJS from 'exceljs';
@@ -20,13 +20,26 @@ interface ProcurementModalProps {
   onSaved: () => void;
 }
 
+const InlineInput = ({ value, onChange, className = "", placeholder = "" }: any) => (
+  <input 
+    type="text" 
+    value={value || ''} 
+    onChange={(e) => onChange(e.target.value)}
+    placeholder={placeholder}
+    className={`border-b border-black outline-none bg-transparent hover:bg-black/5 focus:bg-yellow-50/50 transition-colors ${className}`} 
+  />
+);
+
 export default function ProcurementModal({ isOpen, onClose, document, onSaved }: ProcurementModalProps) {
   const [docNumber, setDocNumber] = useState('');
   const [type, setType] = useState('PR');
   const [status, setStatus] = useState('รอดำเนินการ');
-  const [items, setItems] = useState<any[]>(Array(8).fill({ name: '', quantity: '', price: '' }));
+  const [items, setItems] = useState<any[]>(Array.from({ length: 8 }, () => ({ name: '', quantity: '', price: '', type: 'Stock' })));
   const [metadata, setMetadata] = useState<any>({});
+  const [manualTotal, setManualTotal] = useState<string>('');
+  const [isVatIncluded, setIsVatIncluded] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+  const [uploading, setUploading] = useState(false);
 
   useEffect(() => {
     if (document) {
@@ -42,12 +55,22 @@ export default function ProcurementModal({ isOpen, onClose, document, onSaved }:
       setItems(paddedItems.slice(0, 8));
       
       setMetadata(document.metadata || {});
+      setIsVatIncluded(document.metadata?.is_vat_included || false);
+      if (document.total_amount) {
+        // Only set manual total if it differs from the calculated auto total
+        // We will just set it, but ideally we'd compare. For now, set it.
+        setManualTotal(String(document.total_amount));
+      } else {
+        setManualTotal('');
+      }
     } else {
       setDocNumber(`PR-${new Date().getFullYear()}-${Math.floor(1000 + Math.random() * 9000)}`);
       setType('PR');
       setStatus('รอดำเนินการ');
-      setItems(Array(8).fill({ name: '', quantity: '', price: '' }));
+      setItems(Array.from({ length: 8 }, () => ({ name: '', quantity: '', price: '', type: 'Stock' })));
       setMetadata({});
+      setManualTotal('');
+      setIsVatIncluded(false);
     }
   }, [document, isOpen]);
 
@@ -55,17 +78,65 @@ export default function ProcurementModal({ isOpen, onClose, document, onSaved }:
     const newItems = [...items];
     newItems[idx] = { ...newItems[idx], [field]: value };
     setItems(newItems);
+    setManualTotal(''); // Reset manual override on item change to restore realtime calculation
   };
 
   const updateMeta = (field: string, value: any) => {
     setMetadata({ ...metadata, [field]: value });
   };
 
-  const totalAmount = items.reduce((sum, item) => {
-    const qty = Number(item.quantity) || 0;
-    const price = Number(item.price) || 0;
+  const baseTotalAmount = items.reduce((sum, item) => {
+    const qty = Number(String(item.quantity).replace(/,/g, '')) || 0;
+    const price = Number(String(item.price).replace(/,/g, '')) || 0;
     return sum + (qty * price);
   }, 0);
+
+  const autoTotalAmount = isVatIncluded ? baseTotalAmount * 1.07 : baseTotalAmount;
+
+  // We only show manualTotal if they explicitly typed something recently and haven't changed items
+  // But wait, if they load an existing document, manualTotal is populated. 
+  // We want to show autoTotalAmount if it matches, or if manualTotal is clear.
+  // Actually, if manualTotal is equal to autoTotalAmount, we just use auto.
+  const isOverride = manualTotal !== '' && Number(String(manualTotal).replace(/,/g, '')) !== autoTotalAmount;
+  const displayTotal = isOverride ? manualTotal : (autoTotalAmount > 0 ? autoTotalAmount.toLocaleString(undefined, {minimumFractionDigits: 2}) : '');
+  const finalTotalAmount = isOverride ? Number(String(manualTotal).replace(/,/g, '')) : autoTotalAmount;
+
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setUploading(true);
+    try {
+      const fileExt = file.name.split('.').pop();
+      const fileName = `${Date.now()}-${Math.random().toString(36).substring(7)}.${fileExt}`;
+      const { data, error } = await supabase.storage
+        .from('pr-attachments')
+        .upload(fileName, file);
+
+      if (error) throw error;
+
+      const { data: { publicUrl } } = supabase.storage
+        .from('pr-attachments')
+        .getPublicUrl(fileName);
+
+      const newAttachments = [...(metadata.attachments || []), { name: file.name, url: publicUrl }];
+      updateMeta('attachments', newAttachments);
+      toast.success('อัปโหลดไฟล์สำเร็จ');
+    } catch (error: any) {
+      console.error('Upload error:', error);
+      toast.error('ไม่สามารถอัปโหลดได้ โปรดตรวจสอบว่าได้สร้าง Bucket "pr-attachments" ไว้หรือยัง');
+    } finally {
+      setUploading(false);
+      // clear input
+      e.target.value = '';
+    }
+  };
+
+  const removeAttachment = (idx: number) => {
+    const newAttachments = [...(metadata.attachments || [])];
+    newAttachments.splice(idx, 1);
+    updateMeta('attachments', newAttachments);
+  };
 
   const exportToExcel = async () => {
     try {
@@ -90,11 +161,10 @@ export default function ProcurementModal({ isOpen, onClose, document, onSaved }:
              ws.getCell(`B${row}`).value = item.quantity;
              ws.getCell(`C${row}`).value = item.name;
              ws.getCell(`L${row}`).value = item.price;
-             ws.getCell(`M${row}`).value = (Number(item.quantity) * Number(item.price)) || ''; 
           }
         });
         
-        ws.getCell('E24').value = totalAmount;
+        ws.getCell('E24').value = finalTotalAmount;
         ws.getCell('I24').value = metadata.total_foreign || '';
         if (metadata.budget_control === 'Budgeted') ws.getCell('C26').value = '✔';
         if (metadata.budget_control === 'Not Budgeted') ws.getCell('E26').value = '✔';
@@ -145,8 +215,8 @@ export default function ProcurementModal({ isOpen, onClose, document, onSaved }:
       supplier: metadata.recommended_supplier || '',
       expected_delivery: metadata.date_required || null,
       items: validItems,
-      metadata,
-      total_amount: totalAmount
+      metadata: { ...metadata, is_vat_included: isVatIncluded },
+      total_amount: finalTotalAmount
     };
 
     try {
@@ -168,15 +238,7 @@ export default function ProcurementModal({ isOpen, onClose, document, onSaved }:
     }
   };
 
-  const InlineInput = ({ value, onChange, className = "", placeholder = "" }: any) => (
-    <input 
-      type="text" 
-      value={value || ''} 
-      onChange={(e) => onChange(e.target.value)}
-      placeholder={placeholder}
-      className={`border-b border-black outline-none bg-transparent hover:bg-black/5 focus:bg-yellow-50/50 transition-colors ${className}`} 
-    />
-  );
+
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
@@ -207,7 +269,7 @@ export default function ProcurementModal({ isOpen, onClose, document, onSaved }:
 
             <div className="relative z-10 px-4 py-2">
               <div className="flex items-center justify-between mb-8">
-                <div className="w-40"><img src="/rpm-logo.jpg" alt="RPM Logo" className="h-16 object-contain" /></div>
+                <div className="w-40"><img src="/rpm-logo.png" alt="RPM Logo" className="h-12 object-contain" /></div>
                 <div className="text-center flex-1"><h1 className="text-xl font-bold underline" style={{ letterSpacing: '0.5px' }}>PURCHASE REQUISITION FORM</h1></div>
                 <div className="w-40"></div>
               </div>
@@ -230,14 +292,21 @@ export default function ProcurementModal({ isOpen, onClose, document, onSaved }:
                 <div className="ml-6 border-2 border-black">
                   <div className="flex bg-[#deeaf6] border-b-2 border-black font-semibold text-center text-[12px]">
                     <div className="w-[10%] py-1 border-r border-black">QTY</div>
-                    <div className="w-[70%] py-1 border-r border-black">ITEM</div>
+                    <div className="w-[50%] py-1 border-r border-black">ITEM</div>
+                    <div className="w-[20%] py-1 border-r border-black">TYPE</div>
                     <div className="w-[20%] py-1">UNIT PRICE</div>
                   </div>
                   {items.map((item, idx) => (
                     <div key={idx} className={`flex ${idx !== items.length - 1 ? 'border-b border-black' : ''}`}>
-                      <div className="w-[10%] border-r border-black p-0.5"><input type="text" value={item.quantity} onChange={(e) => updateItem(idx, 'quantity', e.target.value)} className="w-full text-center outline-none bg-transparent" /></div>
-                      <div className="w-[70%] border-r border-black p-0.5"><input type="text" value={item.name} onChange={(e) => updateItem(idx, 'name', e.target.value)} className="w-full px-1 outline-none bg-transparent" /></div>
-                      <div className="w-[20%] p-0.5"><input type="text" value={item.price} onChange={(e) => updateItem(idx, 'price', e.target.value)} className="w-full text-right px-1 outline-none bg-transparent" /></div>
+                      <div className="w-[10%] border-r border-black p-0.5"><input type="text" value={item.quantity || ''} onChange={(e) => updateItem(idx, 'quantity', e.target.value)} className="w-full text-center outline-none bg-transparent" /></div>
+                      <div className="w-[50%] border-r border-black p-0.5"><input type="text" value={item.name || ''} onChange={(e) => updateItem(idx, 'name', e.target.value)} className="w-full px-1 outline-none bg-transparent" /></div>
+                      <div className="w-[20%] border-r border-black p-0.5 flex items-center justify-center">
+                        <select value={item.type || 'Stock'} onChange={(e) => updateItem(idx, 'type', e.target.value)} className="bg-transparent outline-none w-full text-center text-xs">
+                          <option value="Stock">Stock</option>
+                          <option value="Asset">Asset</option>
+                        </select>
+                      </div>
+                      <div className="w-[20%] p-0.5"><input type="text" value={item.price || ''} onChange={(e) => updateItem(idx, 'price', e.target.value)} className="w-full text-right px-1 outline-none bg-transparent" /></div>
                     </div>
                   ))}
                 </div>
@@ -245,7 +314,30 @@ export default function ProcurementModal({ isOpen, onClose, document, onSaved }:
 
               <div className="mb-6 text-[13px]">
                 <div className="flex"><span className="w-6 shrink-0">3</span><span className="shrink-0 mr-4">Total Cost (please attach all quotations and other relevant documentation)</span></div>
-                <div className="flex items-end mt-2"><div className="w-6 shrink-0"></div><span className="mr-2">THB:</span><div className="w-[45%] border-b border-black text-center font-bold">{totalAmount > 0 ? totalAmount.toLocaleString(undefined, {minimumFractionDigits: 2}) : ''}</div><span className="mx-4 shrink-0">Foreign Currency</span><InlineInput value={metadata.total_foreign} onChange={(v: string) => updateMeta('total_foreign', v)} className="flex-1" /></div>
+                <div className="flex items-end mt-2">
+                  <div className="w-6 shrink-0"></div>
+                  <span className="mr-2">THB:</span>
+                  <input 
+                    type="text" 
+                    value={displayTotal} 
+                    onChange={(e) => setManualTotal(e.target.value)}
+                    className="w-[30%] border-b border-black text-center font-bold outline-none bg-transparent hover:bg-black/5 focus:bg-yellow-50/50 transition-colors"
+                  />
+                  <label className="ml-3 flex items-center gap-1 cursor-pointer select-none text-[11px] font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 px-2 py-1 rounded border border-gray-300">
+                    <input 
+                      type="checkbox" 
+                      checked={isVatIncluded} 
+                      onChange={(e) => {
+                        setIsVatIncluded(e.target.checked);
+                        setManualTotal(''); // Revert to auto calculation on toggle
+                      }} 
+                      className="accent-black w-3 h-3"
+                    />
+                    + 7% VAT
+                  </label>
+                  <span className="mx-4 shrink-0">Foreign Currency</span>
+                  <InlineInput value={metadata.total_foreign} onChange={(v: string) => updateMeta('total_foreign', v)} className="flex-1" />
+                </div>
               </div>
 
               <div className="mb-6 text-[13px]">
@@ -256,6 +348,31 @@ export default function ProcurementModal({ isOpen, onClose, document, onSaved }:
               <div className="mb-6 text-[13px]">
                 <div className="flex"><span className="w-6 shrink-0">5</span><span className="shrink-0 mr-4">Prepare and attach a detailed summary of the 3 quotations obtained</span></div>
                 <div className="flex items-end mt-2"><div className="w-6 shrink-0"></div><span className="shrink-0 mr-4">If 3 quotes were not obtained, please state the reasons:</span><InlineInput value={metadata.no_quotes_reason} onChange={(v: string) => updateMeta('no_quotes_reason', v)} className="flex-1 min-w-0" /></div>
+              </div>
+
+              {/* Attachments Section */}
+              <div className="mb-6 text-[13px] border border-dashed border-gray-300 p-4 rounded-md bg-gray-50/50 print:hidden">
+                <div className="flex items-center justify-between mb-2">
+                  <div className="font-semibold flex items-center gap-2"><Paperclip className="w-4 h-4" /> เอกสารแนบ (ใบเสนอราคา ฯลฯ)</div>
+                  <div>
+                    <input type="file" id="pr-file-upload" className="hidden" onChange={handleFileUpload} disabled={uploading} />
+                    <Label htmlFor="pr-file-upload" className={`cursor-pointer inline-flex items-center justify-center rounded-md text-xs font-medium transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50 bg-secondary text-secondary-foreground shadow-sm hover:bg-secondary/80 h-7 px-3 ${uploading ? 'opacity-50 pointer-events-none' : ''}`}>
+                      {uploading ? <Loader2 className="w-3 h-3 mr-1 animate-spin" /> : <Plus className="w-3 h-3 mr-1" />} อัปโหลดไฟล์
+                    </Label>
+                  </div>
+                </div>
+                {metadata.attachments && metadata.attachments.length > 0 ? (
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 mt-3">
+                    {metadata.attachments.map((file: any, idx: number) => (
+                      <div key={idx} className="flex items-center justify-between bg-white border rounded p-2 text-xs shadow-sm">
+                        <a href={file.url} target="_blank" rel="noreferrer" className="text-blue-600 hover:underline truncate mr-2 flex-1" title={file.name}>{file.name}</a>
+                        <button onClick={() => removeAttachment(idx)} className="text-red-500 hover:bg-red-50 p-1 rounded"><Trash2 className="w-3 h-3" /></button>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="text-center py-4 text-muted-foreground text-xs">ยังไม่มีเอกสารแนบ</div>
+                )}
               </div>
 
               <div className="mb-6 text-[13px]">
