@@ -96,7 +96,7 @@ export default function ProcurementReceiveModal({ isOpen, onClose, document, onS
       });
       setItemsToReceive(initialItems);
     }
-  }, [document, isOpen, baseAssetCount]);
+  }, [document, isOpen]);
 
   const updateReceiveNow = (idx: number, val: string) => {
     const num = Math.min(itemsToReceive[idx].remaining, Math.max(0, parseInt(val) || 0));
