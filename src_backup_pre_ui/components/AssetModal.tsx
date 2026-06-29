@@ -68,12 +68,12 @@ export default function AssetModal({ isOpen, onClose, assetId }: { isOpen: boole
       const filePath = `${fileName}`;
 
       const { error: uploadError } = await supabase.storage
-        .from('asset_images')
+        .from('asset-images')
         .upload(filePath, file);
 
       if (uploadError) throw uploadError;
 
-      const { data } = supabase.storage.from('asset_images').getPublicUrl(filePath);
+      const { data } = supabase.storage.from('asset-images').getPublicUrl(filePath);
       
       setFormData({ ...formData, thumbnail_url: data.publicUrl });
       toast.success('Image uploaded successfully');

@@ -192,45 +192,42 @@ export default function Dashboard() {
     <div className="space-y-6">
       
       {/* Top Header */}
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 border-b border-slate-200/60 dark:border-slate-800/60 pb-6 mb-6">
-        <div>
-          <h1 className="text-3xl font-bold tracking-tight text-slate-900 dark:text-white">Dashboard</h1>
-          <p className="text-sm text-slate-500 mt-1">Overview of your IT assets and operations</p>
-        </div>
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 border-b border-border/50 pb-4">
+        <h1 className="text-2xl font-bold tracking-tight text-foreground">Dashboard</h1>
         
         <div className="flex-1 max-w-md relative w-full sm:mx-4">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input 
             placeholder="Global search (Assets, Stock, Tickets)..." 
-            className="pl-10 h-10 bg-white/60 dark:bg-slate-900/60 border-slate-200/60 shadow-sm focus:ring-2 focus:ring-blue-500/20 transition-all w-full rounded-xl"
+            className="pl-10 bg-background/50 focus:bg-background transition-colors w-full"
             value={globalSearch}
             onChange={(e) => setGlobalSearch(e.target.value)}
           />
           
           {/* Search Results Dropdown */}
           {globalSearch.length >= 2 && (
-            <div className="absolute top-full left-0 right-0 mt-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl shadow-xl z-50 max-h-80 overflow-y-auto transition-colors duration-300">
+            <div className="absolute top-full left-0 right-0 mt-1 bg-popover border border-border/60 rounded-md shadow-lg z-50 max-h-80 overflow-y-auto transition-colors duration-300">
               {isSearching ? (
-                <div className="p-4 text-sm text-center text-slate-500">Searching...</div>
+                <div className="p-4 text-sm text-center text-muted-foreground">Searching...</div>
               ) : searchResults.length === 0 ? (
-                <div className="p-4 text-sm text-center text-slate-500">No results found for "{globalSearch}"</div>
+                <div className="p-4 text-sm text-center text-muted-foreground">No results found for "{globalSearch}"</div>
               ) : (
                 <ul className="py-2">
                   {searchResults.map((res, i) => (
                     <li key={`${res.type}-${res.id}-${i}`}>
                       <button 
                         onClick={() => router.push(res.link)}
-                        className="w-full text-left px-4 py-3 hover:bg-slate-50 dark:hover:bg-slate-800/50 outline-none flex flex-col transition-colors border-b border-slate-100 dark:border-slate-800/50 last:border-0"
+                        className="w-full text-left px-4 py-2 hover:bg-muted/50 focus:bg-muted/50 outline-none flex flex-col transition-colors"
                       >
                         <div className="flex items-center justify-between w-full">
-                          <span className="font-medium text-sm text-slate-900 dark:text-slate-100 truncate">{res.title}</span>
-                          <span className={`text-[10px] px-2 py-0.5 rounded-full font-medium ${
-                            res.type === 'Asset' ? 'bg-blue-100 text-blue-700 dark:bg-blue-500/20 dark:text-blue-300' :
-                            res.type === 'Stock' ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-500/20 dark:text-emerald-300' :
-                            'bg-amber-100 text-amber-700 dark:bg-amber-500/20 dark:text-amber-300'
+                          <span className="font-medium text-sm text-foreground truncate">{res.title}</span>
+                          <span className={`text-[10px] px-1.5 py-0.5 rounded-full ${
+                            res.type === 'Asset' ? 'bg-blue-100 text-blue-700' :
+                            res.type === 'Stock' ? 'bg-emerald-100 text-emerald-700' :
+                            'bg-amber-100 text-amber-700'
                           }`}>{res.type}</span>
                         </div>
-                        <span className="text-xs text-slate-500 dark:text-slate-400 truncate mt-1">{res.subtitle || 'No details'}</span>
+                        <span className="text-xs text-muted-foreground truncate mt-0.5">{res.subtitle || 'No details'}</span>
                       </button>
                     </li>
                   ))}
@@ -240,11 +237,11 @@ export default function Dashboard() {
           )}
         </div>
 
-        <div className="flex items-center gap-3">
-          <Button variant="outline" size="sm" className="h-10 rounded-xl bg-white shadow-sm border-slate-200 hover:bg-slate-50 transition-all">
-            <Download className="mr-2 h-4 w-4 text-slate-500" /> Export
+        <div className="flex items-center gap-2">
+          <Button variant="outline" size="sm" className="h-9">
+            <Download className="mr-2 h-4 w-4" /> Download
           </Button>
-          <Button className="h-10 rounded-xl bg-blue-600 hover:bg-blue-700 text-white shadow-sm shadow-blue-600/20 transition-all">
+          <Button variant="outline" size="sm" className="h-9">
             <Calendar className="mr-2 h-4 w-4" /> Pick a date
           </Button>
         </div>
@@ -252,17 +249,17 @@ export default function Dashboard() {
 
       {/* Tabs System */}
       <Tabs.Root defaultValue="overview" className="flex flex-col gap-6">
-        <Tabs.List className="flex flex-wrap gap-1 bg-slate-100/50 dark:bg-slate-800/50 p-1.5 rounded-xl w-full sm:w-fit border border-slate-200/50 dark:border-slate-700/50 shadow-inner">
-          <Tabs.Trigger value="overview" className="px-5 py-2 text-sm font-semibold rounded-lg text-slate-500 hover:text-slate-900 dark:hover:text-white data-[state=active]:bg-white dark:data-[state=active]:bg-slate-900 data-[state=active]:text-blue-700 dark:data-[state=active]:text-blue-400 data-[state=active]:shadow-[0_1px_3px_rgba(0,0,0,0.1)] transition-all outline-none">
+        <Tabs.List className="flex flex-wrap gap-1 bg-secondary/30 p-1 rounded-md w-full sm:w-fit border border-border/50">
+          <Tabs.Trigger value="overview" className="px-4 py-1.5 text-sm font-medium rounded-sm text-muted-foreground hover:text-foreground data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm data-[state=active]:border data-[state=active]:border-border/50 transition-all outline-none">
             Overview
           </Tabs.Trigger>
-          <Tabs.Trigger value="analytics" className="px-5 py-2 text-sm font-semibold rounded-lg text-slate-500 hover:text-slate-900 dark:hover:text-white data-[state=active]:bg-white dark:data-[state=active]:bg-slate-900 data-[state=active]:text-blue-700 dark:data-[state=active]:text-blue-400 data-[state=active]:shadow-[0_1px_3px_rgba(0,0,0,0.1)] transition-all outline-none">
+          <Tabs.Trigger value="analytics" className="px-4 py-1.5 text-sm font-medium rounded-sm text-muted-foreground hover:text-foreground data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm data-[state=active]:border data-[state=active]:border-border/50 transition-all outline-none">
             Analytics
           </Tabs.Trigger>
-          <Tabs.Trigger value="reports" className="px-5 py-2 text-sm font-semibold rounded-lg text-slate-500 hover:text-slate-900 dark:hover:text-white data-[state=active]:bg-white dark:data-[state=active]:bg-slate-900 data-[state=active]:text-blue-700 dark:data-[state=active]:text-blue-400 data-[state=active]:shadow-[0_1px_3px_rgba(0,0,0,0.1)] transition-all outline-none">
+          <Tabs.Trigger value="reports" className="px-4 py-1.5 text-sm font-medium rounded-sm text-muted-foreground hover:text-foreground data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm data-[state=active]:border data-[state=active]:border-border/50 transition-all outline-none">
             Reports
           </Tabs.Trigger>
-          <Tabs.Trigger value="notifications" className="px-5 py-2 text-sm font-semibold rounded-lg text-slate-500 hover:text-slate-900 dark:hover:text-white data-[state=active]:bg-white dark:data-[state=active]:bg-slate-900 data-[state=active]:text-blue-700 dark:data-[state=active]:text-blue-400 data-[state=active]:shadow-[0_1px_3px_rgba(0,0,0,0.1)] transition-all outline-none">
+          <Tabs.Trigger value="notifications" className="px-4 py-1.5 text-sm font-medium rounded-sm text-muted-foreground hover:text-foreground data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm data-[state=active]:border data-[state=active]:border-border/50 transition-all outline-none">
             Notifications
           </Tabs.Trigger>
         </Tabs.List>
@@ -271,23 +268,23 @@ export default function Dashboard() {
           {/* KPI Cards */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
             {/* Total Assets */}
-            <Card className="shadow-sm border border-slate-200/60 dark:border-slate-800/60 rounded-2xl bg-white dark:bg-slate-900 hover:shadow-md transition-shadow">
-              <CardContent className="p-6 flex flex-col justify-between h-full space-y-4">
+            <Card className="shadow-sm border-border/60">
+              <CardContent className="p-5 flex flex-col justify-between h-full space-y-4">
                 <div className="flex justify-between items-start">
-                  <div className="space-y-1.5">
-                    <p className="text-sm font-semibold text-slate-500 uppercase tracking-wider flex items-center gap-2">
-                      <HardDrive size={16} className="text-blue-500" /> Total Assets
+                  <div className="space-y-1">
+                    <p className="text-sm font-medium text-muted-foreground flex items-center gap-2">
+                      <HardDrive size={14} /> Total Assets
                     </p>
-                    <p className="text-4xl font-extrabold text-slate-900 dark:text-white tracking-tight">{isLoading ? '...' : stats?.total}</p>
-                    <p className="text-xs text-slate-400">Overall system assets</p>
+                    <p className="text-3xl font-bold">{isLoading ? '...' : stats?.total}</p>
+                    <p className="text-xs text-muted-foreground">Overall system assets</p>
                   </div>
-                  <div className="p-3 bg-gradient-to-br from-blue-50 to-blue-100 dark:from-blue-900/20 dark:to-blue-800/20 text-blue-600 dark:text-blue-400 rounded-xl shadow-sm border border-blue-100 dark:border-blue-800/30">
-                    <Activity size={24} />
+                  <div className="p-2 bg-primary/10 text-primary rounded-full">
+                    <Activity size={18} />
                   </div>
                 </div>
-                <div className="flex items-center justify-between text-sm pt-2 border-t border-slate-100 dark:border-slate-800">
-                  <span className="text-slate-500">New this week</span>
-                  <span className="flex items-center text-emerald-600 bg-emerald-50 dark:bg-emerald-500/10 px-2 py-0.5 rounded-full font-bold">
+                <div className="flex items-center justify-between text-sm">
+                  <span className="text-muted-foreground">New this week</span>
+                  <span className="flex items-center text-emerald-600 font-medium">
                     +{stats?.newAssetsThisWeek || 0} <TrendingUp size={14} className="ml-1" />
                   </span>
                 </div>
@@ -295,23 +292,20 @@ export default function Dashboard() {
             </Card>
 
             {/* Active Assets */}
-            <Card className="shadow-sm border border-slate-200/60 dark:border-slate-800/60 rounded-2xl bg-white dark:bg-slate-900 hover:shadow-md transition-shadow">
-              <CardContent className="p-6 flex flex-col justify-between h-full space-y-4">
+            <Card className="shadow-sm border-border/60">
+              <CardContent className="p-5 flex flex-col justify-between h-full space-y-4">
                 <div className="flex justify-between items-start">
-                  <div className="space-y-1.5">
-                    <p className="text-sm font-semibold text-slate-500 uppercase tracking-wider flex items-center gap-2">
-                      <Shield size={16} className="text-emerald-500" /> Active Assets
+                  <div className="space-y-1">
+                    <p className="text-sm font-medium text-muted-foreground flex items-center gap-2">
+                      <Shield size={14} /> Active Assets
                     </p>
-                    <p className="text-4xl font-extrabold text-slate-900 dark:text-white tracking-tight">{isLoading ? '...' : stats?.active}</p>
-                    <p className="text-xs text-slate-400">Currently deployed</p>
-                  </div>
-                  <div className="p-3 bg-gradient-to-br from-emerald-50 to-emerald-100 dark:from-emerald-900/20 dark:to-emerald-800/20 text-emerald-600 dark:text-emerald-400 rounded-xl shadow-sm border border-emerald-100 dark:border-emerald-800/30">
-                    <Activity size={24} />
+                    <p className="text-3xl font-bold">{isLoading ? '...' : stats?.active}</p>
+                    <p className="text-xs text-muted-foreground">Currently deployed</p>
                   </div>
                 </div>
-                <div className="flex items-center justify-between text-sm pt-2 border-t border-slate-100 dark:border-slate-800">
-                  <span className="text-slate-500">Active Rate</span>
-                  <span className="flex items-center text-emerald-600 bg-emerald-50 dark:bg-emerald-500/10 px-2 py-0.5 rounded-full font-bold">
+                <div className="flex items-center justify-between text-sm">
+                  <span className="text-muted-foreground">Active Rate</span>
+                  <span className="flex items-center text-blue-600 font-medium">
                     {stats?.activeRate || 0}%
                   </span>
                 </div>
@@ -319,23 +313,20 @@ export default function Dashboard() {
             </Card>
 
             {/* Repairing */}
-            <Card className="shadow-sm border border-slate-200/60 dark:border-slate-800/60 rounded-2xl bg-white dark:bg-slate-900 hover:shadow-md transition-shadow">
-              <CardContent className="p-6 flex flex-col justify-between h-full space-y-4">
+            <Card className="shadow-sm border-border/60">
+              <CardContent className="p-5 flex flex-col justify-between h-full space-y-4">
                 <div className="flex justify-between items-start">
-                  <div className="space-y-1.5">
-                    <p className="text-sm font-semibold text-slate-500 uppercase tracking-wider flex items-center gap-2">
-                      <Wrench size={16} className="text-red-500" /> In Repair
+                  <div className="space-y-1">
+                    <p className="text-sm font-medium text-muted-foreground flex items-center gap-2">
+                      <Wrench size={14} /> In Repair
                     </p>
-                    <p className="text-4xl font-extrabold text-slate-900 dark:text-white tracking-tight">{isLoading ? '...' : stats?.repair}</p>
-                    <p className="text-xs text-slate-400">Currently down</p>
-                  </div>
-                  <div className="p-3 bg-gradient-to-br from-red-50 to-red-100 dark:from-red-900/20 dark:to-red-800/20 text-red-600 dark:text-red-400 rounded-xl shadow-sm border border-red-100 dark:border-red-800/30">
-                    <Wrench size={24} />
+                    <p className="text-3xl font-bold">{isLoading ? '...' : stats?.repair}</p>
+                    <p className="text-xs text-muted-foreground">Currently down</p>
                   </div>
                 </div>
-                <div className="flex items-center justify-between text-sm pt-2 border-t border-slate-100 dark:border-slate-800">
-                  <span className="text-slate-500">New tickets (7d)</span>
-                  <span className="flex items-center text-red-600 bg-red-50 dark:bg-red-500/10 px-2 py-0.5 rounded-full font-bold">
+                <div className="flex items-center justify-between text-sm">
+                  <span className="text-muted-foreground">New tickets (7d)</span>
+                  <span className="flex items-center text-red-600 font-medium">
                     +{stats?.newTicketsThisWeek || 0} <AlertCircle size={14} className="ml-1" />
                   </span>
                 </div>
@@ -343,23 +334,20 @@ export default function Dashboard() {
             </Card>
 
             {/* Spare */}
-            <Card className="shadow-sm border border-slate-200/60 dark:border-slate-800/60 rounded-2xl bg-white dark:bg-slate-900 hover:shadow-md transition-shadow">
-              <CardContent className="p-6 flex flex-col justify-between h-full space-y-4">
+            <Card className="shadow-sm border-border/60">
+              <CardContent className="p-5 flex flex-col justify-between h-full space-y-4">
                 <div className="flex justify-between items-start">
-                  <div className="space-y-1.5">
-                    <p className="text-sm font-semibold text-slate-500 uppercase tracking-wider flex items-center gap-2">
-                      <Box size={16} className="text-amber-500" /> Spare Units
+                  <div className="space-y-1">
+                    <p className="text-sm font-medium text-muted-foreground flex items-center gap-2">
+                      <Box size={14} /> Spare Units
                     </p>
-                    <p className="text-4xl font-extrabold text-slate-900 dark:text-white tracking-tight">{isLoading ? '...' : stats?.spare}</p>
-                    <p className="text-xs text-slate-400">Ready to deploy</p>
-                  </div>
-                  <div className="p-3 bg-gradient-to-br from-amber-50 to-amber-100 dark:from-amber-900/20 dark:to-amber-800/20 text-amber-600 dark:text-amber-400 rounded-xl shadow-sm border border-amber-100 dark:border-amber-800/30">
-                    <Box size={24} />
+                    <p className="text-3xl font-bold">{isLoading ? '...' : stats?.spare}</p>
+                    <p className="text-xs text-muted-foreground">Ready to deploy</p>
                   </div>
                 </div>
-                <div className="flex items-center justify-between text-sm pt-2 border-t border-slate-100 dark:border-slate-800">
-                  <span className="text-slate-500">Spare Ratio</span>
-                  <span className="flex items-center text-amber-600 bg-amber-50 dark:bg-amber-500/10 px-2 py-0.5 rounded-full font-bold">
+                <div className="flex items-center justify-between text-sm">
+                  <span className="text-muted-foreground">Spare Ratio</span>
+                  <span className="flex items-center text-emerald-600 font-medium">
                     {stats?.spareRate || 0}% 
                   </span>
                 </div>

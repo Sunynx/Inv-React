@@ -188,18 +188,18 @@ export default function AssetsPage() {
   ];
 
   return (
-    <div className="space-y-6 print:space-y-0 print:m-0 print:p-0 animate-in fade-in duration-500">
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 pt-2 print:hidden mb-4">
+    <div className="space-y-6 print:space-y-0 print:m-0 print:p-0">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 pt-2 print:hidden">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight text-slate-900 dark:text-white">รายการทรัพย์สิน IT</h1>
-          <p className="text-sm text-slate-500 mt-1">จัดการและติดตามรายการทรัพย์สินทั้งหมดในระบบของคุณอย่างมีประสิทธิภาพ</p>
+          <h1 className="text-2xl font-semibold tracking-tight text-foreground">รายการทรัพย์สิน IT</h1>
+          <p className="text-sm text-muted-foreground mt-1">จัดการและติดตามรายการทรัพย์สินทั้งหมดในระบบ</p>
         </div>
       </div>
 
-      <Card className="shadow-sm border border-slate-200/60 dark:border-slate-800/60 rounded-2xl overflow-hidden bg-white dark:bg-slate-900 transition-colors duration-300 print:hidden">
-        <div className="p-5 border-b border-slate-100 dark:border-slate-800/50 flex flex-col gap-5">
+      <Card className="shadow-sm border-border/60 rounded-xl overflow-hidden bg-card border-0 transition-colors duration-300 print:hidden">
+        <div className="p-4 border-b border-gray-100 flex flex-col gap-4">
           <Tabs.Root value={filterTab} onValueChange={setFilterTab} className="w-full overflow-x-auto hide-scrollbar">
-            <Tabs.List className="flex gap-1.5 inline-flex w-max bg-slate-100/50 dark:bg-slate-800/50 p-1.5 rounded-xl border border-slate-200/50 dark:border-slate-700/50">
+            <Tabs.List className="flex gap-1 inline-flex w-max">
               {[
                 { value: 'all', label: 'ทั้งหมด', count: assets.length },
                 { value: 'ใช้งาน', label: 'ใช้งาน', count: countByStatus('ใช้งาน') },
@@ -209,47 +209,47 @@ export default function AssetsPage() {
                 { value: 'ชำรุด', label: 'ชำรุด', count: countByStatus('ชำรุด') },
                 { value: 'จำหน่าย', label: 'จำหน่าย', count: countByStatus('จำหน่าย') },
               ].map(tab => (
-                <Tabs.Trigger key={tab.value} value={tab.value} className="px-4 py-2 text-sm font-semibold text-slate-500 hover:text-slate-900 dark:hover:text-white data-[state=active]:bg-white dark:data-[state=active]:bg-slate-900 data-[state=active]:text-blue-700 dark:data-[state=active]:text-blue-400 data-[state=active]:shadow-[0_1px_3px_rgba(0,0,0,0.1)] rounded-lg transition-all flex items-center gap-2 outline-none">
-                  {tab.label} <span className="bg-slate-200/60 dark:bg-slate-700 text-slate-600 dark:text-slate-300 px-2 py-0.5 rounded-md text-[10px] font-bold">{tab.count}</span>
+                <Tabs.Trigger key={tab.value} value={tab.value} className="px-3 py-1.5 text-sm font-medium text-gray-500 hover:text-gray-900 data-[state=active]:text-gray-900 data-[state=active]:bg-gray-100 rounded-md transition-colors flex items-center gap-2">
+                  {tab.label} <span className="bg-gray-200 text-gray-600 px-1.5 py-0.5 rounded-full text-[10px] font-semibold">{tab.count}</span>
                 </Tabs.Trigger>
               ))}
             </Tabs.List>
           </Tabs.Root>
 
-          <div className="flex flex-wrap lg:flex-nowrap items-center justify-between gap-4 w-full">
-            <div className="relative w-full lg:w-72 shrink-0">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
-              <Input placeholder="ค้นหาชื่อ, รหัส, สถานที่..." className="pl-10 h-10 bg-white/60 dark:bg-slate-900/60 border-slate-200/60 shadow-sm focus:ring-2 focus:ring-blue-500/20 text-sm w-full rounded-xl transition-all" value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} />
+          <div className="flex flex-wrap lg:flex-nowrap items-center justify-between gap-3 w-full">
+            <div className="relative w-full lg:w-64 shrink-0">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+              <Input placeholder="ค้นหาชื่อ, รหัส, สถานที่..." className="pl-9 h-9 bg-gray-50 border-gray-200 text-sm w-full" value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} />
             </div>
 
-            <div className="flex flex-wrap items-center gap-3 w-full lg:w-auto justify-start lg:justify-end">
+            <div className="flex flex-wrap items-center gap-2 w-full lg:w-auto justify-start lg:justify-end">
               <Select value={filterDepartment} onValueChange={setFilterDepartment}>
-                <SelectTrigger className="h-10 bg-white dark:bg-slate-900 border-slate-200/60 dark:border-slate-800/60 shadow-sm text-sm w-[140px] flex justify-between shrink-0 rounded-xl transition-all">
+                <SelectTrigger className="h-9 bg-white shadow-sm text-sm w-[130px] flex justify-between shrink-0">
                   <span className="truncate">
                     {filterDepartment === 'all' ? 'ทุกแผนก' : filterDepartment}
                   </span>
                 </SelectTrigger>
-                <SelectContent className="rounded-xl">
+                <SelectContent>
                   <SelectItem value="all">ทุกแผนก</SelectItem>
                   {uniqueDepartments.map(dept => <SelectItem key={dept} value={dept}>{dept}</SelectItem>)}
                 </SelectContent>
               </Select>
 
               <Select value={filterCategory} onValueChange={setFilterCategory}>
-                <SelectTrigger className="h-10 bg-white dark:bg-slate-900 border-slate-200/60 dark:border-slate-800/60 shadow-sm text-sm w-[140px] flex justify-between shrink-0 rounded-xl transition-all">
+                <SelectTrigger className="h-9 bg-white shadow-sm text-sm w-[130px] flex justify-between shrink-0">
                   <span className="truncate">
                     {filterCategory === 'all' ? 'ทุกประเภท' : filterCategory}
                   </span>
                 </SelectTrigger>
-                <SelectContent className="rounded-xl">
+                <SelectContent>
                   <SelectItem value="all">ทุกประเภท</SelectItem>
                   {uniqueCategories.map(cat => <SelectItem key={cat} value={cat}>{cat}</SelectItem>)}
                 </SelectContent>
               </Select>
 
-              <div className="w-[140px] shrink-0">
+              <div className="w-[130px] shrink-0">
                 <Select value={sortBy} onValueChange={setSortBy}>
-                  <SelectTrigger className="h-10 bg-white dark:bg-slate-900 border-slate-200/60 dark:border-slate-800/60 shadow-sm text-sm w-full flex justify-between rounded-xl transition-all">
+                  <SelectTrigger className="h-9 bg-white shadow-sm text-sm w-full flex justify-between">
                     <span className="truncate">
                       {sortBy === 'newest' && 'เพิ่มใหม่ล่าสุด'}
                       {sortBy === 'recently_edited' && 'แก้ไขล่าสุด'}
@@ -257,7 +257,7 @@ export default function AssetsPage() {
                       {!sortBy && 'เรียงตาม'}
                     </span>
                   </SelectTrigger>
-                  <SelectContent className="rounded-xl">
+                  <SelectContent>
                     <SelectItem value="newest">เพิ่มใหม่ล่าสุด</SelectItem>
                     <SelectItem value="recently_edited">แก้ไขล่าสุด</SelectItem>
                     <SelectItem value="oldest">เพิ่มเก่าสุด</SelectItem>
@@ -266,21 +266,21 @@ export default function AssetsPage() {
               </div>
               
               <div className="flex items-center gap-2 shrink-0 ml-auto lg:ml-2">
-                <Button variant="outline" size="sm" className="h-10 rounded-xl border-slate-200 hover:bg-slate-50 transition-all" onClick={() => setIsExportModalOpen(true)}>
-                  <Download className="w-4 h-4 mr-1.5 text-slate-500" /> ส่งออก
+                <Button variant="outline" size="sm" className="h-9" onClick={() => setIsExportModalOpen(true)}>
+                  <Download className="w-4 h-4 mr-1.5" /> ส่งออก
                 </Button>
-                <Button variant="outline" size="sm" className="h-10 rounded-xl border-slate-200 hover:bg-slate-50 transition-all hidden sm:flex" onClick={() => window.print()}>
-                  <Printer className="w-4 h-4 mr-1.5 text-slate-500" /> พิมพ์
+                <Button variant="outline" size="sm" className="h-9" onClick={() => window.print()}>
+                  <Printer className="w-4 h-4 mr-1.5" /> พิมพ์
                 </Button>
-                <Button size="sm" className="h-10 rounded-xl bg-blue-600 hover:bg-blue-700 text-white shadow-sm shadow-blue-600/20 transition-all px-4" onClick={() => { setSelectedAssetId(undefined); setSheetMode('edit'); setIsSheetOpen(true); }}>
-                  <Plus className="w-4 h-4 mr-1.5" /> เพิ่มทรัพย์สิน
+                <Button size="sm" className="h-9 bg-primary hover:bg-primary/90 text-primary-foreground" onClick={() => { setSelectedAssetId(undefined); setSheetMode('edit'); setIsSheetOpen(true); }}>
+                  <Plus className="w-4 h-4 mr-1.5" /> เพิ่ม
                 </Button>
               </div>
             </div>
           </div>
         </div>
 
-        <div className="p-1 bg-slate-50/50 dark:bg-slate-900/50">
+        <div className="p-4 bg-gray-50/30">
           <DataTable 
             columns={columns} 
             data={filteredAssets} 

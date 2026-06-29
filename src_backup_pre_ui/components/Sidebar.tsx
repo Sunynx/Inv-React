@@ -88,17 +88,17 @@ export default function Sidebar() {
                       href={link.href}
                       onClick={() => setOpen(false)}
                       className={cn(
-                        "group flex items-center justify-between px-3 py-2 rounded-lg text-sm font-medium transition-all duration-200",
+                        "flex items-center justify-between px-3 py-1.5 rounded-md text-sm font-medium transition-colors",
                         isActive 
-                          ? "bg-white/10 text-white shadow-[inset_0_1px_1px_rgba(255,255,255,0.1)] border border-white/10" 
-                          : "text-white/60 hover:bg-white/5 hover:text-white"
+                          ? "bg-white/15 text-white shadow-sm" 
+                          : "text-white/60 hover:bg-white/10 hover:text-white"
                       )}
                     >
                       <div className="flex items-center gap-3">
-                        <Icon size={18} strokeWidth={isActive ? 2.5 : 2} className={cn("transition-transform duration-200", isActive ? "scale-110" : "group-hover:scale-110")} />
+                        <Icon size={16} strokeWidth={isActive ? 2.5 : 2} />
                         <span>{link.name}</span>
                       </div>
-                      {isActive && <div className="w-1.5 h-1.5 rounded-full bg-blue-400 shadow-[0_0_8px_rgba(96,165,250,0.8)]" />}
+                      {isActive && <ChevronRight size={14} className="text-white/40 opacity-50" />}
                     </Link>
                   </li>
                 );
@@ -130,9 +130,9 @@ export default function Sidebar() {
       </div>
 
       {/* Mobile Header */}
-      <div className="md:hidden fixed top-0 left-0 right-0 h-16 bg-[#1e345d]/80 backdrop-blur-md z-40 flex items-center px-4 justify-between shadow-sm border-b border-white/10">
+      <div className="md:hidden fixed top-0 left-0 right-0 h-16 bg-[#1e345d] z-40 flex items-center px-4 justify-between shadow-md border-b border-white/10">
         <Sheet open={open} onOpenChange={setOpen}>
-          <SheetTrigger className="inline-flex items-center justify-center shrink-0 w-10 h-10 rounded-lg text-white hover:bg-white/10 transition-colors">
+          <SheetTrigger render={<Button variant="ghost" size="icon" className="text-white hover:bg-white/10 hover:text-white" />}>
             <Menu size={24} />
           </SheetTrigger>
           <SheetContent side="left" className="p-0 w-64 border-none bg-transparent">

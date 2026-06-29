@@ -121,9 +121,9 @@ export default function AssetSheet({ isOpen, onClose, assetId, mode = 'edit', on
         }
         
         const fileName = `${uuidv4()}.${fileExt || 'jpg'}`;
-        const { error: uploadError } = await supabase.storage.from('asset_images').upload(fileName, processedFile);
+        const { error: uploadError } = await supabase.storage.from('asset-images').upload(fileName, processedFile);
         if (uploadError) throw uploadError;
-        const { data } = supabase.storage.from('asset_images').getPublicUrl(fileName);
+        const { data } = supabase.storage.from('asset-images').getPublicUrl(fileName);
         return data.publicUrl;
       });
       
@@ -154,9 +154,9 @@ export default function AssetSheet({ isOpen, onClose, assetId, mode = 'edit', on
       if (!file) return;
       const fileExt = file.name.split('.').pop();
       const fileName = `docs/${uuidv4()}.${fileExt}`;
-      const { error: uploadError } = await supabase.storage.from('asset_images').upload(fileName, file);
+      const { error: uploadError } = await supabase.storage.from('asset-images').upload(fileName, file);
       if (uploadError) throw uploadError;
-      const { data } = supabase.storage.from('asset_images').getPublicUrl(fileName);
+      const { data } = supabase.storage.from('asset-images').getPublicUrl(fileName);
       
       setFormData({ 
         ...formData, 

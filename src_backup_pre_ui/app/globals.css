@@ -34,23 +34,6 @@
   }
 }
 
-@layer utilities {
-  .hide-scrollbar {
-    -ms-overflow-style: none;
-    scrollbar-width: none;
-  }
-  .hide-scrollbar::-webkit-scrollbar {
-    display: none;
-  }
-  .custom-scrollbar {
-    -ms-overflow-style: none;
-    scrollbar-width: none;
-  }
-  .custom-scrollbar::-webkit-scrollbar {
-    display: none;
-  }
-}
-
 @theme inline {
   --font-heading: var(--font-sans);
   --font-sans: var(--font-sans);
