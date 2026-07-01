@@ -12,6 +12,7 @@ import { Textarea } from '@/components/ui/textarea';
 import toast from 'react-hot-toast';
 import ExcelJS from 'exceljs';
 import { saveAs } from 'file-saver';
+import { logAudit } from '@/lib/auditLog';
 
 interface ProcurementModalProps {
   isOpen: boolean;
@@ -223,10 +224,12 @@ export default function ProcurementModal({ isOpen, onClose, document, onSaved }:
       if (document?.id) {
         const { error } = await supabase.from('procurement').update(payload).eq('id', document.id);
         if (error) throw error;
+        logAudit({ action: 'update', details: `Updated PR ${docNumber} (Status: ${status})` });
         toast.success('อัปเดตเอกสารสำเร็จ');
       } else {
         const { error } = await supabase.from('procurement').insert([payload]);
         if (error) throw error;
+        logAudit({ action: 'create', details: `Created PR ${docNumber}` });
         toast.success('สร้างเอกสารสำเร็จ');
       }
       onSaved();

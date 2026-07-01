@@ -8,11 +8,28 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { useForm, Controller } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import * as z from 'zod';
+import { logAudit, formatAuditDetails } from '@/lib/auditLog';
+
+const ticketSchema = z.object({
+  asset_id: z.string().nullable().optional(),
+  title: z.string().min(1, 'กรุณาระบุหัวข้อการแจ้งซ่อม'),
+  description: z.string().nullable().optional(),
+  priority: z.string().min(1),
+  status: z.string().min(1),
+  cost: z.coerce.number().nullable().optional(),
+});
+type TicketFormValues = z.infer<typeof ticketSchema>;
 
 export default function TicketModal({ isOpen, onClose, ticketId }: { isOpen: boolean; onClose: () => void; ticketId?: string }) {
-  const [loading, setLoading] = useState(false);
-  const [formData, setFormData] = useState<any>({});
   const queryClient = useQueryClient();
+
+  const form = useForm<TicketFormValues>({
+    resolver: zodResolver(ticketSchema),
+    defaultValues: { status: 'เปิด', priority: 'ปกติ' }
+  });
 
   const { data: assets = [] } = useQuery({
     queryKey: ['assets_lookup'],
@@ -49,14 +66,17 @@ export default function TicketModal({ isOpen, onClose, ticketId }: { isOpen: boo
   useEffect(() => {
     if (isOpen) {
       if (ticketId && ticketData) {
-        setFormData(ticketData);
+        form.reset({
+          ...ticketData,
+          cost: ticketData.cost ? Number(ticketData.cost) : null
+        });
       } else if (!ticketId) {
-        setFormData({ status: 'เปิด', priority: 'ปกติ' });
+        form.reset({ status: 'เปิด', priority: 'ปกติ' });
       }
-    } else {
-      setFormData({});
+      setSelectedPartId('');
+      setPartQty(1);
     }
-  }, [isOpen, ticketId, ticketData]);
+  }, [isOpen, ticketId, ticketData, form]);
 
   const saveMutation = useMutation({
     mutationFn: async (payload: any) => {
@@ -78,7 +98,7 @@ export default function TicketModal({ isOpen, onClose, ticketId }: { isOpen: boo
       }
 
       if (selectedPartId && partQty > 0 && currentTicketId) {
-        const { data: currentStock } = await supabase.from('stock_items').select('quantity').eq('id', selectedPartId).single();
+        const { data: currentStock } = await supabase.from('stock_items').select('quantity, name').eq('id', selectedPartId).single();
         if (currentStock) {
           const newQty = currentStock.quantity - partQty;
           await supabase.from('stock_items').update({ quantity: newQty }).eq('id', selectedPartId);
@@ -90,13 +110,21 @@ export default function TicketModal({ isOpen, onClose, ticketId }: { isOpen: boo
             recipient: payload.assigned_to || payload.reported_by || 'Ticket System',
             notes: 'Auto-deducted from repair ticket'
           }]);
+          
+          logAudit({
+            action: 'update',
+            details: `Deducted ${partQty} of ${currentStock.name} for Ticket ${currentTicketId}`
+          });
         }
       }
     },
-    onSuccess: () => {
+    onSuccess: (_, variables) => {
+      const action = ticketId ? 'update' : 'create';
+      logAudit({
+        action,
+        details: `Ticket ${action}d: ${variables.title}`
+      });
       toast.success(ticketId ? 'Ticket updated successfully' : 'Ticket created successfully');
-      setSelectedPartId('');
-      setPartQty(1);
       queryClient.invalidateQueries({ queryKey: ['repair_tickets'] });
       queryClient.invalidateQueries({ queryKey: ['stock_items'] });
       onClose();
@@ -104,18 +132,8 @@ export default function TicketModal({ isOpen, onClose, ticketId }: { isOpen: boo
     onError: (err: any) => toast.error('Error saving ticket: ' + err.message)
   });
 
-  const handleSave = (e: React.FormEvent) => {
-    e.preventDefault();
-    const payload = { ...formData };
-    saveMutation.mutate(payload);
-  };
-
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
-    setFormData({ ...formData, [e.target.name]: e.target.value });
-  };
-  
-  const handleSelectChange = (name: string, value: string) => {
-    setFormData({ ...formData, [name]: value });
+  const onSubmit = (data: TicketFormValues) => {
+    saveMutation.mutate(data);
   };
 
   return (
@@ -128,27 +146,30 @@ export default function TicketModal({ isOpen, onClose, ticketId }: { isOpen: boo
         {isLoadingTicket ? (
           <div className="py-12 text-center text-muted-foreground">Loading...</div>
         ) : (
-          <form onSubmit={handleSave} className="space-y-6 mt-4">
+          <form id="ticket-form" onSubmit={form.handleSubmit(onSubmit)} className="space-y-6 mt-4">
             
             <div className="space-y-2">
               <Label>Asset (อุปกรณ์ที่เสีย)</Label>
-              <Select value={formData.asset_id || ''} onValueChange={(v) => handleSelectChange('asset_id', v)}>
-                <SelectTrigger><SelectValue placeholder="Select an Asset...">{assets.find(a => a.id === formData.asset_id) ? `[${assets.find(a => a.id === formData.asset_id)?.asset_code}] ${assets.find(a => a.id === formData.asset_id)?.name}` : 'Select an Asset...'}</SelectValue></SelectTrigger>
-                <SelectContent>
-                  {assets.map(a => <SelectItem key={a.id} value={a.id}>[{a.asset_code}] {a.name}</SelectItem>)}
-                </SelectContent>
-              </Select>
+              <Controller name="asset_id" control={form.control} render={({ field }) => (
+                <Select value={field.value || ''} onValueChange={field.onChange}>
+                  <SelectTrigger><SelectValue placeholder="Select an Asset..." /></SelectTrigger>
+                  <SelectContent>
+                    {assets.map(a => <SelectItem key={a.id} value={a.id}>[{a.asset_code}] {a.name}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+              )} />
             </div>
 
             <div className="space-y-2">
               <Label>Title (หัวข้อการแจ้งซ่อม) *</Label>
-              <Input required name="title" value={formData.title || ''} onChange={handleChange} />
+              <Input {...form.register('title')} />
+              {form.formState.errors.title && <p className="text-xs text-red-500">{form.formState.errors.title.message}</p>}
             </div>
 
             <div className="space-y-2">
               <Label>Description (รายละเอียดอาการที่เสีย)</Label>
               <textarea 
-                name="description" value={formData.description || ''} onChange={handleChange} rows={3} 
+                {...form.register('description')} rows={3} 
                 className="flex min-h-[80px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
               />
             </div>
@@ -156,39 +177,43 @@ export default function TicketModal({ isOpen, onClose, ticketId }: { isOpen: boo
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label>Priority (ความสำคัญ)</Label>
-                <Select value={formData.priority || 'ปกติ'} onValueChange={(v) => handleSelectChange('priority', v)}>
-                  <SelectTrigger><SelectValue placeholder="Select Priority..." /></SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="ต่ำ">ต่ำ (Low)</SelectItem>
-                    <SelectItem value="ปกติ">ปกติ (Medium)</SelectItem>
-                    <SelectItem value="สูง">สูง (High)</SelectItem>
-                    <SelectItem value="เร่งด่วน">เร่งด่วน (Critical)</SelectItem>
-                  </SelectContent>
-                </Select>
+                <Controller name="priority" control={form.control} render={({ field }) => (
+                  <Select value={field.value || 'ปกติ'} onValueChange={field.onChange}>
+                    <SelectTrigger><SelectValue placeholder="Select Priority..." /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="ต่ำ">ต่ำ (Low)</SelectItem>
+                      <SelectItem value="ปกติ">ปกติ (Medium)</SelectItem>
+                      <SelectItem value="สูง">สูง (High)</SelectItem>
+                      <SelectItem value="เร่งด่วน">เร่งด่วน (Critical)</SelectItem>
+                    </SelectContent>
+                  </Select>
+                )} />
               </div>
 
               <div className="space-y-2">
                 <Label>Status (สถานะ)</Label>
-                <Select value={formData.status || 'รอการตรวจสอบ'} onValueChange={(v) => handleSelectChange('status', v)}>
-                  <SelectTrigger><SelectValue placeholder="Select Status..." /></SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="เปิด">เปิด (Pending)</SelectItem>
-                    <SelectItem value="กำลังดำเนินการ">กำลังดำเนินการ (In Progress)</SelectItem>
-                    <SelectItem value="รอะไหล่">รอะไหล่ (Waiting for parts)</SelectItem>
-                    <SelectItem value="เสร็จสิ้น">เสร็จสิ้น (Resolved)</SelectItem>
-                    <SelectItem value="ยกเลิก">ยกเลิก (Cancelled)</SelectItem>
-                  </SelectContent>
-                </Select>
+                <Controller name="status" control={form.control} render={({ field }) => (
+                  <Select value={field.value || 'เปิด'} onValueChange={field.onChange}>
+                    <SelectTrigger><SelectValue placeholder="Select Status..." /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="เปิด">เปิด (Pending)</SelectItem>
+                      <SelectItem value="กำลังดำเนินการ">กำลังดำเนินการ (In Progress)</SelectItem>
+                      <SelectItem value="รอะไหล่">รอะไหล่ (Waiting for parts)</SelectItem>
+                      <SelectItem value="เสร็จสิ้น">เสร็จสิ้น (Resolved)</SelectItem>
+                      <SelectItem value="ยกเลิก">ยกเลิก (Cancelled)</SelectItem>
+                    </SelectContent>
+                  </Select>
+                )} />
               </div>
 
               <div className="space-y-2">
                 <Label>Cost (ค่าซ่อม)</Label>
-                <Input type="number" name="cost" value={formData.cost || ''} onChange={handleChange} />
+                <Input type="number" {...form.register('cost')} />
               </div>
             </div>
 
-            <div className="space-y-2 pt-4 border-t">
-              <Label className="text-blue-600 font-semibold">Use Parts from Stock (เบิกอะไหล่)</Label>
+            <div className="space-y-2 pt-4 border-t border-border">
+              <Label className="text-blue-600 dark:text-blue-400 font-semibold">Use Parts from Stock (เบิกอะไหล่)</Label>
               <div className="flex gap-3">
                 <div className="flex-1">
                   <Select value={selectedPartId} onValueChange={setSelectedPartId}>
@@ -209,7 +234,7 @@ export default function TicketModal({ isOpen, onClose, ticketId }: { isOpen: boo
               {selectedPartId && <p className="text-xs text-muted-foreground">This will deduct stock and log a transaction automatically upon save.</p>}
             </div>
 
-            <div className="flex justify-end gap-3 pt-6 border-t mt-6">
+            <div className="flex justify-end gap-3 pt-6 border-t border-border mt-6">
               <Button type="button" variant="outline" onClick={onClose}>Cancel</Button>
               <Button type="submit" disabled={saveMutation.isPending} className="bg-primary hover:bg-primary/90 text-primary-foreground">
                 {saveMutation.isPending ? 'Saving...' : 'Save Ticket'}

@@ -275,10 +275,10 @@ export default function PRDashboardPage() {
               {topItemsData.length > 0 ? (
                 <ResponsiveContainer width="100%" height="100%">
                   <BarChart data={topItemsData} layout="vertical" margin={{ top: 0, right: 20, left: -20, bottom: 0 }}>
-                    <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="#eee" />
-                    <XAxis type="number" axisLine={false} tickLine={false} tick={{ fontSize: 11, fill: '#666' }} allowDecimals={false} />
-                    <YAxis dataKey="name" type="category" axisLine={false} tickLine={false} tick={{ fontSize: 11, fill: '#333' }} width={120} />
-                    <RechartsTooltip cursor={{ fill: '#f4f4f5' }} formatter={(val: number) => [`${val.toLocaleString()} ชิ้น`, 'จำนวนที่สั่ง']} />
+                    <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="#888888" strokeOpacity={0.2} />
+                    <XAxis type="number" axisLine={false} tickLine={false} tick={{ fontSize: 11, fill: '#888888' }} allowDecimals={false} />
+                    <YAxis dataKey="name" type="category" axisLine={false} tickLine={false} tick={{ fontSize: 11, fill: '#888888' }} width={120} />
+                    <RechartsTooltip contentStyle={{ borderRadius: '8px', border: '1px solid var(--border)', backgroundColor: 'var(--card)', color: 'var(--card-foreground)' }} cursor={{ fill: '#888888', opacity: 0.1 }} formatter={(val: number) => [`${val.toLocaleString()} ชิ้น`, 'จำนวนที่สั่ง']} />
                     <Bar dataKey="count" fill="#8b5cf6" radius={[0, 4, 4, 0]} maxBarSize={30} />
                   </BarChart>
                 </ResponsiveContainer>
@@ -305,10 +305,10 @@ export default function PRDashboardPage() {
                         <stop offset="95%" stopColor="#f59e0b" stopOpacity={0}/>
                       </linearGradient>
                     </defs>
-                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#eee" />
-                    <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 11, fill: '#666' }} dy={10} minTickGap={20} />
-                    <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 11, fill: '#666' }} allowDecimals={false} />
-                    <RechartsTooltip contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }} cursor={{ stroke: '#f59e0b', strokeWidth: 1, strokeDasharray: '3 3' }} formatter={(val: number) => [val, 'จำนวนใบสั่งซื้อ']} />
+                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#888888" strokeOpacity={0.2} />
+                    <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 11, fill: '#888888' }} dy={10} minTickGap={20} />
+                    <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 11, fill: '#888888' }} allowDecimals={false} />
+                    <RechartsTooltip contentStyle={{ borderRadius: '8px', border: '1px solid var(--border)', backgroundColor: 'var(--card)', color: 'var(--card-foreground)' }} cursor={{ stroke: '#f59e0b', strokeWidth: 1, strokeDasharray: '3 3' }} formatter={(val: number) => [val, 'จำนวนใบสั่งซื้อ']} />
                     <Area type="monotone" dataKey="count" stroke="#f59e0b" strokeWidth={3} fillOpacity={1} fill="url(#colorCount)" activeDot={{ r: 6, fill: '#f59e0b', stroke: '#fff', strokeWidth: 2 }} />
                   </AreaChart>
                 </ResponsiveContainer>
@@ -329,17 +329,17 @@ export default function PRDashboardPage() {
               {topItemsData.length === 0 && topPRs.length === 0 ? (
                 <div className="text-center py-8 text-sm text-muted-foreground">ไม่มีข้อมูล</div>
               ) : topPRs.map((pr, idx) => (
-                <div key={idx} className="flex justify-between items-center bg-gray-50 p-3 rounded-md border border-gray-100">
+                <div key={idx} className="flex justify-between items-center bg-slate-50 dark:bg-slate-800/50 p-3 rounded-md border border-slate-100 dark:border-slate-700/50 transition-colors">
                   <div className="min-w-0 flex-1 pr-2">
-                    <p className="text-sm font-medium truncate" title={pr.title}>{pr.title}</p>
+                    <p className="text-sm font-medium truncate text-slate-900 dark:text-slate-100" title={pr.title}>{pr.title}</p>
                     <div className="flex items-center gap-2 mt-1">
-                      <span className="text-[10px] text-muted-foreground">{pr.document_number}</span>
-                      <span className="border border-gray-200 text-gray-600 rounded-full text-[9px] h-4 px-2 flex items-center">{pr.metadata?.department || 'N/A'}</span>
+                      <span className="text-[10px] text-slate-500 dark:text-slate-400">{pr.document_number}</span>
+                      <span className="border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400 rounded-full text-[9px] h-4 px-2 flex items-center">{pr.metadata?.department || 'N/A'}</span>
                     </div>
                   </div>
                   <div className="text-right whitespace-nowrap">
-                    <div className="text-sm font-bold text-slate-800">฿{(Number(pr.total_amount) || 0).toLocaleString()}</div>
-                    <div className="text-[10px] text-emerald-600">{pr.status}</div>
+                    <div className="text-sm font-bold text-slate-800 dark:text-slate-200">฿{(Number(pr.total_amount) || 0).toLocaleString()}</div>
+                    <div className="text-[10px] text-emerald-600 dark:text-emerald-400">{pr.status}</div>
                   </div>
                 </div>
               ))}

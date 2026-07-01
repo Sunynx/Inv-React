@@ -2,6 +2,7 @@
 import { useState } from 'react';
 import { supabase } from '@/lib/supabase';
 import toast from 'react-hot-toast';
+import { logAudit } from '@/lib/auditLog';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -48,6 +49,11 @@ export default function StockTxModal({
         recipient: responsible || null
       }]);
       if (txErr) throw txErr;
+
+      logAudit({ 
+        action: type === 'receive' ? 'create' : 'update', 
+        details: `${type === 'receive' ? 'Received' : 'Distributed'} ${qty} units of ${itemName}` 
+      });
 
       toast.success(`Successfully ${type === 'receive' ? 'received' : 'distributed'} ${qty} items.`);
       onClose();

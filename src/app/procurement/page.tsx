@@ -14,6 +14,7 @@ import * as Tabs from '@radix-ui/react-tabs';
 import Link from 'next/link';
 import ProcurementModal from '@/components/ProcurementModal';
 import ProcurementReceiveModal from '@/components/ProcurementReceiveModal';
+import { EmptyState } from '@/components/EmptyState';
 import ImportPRModal from '@/components/ImportPRModal';
 import PRPrintView from '@/components/PRPrintView';
 import toast from 'react-hot-toast';
@@ -263,7 +264,16 @@ export default function ProcurementPage() {
                 {isLoading ? (
                   <tr><td colSpan={7} className="px-6 py-8 text-center text-muted-foreground">Loading...</td></tr>
                 ) : filteredDocs.length === 0 ? (
-                  <tr><td colSpan={7} className="px-6 py-8 text-center text-muted-foreground">No documents found.</td></tr>
+                  <tr>
+                    <td colSpan={7} className="p-0">
+                      <EmptyState 
+                        title="ไม่พบเอกสารจัดซื้อ" 
+                        description="ยังไม่มีเอกสาร PR/PO ที่ตรงกับเงื่อนไขการค้นหาของคุณ หรือยังไม่ได้สร้างเอกสารใหม่"
+                        actionLabel="สร้างเอกสารใหม่"
+                        onAction={handleCreate}
+                      />
+                    </td>
+                  </tr>
                 ) : (
                   filteredDocs.map(doc => (
                     <tr key={doc.id} className="hover:bg-muted/30 transition-colors">

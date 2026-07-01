@@ -1,9 +1,10 @@
 'use client';
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { supabase } from '@/lib/supabase';
 import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import { Skeleton } from '@/components/ui/skeleton';
 import * as Tabs from '@radix-ui/react-tabs';
 import { 
   AreaChart, Area, XAxis, YAxis, CartesianGrid, ResponsiveContainer,
@@ -11,13 +12,16 @@ import {
 } from 'recharts';
 import { ChartContainer, ChartTooltip, ChartTooltipContent, ChartLegend, ChartLegendContent } from "@/components/ui/chart";
 import { 
-  Download, Calendar, TrendingUp, TrendingDown, Clock, Activity, HardDrive, Wrench, Shield, Box, Search, Send, Bot, AlertCircle
+  Download, Calendar, TrendingUp, TrendingDown, Clock, Activity, HardDrive, Wrench, Shield, Box, Search, Send, Bot, AlertCircle, Command
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { Input } from '@/components/ui/input';
 import { useRouter } from 'next/navigation';
 import toast from 'react-hot-toast';
 import { syncNotifications } from '@/lib/syncNotifications';
+import DashboardKPICards from '@/components/DashboardKPICards';
+import ReportExportModal from '@/components/ReportExportModal';
+import Notifications from '@/components/Notifications';
 
 export default function Dashboard() {
   const [globalSearch, setGlobalSearch] = useState('');
@@ -26,8 +30,10 @@ export default function Dashboard() {
   const [chatInput, setChatInput] = useState('');
   const [chatMessages, setChatMessages] = useState<{role: 'user'|'ai', text: string}[]>([]);
   const [isAiLoading, setIsAiLoading] = useState(false);
+  const [isExportModalOpen, setIsExportModalOpen] = useState(false);
   const router = useRouter();
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const searchInputRef = useRef<HTMLInputElement>(null);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -41,6 +47,90 @@ export default function Dashboard() {
     // Sync notifications automatically when dashboard loads
     syncNotifications();
   }, []);
+
+  // ============ Keyboard Shortcut: Ctrl+K for Global Search ============
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
+        e.preventDefault();
+        searchInputRef.current?.focus();
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, []);
+
+  // ============ Global Search: Debounced Search Effect ============
+  useEffect(() => {
+    if (globalSearch.length < 2) {
+      setSearchResults([]);
+      setIsSearching(false);
+      return;
+    }
+
+    setIsSearching(true);
+    const debounceTimer = setTimeout(async () => {
+      try {
+        const term = `%${globalSearch}%`;
+        
+        const [assetsRes, stockRes, ticketsRes] = await Promise.all([
+          supabase.from('assets')
+            .select('id, name, asset_code, status, assigned_user')
+            .or(`name.ilike.${term},asset_code.ilike.${term},assigned_user.ilike.${term},location.ilike.${term}`)
+            .limit(5),
+          supabase.from('stock_items')
+            .select('id, name, sku, quantity')
+            .or(`name.ilike.${term},sku.ilike.${term}`)
+            .limit(3),
+          supabase.from('repair_tickets')
+            .select('id, title, status, assets(name)')
+            .or(`title.ilike.${term},description.ilike.${term}`)
+            .limit(3),
+        ]);
+
+        const results: any[] = [];
+        
+        (assetsRes.data || []).forEach(a => {
+          results.push({
+            type: 'Asset',
+            id: a.id,
+            title: a.name,
+            subtitle: `${a.asset_code || ''} · ${a.status || ''} · ${a.assigned_user || 'ไม่ระบุผู้ใช้'}`,
+            link: `/assets?highlight=${a.id}`,
+          });
+        });
+
+        (stockRes.data || []).forEach(s => {
+          results.push({
+            type: 'Stock',
+            id: s.id,
+            title: s.name,
+            subtitle: `SKU: ${s.sku || '-'} · คงเหลือ: ${s.quantity || 0}`,
+            link: `/stock?highlight=${s.id}`,
+          });
+        });
+
+        (ticketsRes.data || []).forEach(t => {
+          results.push({
+            type: 'Ticket',
+            id: t.id,
+            title: t.title,
+            subtitle: `สถานะ: ${t.status || '-'} · ${(t as any).assets?.name || '-'}`,
+            link: `/tickets?highlight=${t.id}`,
+          });
+        });
+
+        setSearchResults(results);
+      } catch (err) {
+        console.error('Search error:', err);
+        setSearchResults([]);
+      } finally {
+        setIsSearching(false);
+      }
+    }, 350);
+
+    return () => clearTimeout(debounceTimer);
+  }, [globalSearch]);
 
   const { data: dashboardData, isLoading } = useQuery({
     queryKey: ['dashboard_data'],
@@ -65,10 +155,22 @@ export default function Dashboard() {
       
       const now = new Date();
       const oneWeekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+      const oneMonthAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+      const twoMonthsAgo = new Date(now.getTime() - 60 * 24 * 60 * 60 * 1000);
       
       const newAssetsThisWeek = assets.filter(x => new Date(x.created_at) >= oneWeekAgo).length;
       const newTicketsThisWeek = tickets.filter(t => new Date(t.created_at) >= oneWeekAgo).length;
       
+      // Calculate % change from last month
+      const assetsThisMonth = assets.filter(x => new Date(x.created_at) >= oneMonthAgo).length;
+      const assetsLastMonth = assets.filter(x => {
+        const d = new Date(x.created_at);
+        return d >= twoMonthsAgo && d < oneMonthAgo;
+      }).length;
+      const fromLastMonth = assetsLastMonth > 0 
+        ? Math.round(((assetsThisMonth - assetsLastMonth) / assetsLastMonth) * 100) 
+        : assetsThisMonth > 0 ? 100 : 0;
+
       const activeRate = t > 0 ? Math.round((a / t) * 100) : 0;
       const spareRate = t > 0 ? Math.round((s / t) * 100) : 0;
       const repairRate = t > 0 ? Math.round((r / t) * 100) : 0;
@@ -82,7 +184,8 @@ export default function Dashboard() {
         newTicketsThisWeek,
         activeRate,
         spareRate,
-        repairRate
+        repairRate,
+        fromLastMonth
       };
 
       // Chart Data
@@ -179,7 +282,7 @@ export default function Dashboard() {
     }
   });
 
-  const stats = dashboardData?.stats || { total: 0, active: 0, repair: 0, spare: 0, fromLastMonth: 0 };
+  const stats = dashboardData?.stats || { total: 0, active: 0, repair: 0, spare: 0, fromLastMonth: 0, newAssetsThisWeek: 0, newTicketsThisWeek: 0, activeRate: 0, spareRate: 0, repairRate: 0 };
   const chartData = dashboardData?.chartData || [];
   const departments = dashboardData?.departments || [];
   const categoriesStats = dashboardData?.categoriesStats || [];
@@ -201,25 +304,39 @@ export default function Dashboard() {
         <div className="flex-1 max-w-md relative w-full sm:mx-4">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
           <Input 
+            ref={searchInputRef}
             placeholder="Global search (Assets, Stock, Tickets)..." 
-            className="pl-10 h-10 bg-white/60 dark:bg-slate-900/60 border-slate-200/60 shadow-sm focus:ring-2 focus:ring-blue-500/20 transition-all w-full rounded-xl"
+            className="pl-10 pr-16 h-10 bg-white/60 dark:bg-slate-900/60 border-slate-200/60 shadow-sm focus:ring-2 focus:ring-blue-500/20 transition-all w-full rounded-xl"
             value={globalSearch}
             onChange={(e) => setGlobalSearch(e.target.value)}
           />
+          <kbd className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none hidden sm:inline-flex h-5 items-center gap-0.5 rounded border border-slate-200 dark:border-slate-700 bg-slate-100 dark:bg-slate-800 px-1.5 font-mono text-[10px] font-medium text-slate-500 dark:text-slate-400">
+            <Command size={10} />K
+          </kbd>
           
           {/* Search Results Dropdown */}
           {globalSearch.length >= 2 && (
             <div className="absolute top-full left-0 right-0 mt-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl shadow-xl z-50 max-h-80 overflow-y-auto transition-colors duration-300">
               {isSearching ? (
-                <div className="p-4 text-sm text-center text-slate-500">Searching...</div>
+                <div className="p-4 space-y-3">
+                  {[...Array(3)].map((_, i) => (
+                    <div key={i} className="flex items-center gap-3 px-2">
+                      <Skeleton className="h-4 w-4 rounded" />
+                      <div className="flex-1 space-y-1.5">
+                        <Skeleton className="h-4 w-3/4" />
+                        <Skeleton className="h-3 w-1/2" />
+                      </div>
+                    </div>
+                  ))}
+                </div>
               ) : searchResults.length === 0 ? (
-                <div className="p-4 text-sm text-center text-slate-500">No results found for "{globalSearch}"</div>
+                <div className="p-4 text-sm text-center text-slate-500">No results found for &quot;{globalSearch}&quot;</div>
               ) : (
                 <ul className="py-2">
                   {searchResults.map((res, i) => (
                     <li key={`${res.type}-${res.id}-${i}`}>
                       <button 
-                        onClick={() => router.push(res.link)}
+                        onClick={() => { router.push(res.link); setGlobalSearch(''); }}
                         className="w-full text-left px-4 py-3 hover:bg-slate-50 dark:hover:bg-slate-800/50 outline-none flex flex-col transition-colors border-b border-slate-100 dark:border-slate-800/50 last:border-0"
                       >
                         <div className="flex items-center justify-between w-full">
@@ -241,11 +358,8 @@ export default function Dashboard() {
         </div>
 
         <div className="flex items-center gap-3">
-          <Button variant="outline" size="sm" className="h-10 rounded-xl bg-white shadow-sm border-slate-200 hover:bg-slate-50 transition-all">
+          <Button variant="outline" size="sm" className="h-10 rounded-xl bg-white shadow-sm border-slate-200 hover:bg-slate-50 transition-all" onClick={() => setIsExportModalOpen(true)}>
             <Download className="mr-2 h-4 w-4 text-slate-500" /> Export
-          </Button>
-          <Button className="h-10 rounded-xl bg-blue-600 hover:bg-blue-700 text-white shadow-sm shadow-blue-600/20 transition-all">
-            <Calendar className="mr-2 h-4 w-4" /> Pick a date
           </Button>
         </div>
       </div>
@@ -268,104 +382,8 @@ export default function Dashboard() {
         </Tabs.List>
 
         <Tabs.Content value="overview" className="space-y-6 outline-none">
-          {/* KPI Cards */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-            {/* Total Assets */}
-            <Card className="shadow-sm border border-slate-200/60 dark:border-slate-800/60 rounded-2xl bg-white dark:bg-slate-900 hover:shadow-md transition-shadow">
-              <CardContent className="p-6 flex flex-col justify-between h-full space-y-4">
-                <div className="flex justify-between items-start">
-                  <div className="space-y-1.5">
-                    <p className="text-sm font-semibold text-slate-500 uppercase tracking-wider flex items-center gap-2">
-                      <HardDrive size={16} className="text-blue-500" /> Total Assets
-                    </p>
-                    <p className="text-4xl font-extrabold text-slate-900 dark:text-white tracking-tight">{isLoading ? '...' : stats?.total}</p>
-                    <p className="text-xs text-slate-400">Overall system assets</p>
-                  </div>
-                  <div className="p-3 bg-gradient-to-br from-blue-50 to-blue-100 dark:from-blue-900/20 dark:to-blue-800/20 text-blue-600 dark:text-blue-400 rounded-xl shadow-sm border border-blue-100 dark:border-blue-800/30">
-                    <Activity size={24} />
-                  </div>
-                </div>
-                <div className="flex items-center justify-between text-sm pt-2 border-t border-slate-100 dark:border-slate-800">
-                  <span className="text-slate-500">New this week</span>
-                  <span className="flex items-center text-emerald-600 bg-emerald-50 dark:bg-emerald-500/10 px-2 py-0.5 rounded-full font-bold">
-                    +{stats?.newAssetsThisWeek || 0} <TrendingUp size={14} className="ml-1" />
-                  </span>
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* Active Assets */}
-            <Card className="shadow-sm border border-slate-200/60 dark:border-slate-800/60 rounded-2xl bg-white dark:bg-slate-900 hover:shadow-md transition-shadow">
-              <CardContent className="p-6 flex flex-col justify-between h-full space-y-4">
-                <div className="flex justify-between items-start">
-                  <div className="space-y-1.5">
-                    <p className="text-sm font-semibold text-slate-500 uppercase tracking-wider flex items-center gap-2">
-                      <Shield size={16} className="text-emerald-500" /> Active Assets
-                    </p>
-                    <p className="text-4xl font-extrabold text-slate-900 dark:text-white tracking-tight">{isLoading ? '...' : stats?.active}</p>
-                    <p className="text-xs text-slate-400">Currently deployed</p>
-                  </div>
-                  <div className="p-3 bg-gradient-to-br from-emerald-50 to-emerald-100 dark:from-emerald-900/20 dark:to-emerald-800/20 text-emerald-600 dark:text-emerald-400 rounded-xl shadow-sm border border-emerald-100 dark:border-emerald-800/30">
-                    <Activity size={24} />
-                  </div>
-                </div>
-                <div className="flex items-center justify-between text-sm pt-2 border-t border-slate-100 dark:border-slate-800">
-                  <span className="text-slate-500">Active Rate</span>
-                  <span className="flex items-center text-emerald-600 bg-emerald-50 dark:bg-emerald-500/10 px-2 py-0.5 rounded-full font-bold">
-                    {stats?.activeRate || 0}%
-                  </span>
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* Repairing */}
-            <Card className="shadow-sm border border-slate-200/60 dark:border-slate-800/60 rounded-2xl bg-white dark:bg-slate-900 hover:shadow-md transition-shadow">
-              <CardContent className="p-6 flex flex-col justify-between h-full space-y-4">
-                <div className="flex justify-between items-start">
-                  <div className="space-y-1.5">
-                    <p className="text-sm font-semibold text-slate-500 uppercase tracking-wider flex items-center gap-2">
-                      <Wrench size={16} className="text-red-500" /> In Repair
-                    </p>
-                    <p className="text-4xl font-extrabold text-slate-900 dark:text-white tracking-tight">{isLoading ? '...' : stats?.repair}</p>
-                    <p className="text-xs text-slate-400">Currently down</p>
-                  </div>
-                  <div className="p-3 bg-gradient-to-br from-red-50 to-red-100 dark:from-red-900/20 dark:to-red-800/20 text-red-600 dark:text-red-400 rounded-xl shadow-sm border border-red-100 dark:border-red-800/30">
-                    <Wrench size={24} />
-                  </div>
-                </div>
-                <div className="flex items-center justify-between text-sm pt-2 border-t border-slate-100 dark:border-slate-800">
-                  <span className="text-slate-500">New tickets (7d)</span>
-                  <span className="flex items-center text-red-600 bg-red-50 dark:bg-red-500/10 px-2 py-0.5 rounded-full font-bold">
-                    +{stats?.newTicketsThisWeek || 0} <AlertCircle size={14} className="ml-1" />
-                  </span>
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* Spare */}
-            <Card className="shadow-sm border border-slate-200/60 dark:border-slate-800/60 rounded-2xl bg-white dark:bg-slate-900 hover:shadow-md transition-shadow">
-              <CardContent className="p-6 flex flex-col justify-between h-full space-y-4">
-                <div className="flex justify-between items-start">
-                  <div className="space-y-1.5">
-                    <p className="text-sm font-semibold text-slate-500 uppercase tracking-wider flex items-center gap-2">
-                      <Box size={16} className="text-amber-500" /> Spare Units
-                    </p>
-                    <p className="text-4xl font-extrabold text-slate-900 dark:text-white tracking-tight">{isLoading ? '...' : stats?.spare}</p>
-                    <p className="text-xs text-slate-400">Ready to deploy</p>
-                  </div>
-                  <div className="p-3 bg-gradient-to-br from-amber-50 to-amber-100 dark:from-amber-900/20 dark:to-amber-800/20 text-amber-600 dark:text-amber-400 rounded-xl shadow-sm border border-amber-100 dark:border-amber-800/30">
-                    <Box size={24} />
-                  </div>
-                </div>
-                <div className="flex items-center justify-between text-sm pt-2 border-t border-slate-100 dark:border-slate-800">
-                  <span className="text-slate-500">Spare Ratio</span>
-                  <span className="flex items-center text-amber-600 bg-amber-50 dark:bg-amber-500/10 px-2 py-0.5 rounded-full font-bold">
-                    {stats?.spareRate || 0}% 
-                  </span>
-                </div>
-              </CardContent>
-            </Card>
-          </div>
+          {/* KPI Cards — extracted component with skeleton */}
+          <DashboardKPICards stats={stats as any} isLoading={isLoading} />
 
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             
@@ -376,32 +394,36 @@ export default function Dashboard() {
                 <p className="text-sm text-muted-foreground">Showing total assets added vs retired for the last 6 months</p>
               </CardHeader>
               <CardContent>
-                <ChartContainer 
-                  config={{
-                    added: { label: "Added", color: "#3b82f6" },
-                    retired: { label: "Retired", color: "#f43f5e" }
-                  }} 
-                  className="h-[300px] w-full mt-4"
-                >
-                  <AreaChart data={chartData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
-                    <defs>
-                      <linearGradient id="fillAdded" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="5%" stopColor="var(--color-added)" stopOpacity={0.8}/>
-                        <stop offset="95%" stopColor="var(--color-added)" stopOpacity={0.1}/>
-                      </linearGradient>
-                      <linearGradient id="fillRetired" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="5%" stopColor="var(--color-retired)" stopOpacity={0.8}/>
-                        <stop offset="95%" stopColor="var(--color-retired)" stopOpacity={0.1}/>
-                      </linearGradient>
-                    </defs>
-                    <CartesianGrid vertical={false} strokeDasharray="3 3" />
-                    <XAxis dataKey="name" axisLine={false} tickLine={false} tickMargin={8} />
-                    <YAxis axisLine={false} tickLine={false} tickMargin={8} />
-                    <ChartTooltip content={<ChartTooltipContent />} />
-                    <Area type="monotone" dataKey="added" stroke="var(--color-added)" fill="url(#fillAdded)" />
-                    <Area type="monotone" dataKey="retired" stroke="var(--color-retired)" fill="url(#fillRetired)" />
-                  </AreaChart>
-                </ChartContainer>
+                {isLoading ? (
+                  <Skeleton className="h-[300px] w-full mt-4 rounded-lg" />
+                ) : (
+                  <ChartContainer 
+                    config={{
+                      added: { label: "Added", color: "#3b82f6" },
+                      retired: { label: "Retired", color: "#f43f5e" }
+                    }} 
+                    className="h-[300px] w-full mt-4"
+                  >
+                    <AreaChart data={chartData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+                      <defs>
+                        <linearGradient id="fillAdded" x1="0" y1="0" x2="0" y2="1">
+                          <stop offset="5%" stopColor="var(--color-added)" stopOpacity={0.8}/>
+                          <stop offset="95%" stopColor="var(--color-added)" stopOpacity={0.1}/>
+                        </linearGradient>
+                        <linearGradient id="fillRetired" x1="0" y1="0" x2="0" y2="1">
+                          <stop offset="5%" stopColor="var(--color-retired)" stopOpacity={0.8}/>
+                          <stop offset="95%" stopColor="var(--color-retired)" stopOpacity={0.1}/>
+                        </linearGradient>
+                      </defs>
+                      <CartesianGrid vertical={false} strokeDasharray="3 3" />
+                      <XAxis dataKey="name" axisLine={false} tickLine={false} tickMargin={8} />
+                      <YAxis axisLine={false} tickLine={false} tickMargin={8} />
+                      <ChartTooltip content={<ChartTooltipContent />} />
+                      <Area type="monotone" dataKey="added" stroke="var(--color-added)" fill="url(#fillAdded)" />
+                      <Area type="monotone" dataKey="retired" stroke="var(--color-retired)" fill="url(#fillRetired)" />
+                    </AreaChart>
+                  </ChartContainer>
+                )}
               </CardContent>
             </Card>
 
@@ -412,26 +434,38 @@ export default function Dashboard() {
                 <p className="text-sm text-muted-foreground">Current distribution of assets</p>
               </CardHeader>
               <CardContent>
-                <div className="mt-4 mb-2">
-                  <p className="text-3xl font-bold">{isLoading ? '...' : stats.total}</p>
-                  <p className="text-sm text-emerald-600 font-medium">+{stats.fromLastMonth}% from last month</p>
-                </div>
-                <ChartContainer 
-                  config={{
-                    value: { label: "Assets", color: "#10b981" }
-                  }} 
-                  className="h-[200px] w-full mt-6"
-                >
-                  <BarChart data={[
-                    { name: 'Active', value: stats.active, fill: "#10b981" },
-                    { name: 'Spare', value: stats.spare, fill: "#f59e0b" },
-                    { name: 'Repair', value: stats.repair, fill: "#ef4444" }
-                  ]} margin={{ top: 0, right: 0, left: 0, bottom: 0 }}>
-                    <XAxis dataKey="name" axisLine={false} tickLine={false} />
-                    <ChartTooltip content={<ChartTooltipContent hideLabel />} cursor={false} />
-                    <Bar dataKey="value" radius={[4, 4, 0, 0]} barSize={40} />
-                  </BarChart>
-                </ChartContainer>
+                {isLoading ? (
+                  <div className="space-y-3 mt-4">
+                    <Skeleton className="h-10 w-16" />
+                    <Skeleton className="h-4 w-28" />
+                    <Skeleton className="h-[200px] w-full rounded-lg mt-6" />
+                  </div>
+                ) : (
+                  <>
+                    <div className="mt-4 mb-2">
+                      <p className="text-3xl font-bold">{stats.total}</p>
+                      <p className={`text-sm font-medium ${stats.fromLastMonth >= 0 ? 'text-emerald-600' : 'text-red-600'}`}>
+                        {stats.fromLastMonth >= 0 ? '+' : ''}{stats.fromLastMonth}% from last month
+                      </p>
+                    </div>
+                    <ChartContainer 
+                      config={{
+                        value: { label: "Assets", color: "#10b981" }
+                      }} 
+                      className="h-[200px] w-full mt-6"
+                    >
+                      <BarChart data={[
+                        { name: 'Active', value: stats.active, fill: "#10b981" },
+                        { name: 'Spare', value: stats.spare, fill: "#f59e0b" },
+                        { name: 'Repair', value: stats.repair, fill: "#ef4444" }
+                      ]} margin={{ top: 0, right: 0, left: 0, bottom: 0 }}>
+                        <XAxis dataKey="name" axisLine={false} tickLine={false} />
+                        <ChartTooltip content={<ChartTooltipContent hideLabel />} cursor={false} />
+                        <Bar dataKey="value" radius={[4, 4, 0, 0]} barSize={40} />
+                      </BarChart>
+                    </ChartContainer>
+                  </>
+                )}
               </CardContent>
             </Card>
 
@@ -446,7 +480,9 @@ export default function Dashboard() {
                 <p className="text-sm text-muted-foreground mt-1">Active repair requests</p>
               </CardHeader>
               <CardContent>
-                {priorityStats.length === 0 ? (
+                {isLoading ? (
+                  <Skeleton className="h-[250px] w-full rounded-lg" />
+                ) : priorityStats.length === 0 ? (
                   <div className="h-[250px] flex items-center justify-center text-muted-foreground text-sm">No pending tickets.</div>
                 ) : (
                   <ChartContainer 
@@ -499,7 +535,14 @@ export default function Dashboard() {
                     </thead>
                     <tbody className="divide-y divide-border/60">
                       {isLoading ? (
-                        <tr><td colSpan={4} className="px-4 py-8 text-center text-muted-foreground">Loading...</td></tr>
+                        [...Array(3)].map((_, i) => (
+                          <tr key={i}>
+                            <td className="px-4 py-3"><Skeleton className="h-4 w-16" /></td>
+                            <td className="px-4 py-3"><Skeleton className="h-4 w-24" /></td>
+                            <td className="px-4 py-3"><Skeleton className="h-4 w-32" /></td>
+                            <td className="px-4 py-3 text-right"><Skeleton className="h-4 w-20 ml-auto" /></td>
+                          </tr>
+                        ))
                       ) : repairs.length === 0 ? (
                         <tr><td colSpan={4} className="px-4 py-8 text-center text-muted-foreground">No recent tickets.</td></tr>
                       ) : (
@@ -536,7 +579,21 @@ export default function Dashboard() {
               </CardHeader>
               <CardContent className="space-y-4">
                 {isLoading ? (
-                  <p className="text-sm text-muted-foreground text-center py-4">Loading...</p>
+                  [...Array(4)].map((_, i) => (
+                    <div key={i} className="flex items-center justify-between">
+                      <div className="flex items-center gap-3">
+                        <Skeleton className="h-9 w-9 rounded-full" />
+                        <div className="space-y-1">
+                          <Skeleton className="h-4 w-24" />
+                          <Skeleton className="h-3 w-16" />
+                        </div>
+                      </div>
+                      <div className="text-right space-y-1">
+                        <Skeleton className="h-4 w-8 ml-auto" />
+                        <Skeleton className="h-3 w-12 ml-auto" />
+                      </div>
+                    </div>
+                  ))
                 ) : departments.length === 0 ? (
                   <p className="text-sm text-muted-foreground text-center py-4">No departments found.</p>
                 ) : (
@@ -577,7 +634,12 @@ export default function Dashboard() {
               </CardHeader>
               <CardContent className="space-y-4">
                 {isLoading ? (
-                  <p className="text-sm text-muted-foreground text-center py-4">Loading...</p>
+                  [...Array(3)].map((_, i) => (
+                    <div key={i} className="flex flex-col gap-1.5 border-b pb-3 last:border-0 last:pb-0">
+                      <div className="flex justify-between"><Skeleton className="h-4 w-32" /><Skeleton className="h-5 w-20 rounded-full" /></div>
+                      <div className="flex justify-between"><Skeleton className="h-3 w-20" /><Skeleton className="h-3 w-24" /></div>
+                    </div>
+                  ))
                 ) : dashboardData?.expiringAssets?.length === 0 ? (
                   <div className="h-[150px] flex items-center justify-center text-muted-foreground text-sm">No expiring warranties.</div>
                 ) : (
@@ -614,7 +676,7 @@ export default function Dashboard() {
               <div className="h-[200px] overflow-y-auto space-y-3 pr-2 scrollbar-thin">
                 {chatMessages.length === 0 ? (
                   <p className="text-sm text-muted-foreground text-center mt-10">
-                    ถามคำถามเกี่ยวกับสินทรัพย์ เช่น "แผนกไหนมีการส่งซ่อมบ่อยที่สุด?"
+                    ถามคำถามเกี่ยวกับสินทรัพย์ เช่น &quot;แผนกไหนมีการส่งซ่อมบ่อยที่สุด?&quot;
                   </p>
                 ) : (
                   chatMessages.map((msg, i) => (
@@ -711,34 +773,38 @@ export default function Dashboard() {
                 <CardTitle className="text-base font-semibold">Assets by Category</CardTitle>
               </CardHeader>
               <CardContent>
-                <ChartContainer 
-                  config={categoriesStats.reduce((acc, curr, idx) => {
-                    const safeId = curr.name.replace(/[^a-zA-Z0-9]/g, '');
-                    const palette = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899', '#06b6d4', '#f97316', '#6366f1', '#14b8a6', '#84cc16', '#eab308', '#d946ef', '#f43f5e', '#0ea5e9'];
-                    return { ...acc, [safeId]: { label: curr.name, color: palette[idx % palette.length] } };
-                  }, {} as Record<string, any>)}
-                  className="h-[300px] w-full"
-                >
-                  <PieChart>
-                    <ChartTooltip content={<ChartTooltipContent hideLabel />} />
-                    <Pie
-                      data={categoriesStats.map(c => ({ 
-                        ...c, 
-                        safeId: c.name.replace(/[^a-zA-Z0-9]/g, ''),
-                        fill: `var(--color-${c.name.replace(/[^a-zA-Z0-9]/g, '')})` 
-                      }))}
-                      dataKey="value"
-                      nameKey="safeId"
-                      cx="50%"
-                      cy="50%"
-                      innerRadius={60}
-                      outerRadius={90}
-                      paddingAngle={2}
-                      label={({percent}: any) => percent ? `${(percent * 100).toFixed(0)}%` : null}
-                    />
-                    <ChartLegend content={<ChartLegendContent />} className="flex-wrap" />
-                  </PieChart>
-                </ChartContainer>
+                {isLoading ? (
+                  <Skeleton className="h-[300px] w-full rounded-lg" />
+                ) : (
+                  <ChartContainer 
+                    config={categoriesStats.reduce((acc, curr, idx) => {
+                      const safeId = curr.name.replace(/[^a-zA-Z0-9]/g, '');
+                      const palette = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899', '#06b6d4', '#f97316', '#6366f1', '#14b8a6', '#84cc16', '#eab308', '#d946ef', '#f43f5e', '#0ea5e9'];
+                      return { ...acc, [safeId]: { label: curr.name, color: palette[idx % palette.length] } };
+                    }, {} as Record<string, any>)}
+                    className="h-[300px] w-full"
+                  >
+                    <PieChart>
+                      <ChartTooltip content={<ChartTooltipContent hideLabel />} />
+                      <Pie
+                        data={categoriesStats.map(c => ({ 
+                          ...c, 
+                          safeId: c.name.replace(/[^a-zA-Z0-9]/g, ''),
+                          fill: `var(--color-${c.name.replace(/[^a-zA-Z0-9]/g, '')})` 
+                        }))}
+                        dataKey="value"
+                        nameKey="safeId"
+                        cx="50%"
+                        cy="50%"
+                        innerRadius={60}
+                        outerRadius={90}
+                        paddingAngle={2}
+                        label={({percent}: any) => percent ? `${(percent * 100).toFixed(0)}%` : null}
+                      />
+                      <ChartLegend content={<ChartLegendContent />} className="flex-wrap" />
+                    </PieChart>
+                  </ChartContainer>
+                )}
               </CardContent>
             </Card>
 
@@ -748,26 +814,30 @@ export default function Dashboard() {
                 <CardTitle className="text-base font-semibold">Assets by Department</CardTitle>
               </CardHeader>
               <CardContent>
-                <ChartContainer 
-                  config={{
-                    assets: { label: "Assets", color: "#8b5cf6" }
-                  }}
-                  className="h-[300px] w-full"
-                >
-                  <BarChart
-                    layout="vertical"
-                    data={departments.filter(d => d.assetCount > 0).slice(0, 5).map(d => ({ name: d.name.substring(0, 15), assets: d.assetCount }))}
-                    margin={{ top: 10, right: 30, left: 10, bottom: 0 }}
+                {isLoading ? (
+                  <Skeleton className="h-[300px] w-full rounded-lg" />
+                ) : (
+                  <ChartContainer 
+                    config={{
+                      assets: { label: "Assets", color: "#8b5cf6" }
+                    }}
+                    className="h-[300px] w-full"
                   >
-                    <CartesianGrid strokeDasharray="3 3" horizontal={true} vertical={true} stroke="#e5e7eb" />
-                    <XAxis type="number" tick={{ fontSize: 12 }} />
-                    <YAxis dataKey="name" type="category" width={80} tick={{ fontSize: 12 }} />
-                    <ChartTooltip content={<ChartTooltipContent />} cursor={false} />
-                    <Bar dataKey="assets" fill="var(--color-assets)" radius={[0, 4, 4, 0]} barSize={24}>
-                      <LabelList dataKey="assets" position="right" fontSize={12} fill="#6b7280" />
-                    </Bar>
-                  </BarChart>
-                </ChartContainer>
+                    <BarChart
+                      layout="vertical"
+                      data={departments.filter(d => d.assetCount > 0).slice(0, 5).map(d => ({ name: d.name.substring(0, 15), assets: d.assetCount }))}
+                      margin={{ top: 10, right: 30, left: 10, bottom: 0 }}
+                    >
+                      <CartesianGrid strokeDasharray="3 3" horizontal={true} vertical={true} stroke="#e5e7eb" />
+                      <XAxis type="number" tick={{ fontSize: 12 }} />
+                      <YAxis dataKey="name" type="category" width={80} tick={{ fontSize: 12 }} />
+                      <ChartTooltip content={<ChartTooltipContent />} cursor={false} />
+                      <Bar dataKey="assets" fill="var(--color-assets)" radius={[0, 4, 4, 0]} barSize={24}>
+                        <LabelList dataKey="assets" position="right" fontSize={12} fill="#6b7280" />
+                      </Bar>
+                    </BarChart>
+                  </ChartContainer>
+                )}
               </CardContent>
             </Card>
 
@@ -777,25 +847,29 @@ export default function Dashboard() {
                 <CardTitle className="text-base font-semibold">Value by Department</CardTitle>
               </CardHeader>
               <CardContent>
-                <ChartContainer 
-                  config={{
-                    value: { label: "Value (฿)", color: "#ec4899" }
-                  }}
-                  className="h-[300px] w-full"
-                >
-                  <BarChart
-                    data={departments.filter(d => d.totalValue > 0).sort((a,b) => b.totalValue - a.totalValue).slice(0, 5).map(d => ({ name: d.name.substring(0, 10), value: d.totalValue }))}
-                    margin={{ top: 10, right: 10, left: 0, bottom: 20 }}
+                {isLoading ? (
+                  <Skeleton className="h-[300px] w-full rounded-lg" />
+                ) : (
+                  <ChartContainer 
+                    config={{
+                      value: { label: "Value (฿)", color: "#ec4899" }
+                    }}
+                    className="h-[300px] w-full"
                   >
-                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e5e7eb" />
-                    <XAxis dataKey="name" tick={{ fontSize: 12 }} angle={-45} textAnchor="end" />
-                    <YAxis tick={{ fontSize: 12 }} tickFormatter={(val) => `฿${(val/1000).toFixed(0)}k`} />
-                    <ChartTooltip content={<ChartTooltipContent />} cursor={false} />
-                    <Bar dataKey="value" fill="var(--color-value)" radius={[4, 4, 0, 0]} barSize={30}>
-                      <LabelList dataKey="value" position="top" fontSize={10} fill="#6b7280" formatter={(val: number) => `฿${val.toLocaleString()}`} />
-                    </Bar>
-                  </BarChart>
-                </ChartContainer>
+                    <BarChart
+                      data={departments.filter(d => d.totalValue > 0).sort((a,b) => b.totalValue - a.totalValue).slice(0, 5).map(d => ({ name: d.name.substring(0, 10), value: d.totalValue }))}
+                      margin={{ top: 10, right: 10, left: 0, bottom: 20 }}
+                    >
+                      <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e5e7eb" />
+                      <XAxis dataKey="name" tick={{ fontSize: 12 }} angle={-45} textAnchor="end" />
+                      <YAxis tick={{ fontSize: 12 }} tickFormatter={(val) => `฿${(val/1000).toFixed(0)}k`} />
+                      <ChartTooltip content={<ChartTooltipContent />} cursor={false} />
+                      <Bar dataKey="value" fill="var(--color-value)" radius={[4, 4, 0, 0]} barSize={30}>
+                        <LabelList dataKey="value" position="top" fontSize={10} fill="#6b7280" formatter={(val: number) => `฿${val.toLocaleString()}`} />
+                      </Bar>
+                    </BarChart>
+                  </ChartContainer>
+                )}
               </CardContent>
             </Card>
 
@@ -806,55 +880,151 @@ export default function Dashboard() {
                 <p className="text-sm text-muted-foreground mt-1">Monthly trend of new assets added to the inventory.</p>
               </CardHeader>
               <CardContent>
-                <ChartContainer 
-                  config={{
-                    added: { label: "Assets Added", color: "#3b82f6" }
-                  }}
-                  className="h-[300px] w-full"
-                >
-                  <LineChart data={chartData} margin={{ top: 10, right: 30, left: 10, bottom: 0 }}>
-                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e5e7eb" />
-                    <XAxis dataKey="name" tick={{ fontSize: 12 }} />
-                    <YAxis tick={{ fontSize: 12 }} />
-                    <ChartTooltip content={<ChartTooltipContent />} cursor={false} />
-                    <Line type="monotone" dataKey="added" stroke="var(--color-added)" strokeWidth={3} dot={{ r: 4 }} activeDot={{ r: 6 }} />
-                  </LineChart>
-                </ChartContainer>
+                {isLoading ? (
+                  <Skeleton className="h-[300px] w-full rounded-lg" />
+                ) : (
+                  <ChartContainer 
+                    config={{
+                      added: { label: "Assets Added", color: "#3b82f6" }
+                    }}
+                    className="h-[300px] w-full"
+                  >
+                    <LineChart data={chartData} margin={{ top: 10, right: 30, left: 10, bottom: 0 }}>
+                      <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e5e7eb" />
+                      <XAxis dataKey="name" tick={{ fontSize: 12 }} />
+                      <YAxis tick={{ fontSize: 12 }} />
+                      <ChartTooltip content={<ChartTooltipContent />} cursor={false} />
+                      <Line type="monotone" dataKey="added" stroke="var(--color-added)" strokeWidth={3} dot={{ r: 4 }} activeDot={{ r: 6 }} />
+                    </LineChart>
+                  </ChartContainer>
+                )}
               </CardContent>
             </Card>
           </div>
         </Tabs.Content>
 
+        {/* ============ Reports Tab — Now wired to ReportExportModal ============ */}
         <Tabs.Content value="reports" className="space-y-6 outline-none">
           <Card className="shadow-sm border-border/60">
-            <CardContent className="p-12 text-center flex flex-col items-center justify-center">
-              <div className="w-16 h-16 bg-primary/10 text-primary rounded-full flex items-center justify-center mb-4">
-                <Download size={32} />
+            <CardHeader>
+              <CardTitle className="text-lg font-bold">Custom Reports</CardTitle>
+              <p className="text-sm text-muted-foreground mt-1">Generate and download reports in Excel or PDF format.</p>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                {[
+                  { label: 'Asset Inventory', desc: 'Complete list of all IT assets', types: ['assets'] },
+                  { label: 'Repair Tickets', desc: 'All repair and support tickets', types: ['tickets'] },
+                  { label: 'Stock Movements', desc: 'Stock transaction history', types: ['stock'] },
+                  { label: 'Full Report', desc: 'All data combined', types: ['assets', 'tickets', 'stock', 'audit'] },
+                ].map((report, i) => (
+                  <button
+                    key={i}
+                    onClick={() => setIsExportModalOpen(true)}
+                    className="text-left p-5 rounded-xl border border-border/60 bg-card hover:bg-muted/30 hover:border-primary/30 hover:shadow-md transition-all group"
+                  >
+                    <div className="w-10 h-10 rounded-lg bg-primary/10 text-primary flex items-center justify-center mb-3 group-hover:scale-110 transition-transform">
+                      <Download size={20} />
+                    </div>
+                    <h4 className="font-semibold text-sm text-foreground">{report.label}</h4>
+                    <p className="text-xs text-muted-foreground mt-1">{report.desc}</p>
+                  </button>
+                ))}
               </div>
-              <h3 className="text-lg font-bold">Custom Reports Module</h3>
-              <p className="text-muted-foreground mt-2 max-w-md mx-auto">
-                Select your preferred metrics, generate PDF/Excel reports, and schedule automated emails to department heads.
-              </p>
-              <Button className="mt-6" variant="outline">Request Feature Access</Button>
             </CardContent>
           </Card>
         </Tabs.Content>
 
+        {/* ============ Notifications Tab — Now shows inline notification list ============ */}
         <Tabs.Content value="notifications" className="space-y-6 outline-none">
-          <Card className="shadow-sm border-border/60">
-            <CardContent className="p-12 text-center flex flex-col items-center justify-center">
-              <div className="w-16 h-16 bg-amber-100 text-amber-600 rounded-full flex items-center justify-center mb-4">
-                <Activity size={32} />
-              </div>
-              <h3 className="text-lg font-bold">Alerts & Notifications</h3>
-              <p className="text-muted-foreground mt-2 max-w-md mx-auto">
-                No new critical alerts. All systems operational and asset thresholds are within normal limits.
-              </p>
-              <Button className="mt-6" variant="outline">Configure Alert Rules</Button>
-            </CardContent>
-          </Card>
+          <NotificationsInlinePanel />
         </Tabs.Content>
       </Tabs.Root>
+
+      {/* Report Export Modal */}
+      <ReportExportModal
+        isOpen={isExportModalOpen}
+        onClose={() => setIsExportModalOpen(false)}
+      />
     </div>
+  );
+}
+
+// ============ Inline Notifications Panel for Dashboard Tab ============
+function NotificationsInlinePanel() {
+  const { data: notifications = [], isLoading } = useQuery({
+    queryKey: ['notifications_dashboard'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('notifications')
+        .select('*')
+        .order('created_at', { ascending: false })
+        .limit(30);
+      if (error) return [];
+      return data || [];
+    },
+  });
+
+  const getColor = (severity: string) => {
+    switch(severity) {
+      case 'error': case 'danger': return 'text-red-600 bg-red-100 dark:bg-red-500/20 dark:text-red-400';
+      case 'warning': return 'text-amber-600 bg-amber-100 dark:bg-amber-500/20 dark:text-amber-400';
+      case 'info': return 'text-blue-600 bg-blue-100 dark:bg-blue-500/20 dark:text-blue-400';
+      default: return 'text-slate-500 bg-slate-100 dark:bg-slate-700 dark:text-slate-300';
+    }
+  };
+
+  return (
+    <Card className="shadow-sm border-border/60">
+      <CardHeader>
+        <CardTitle className="text-lg font-bold flex items-center gap-2">
+          <AlertCircle size={20} className="text-amber-500" />
+          Alerts & Notifications
+        </CardTitle>
+        <p className="text-sm text-muted-foreground mt-1">Recent system notifications and alerts.</p>
+      </CardHeader>
+      <CardContent>
+        {isLoading ? (
+          <div className="space-y-4">
+            {[...Array(5)].map((_, i) => (
+              <div key={i} className="flex items-start gap-3">
+                <Skeleton className="h-8 w-8 rounded-full shrink-0" />
+                <div className="flex-1 space-y-1.5">
+                  <Skeleton className="h-4 w-3/4" />
+                  <Skeleton className="h-3 w-1/2" />
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : notifications.length === 0 ? (
+          <div className="py-16 flex flex-col items-center justify-center text-center">
+            <div className="w-16 h-16 bg-emerald-100 dark:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 rounded-full flex items-center justify-center mb-4">
+              <Activity size={32} />
+            </div>
+            <h3 className="text-lg font-bold">All caught up!</h3>
+            <p className="text-muted-foreground mt-2 max-w-md mx-auto">
+              No new critical alerts. All systems operational and asset thresholds are within normal limits.
+            </p>
+          </div>
+        ) : (
+          <div className="divide-y divide-border/60">
+            {notifications.map((n: any) => (
+              <div key={n.id} className={`flex items-start gap-3 py-4 first:pt-0 last:pb-0 ${!n.is_read ? 'bg-primary/5 -mx-6 px-6 rounded-lg' : ''}`}>
+                <div className={`p-2 rounded-full shrink-0 ${getColor(n.severity)}`}>
+                  <AlertCircle size={16} />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className={`text-sm leading-snug ${!n.is_read ? 'font-semibold' : 'font-medium'}`}>{n.title}</p>
+                  <p className="text-xs text-muted-foreground line-clamp-2 mt-0.5">{n.message}</p>
+                  <p className="text-[10px] text-muted-foreground mt-1.5">
+                    {n.created_at ? format(new Date(n.created_at), 'dd MMM yyyy HH:mm') : ''}
+                  </p>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </CardContent>
+    </Card>
   );
 }

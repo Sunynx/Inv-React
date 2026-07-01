@@ -91,11 +91,11 @@ export default function StockPage() {
         const item = row.original;
         const isLowStock = item.quantity <= (item.minimum_quantity || 0);
         return isLowStock ? (
-          <div className="inline-flex items-center text-red-600 text-[13px] font-medium bg-red-50 border border-red-200/50 px-2.5 py-1 rounded-full">
+          <div className="inline-flex items-center text-red-600 dark:text-red-400 text-[13px] font-medium bg-red-50 dark:bg-red-500/10 border border-red-200/50 dark:border-red-500/20 px-2.5 py-1 rounded-full transition-colors">
             <AlertTriangle className="w-3.5 h-3.5 mr-1.5" /> Low Stock
           </div>
         ) : (
-          <div className="inline-flex items-center text-emerald-600 text-[13px] font-medium bg-emerald-50 border border-emerald-200/50 px-2.5 py-1 rounded-full">
+          <div className="inline-flex items-center text-emerald-600 dark:text-emerald-400 text-[13px] font-medium bg-emerald-50 dark:bg-emerald-500/10 border border-emerald-200/50 dark:border-emerald-500/20 px-2.5 py-1 rounded-full transition-colors">
             <CheckCircle2 className="w-3.5 h-3.5 mr-1.5" /> Good
           </div>
         );
@@ -154,12 +154,12 @@ export default function StockPage() {
           <Tabs.Root value={filterTab} onValueChange={setFilterTab} className="w-full md:w-auto">
             <Tabs.List className="flex gap-1">
               {[
-                { value: 'all', label: 'All Items', count: items.length, color: 'bg-gray-200 text-gray-600' },
-                { value: 'low', label: 'Low Stock', count: countLow, color: 'bg-red-100 text-red-600' },
-                { value: 'active', label: 'Active', count: countActive, color: 'bg-gray-200 text-gray-600' },
+                { value: 'all', label: 'All Items', count: items.length, color: 'bg-slate-200 text-slate-700 dark:bg-slate-700 dark:text-slate-200' },
+                { value: 'low', label: 'Low Stock', count: countLow, color: 'bg-red-100 text-red-600 dark:bg-red-500/20 dark:text-red-400' },
+                { value: 'active', label: 'Active', count: countActive, color: 'bg-slate-200 text-slate-700 dark:bg-slate-700 dark:text-slate-200' },
               ].map(tab => (
-                <Tabs.Trigger key={tab.value} value={tab.value} className="px-3 py-1.5 text-sm font-medium text-gray-500 hover:text-gray-900 data-[state=active]:text-gray-900 data-[state=active]:bg-gray-100 rounded-md transition-colors flex items-center gap-2">
-                  {tab.label} <span className={`${tab.color} px-1.5 py-0.5 rounded-full text-[10px] font-semibold`}>{tab.count}</span>
+                <Tabs.Trigger key={tab.value} value={tab.value} className="px-3 py-1.5 text-sm font-medium text-muted-foreground hover:text-foreground data-[state=active]:text-foreground data-[state=active]:bg-muted rounded-md transition-colors flex items-center gap-2">
+                  {tab.label} <span className={`${tab.color} px-1.5 py-0.5 rounded-full text-[10px] font-semibold transition-colors`}>{tab.count}</span>
                 </Tabs.Trigger>
               ))}
             </Tabs.List>
@@ -167,8 +167,8 @@ export default function StockPage() {
 
           <div className="flex flex-wrap items-center gap-3 w-full md:w-auto mt-3 md:mt-0">
             <div className="relative w-full md:w-64">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
-              <Input placeholder="Search..." className="pl-9 h-9 bg-gray-50 border-gray-200 text-sm" value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} />
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Input placeholder="Search..." className="pl-9 h-9 bg-background border-input text-sm transition-colors" value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} />
             </div>
             <Button variant="outline" size="sm" className="h-9 shrink-0" onClick={() => setIsExportModalOpen(true)}>
               <Download className="w-4 h-4 mr-1.5" /> Export
@@ -179,7 +179,7 @@ export default function StockPage() {
           </div>
         </div>
 
-        <div className="p-4 bg-gray-50/30">
+        <div className="p-4 bg-muted/10 transition-colors">
           <DataTable columns={columns} data={filteredItems} isLoading={isLoading} />
         </div>
       </Card>

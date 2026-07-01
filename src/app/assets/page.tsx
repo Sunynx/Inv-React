@@ -7,6 +7,9 @@ import { QRCodeSVG } from 'qrcode.react';
 import toast from 'react-hot-toast';
 import AssetSheet from '@/components/AssetSheet';
 import ReportExportModal from '@/components/ReportExportModal';
+import { EmptyState } from '@/components/EmptyState';
+import ConfirmDialog from '@/components/ConfirmDialog';
+import { logAudit, formatAuditDetails } from '@/lib/auditLog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card } from '@/components/ui/card';
@@ -36,6 +39,7 @@ export default function AssetsPage() {
   const [sheetMode, setSheetMode] = useState<'view'|'edit'>('view');
   const [selectedAssetId, setSelectedAssetId] = useState<string | undefined>(undefined);
   const [isExportModalOpen, setIsExportModalOpen] = useState(false);
+  const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
 
   const { data: assets = [], isLoading } = useQuery({
     queryKey: ['assets'],
@@ -54,7 +58,13 @@ export default function AssetsPage() {
       const { error } = await supabase.from('assets').delete().eq('id', id);
       if (error) throw error;
     },
-    onSuccess: () => {
+    onSuccess: (_data, deletedId) => {
+      const deletedAsset = assets.find(a => a.id === deletedId);
+      logAudit({
+        asset_id: deletedId,
+        action: 'delete',
+        details: formatAuditDetails('delete', deletedAsset?.name || 'Unknown'),
+      });
       toast.success('Asset deleted');
       queryClient.invalidateQueries({ queryKey: ['assets'] });
     },
@@ -62,8 +72,13 @@ export default function AssetsPage() {
   });
 
   const handleDelete = (id: string) => {
-    if (confirm('Are you sure you want to delete this asset?')) {
-      deleteMutation.mutate(id);
+    setDeleteConfirmId(id);
+  };
+
+  const confirmDelete = () => {
+    if (deleteConfirmId) {
+      deleteMutation.mutate(deleteConfirmId);
+      setDeleteConfirmId(null);
     }
   };
 
@@ -290,6 +305,14 @@ export default function AssetsPage() {
               setSheetMode('view');
               setIsSheetOpen(true);
             }}
+            emptyState={
+              <EmptyState 
+                title="ไม่พบข้อมูลทรัพย์สิน" 
+                description="ยังไม่มีรายการทรัพย์สินที่ตรงกับเงื่อนไขการค้นหาของคุณ หรือยังไม่ได้เพิ่มข้อมูลเข้าสู่ระบบ"
+                actionLabel="เพิ่มทรัพย์สินใหม่"
+                onAction={() => { setSelectedAssetId(undefined); setSheetMode('edit'); setIsSheetOpen(true); }}
+              />
+            }
           />
         </div>
       </Card>
@@ -305,6 +328,16 @@ export default function AssetsPage() {
         onEdit={() => setSheetMode('edit')}
       />
       
+      <ConfirmDialog
+        isOpen={!!deleteConfirmId}
+        onClose={() => setDeleteConfirmId(null)}
+        onConfirm={confirmDelete}
+        title="ลบทรัพย์สิน"
+        description="คุณแน่ใจหรือไม่ว่าต้องการลบทรัพย์สินนี้? ข้อมูลที่เกี่ยวข้องทั้งหมดจะถูกลบถาวรและไม่สามารถย้อนกลับได้"
+        confirmLabel="ลบทรัพย์สิน"
+        variant="danger"
+      />
+
       <ReportExportModal 
         isOpen={isExportModalOpen} 
         onClose={() => setIsExportModalOpen(false)} 

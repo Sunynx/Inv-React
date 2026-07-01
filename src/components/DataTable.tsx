@@ -68,6 +68,7 @@ interface DataTableProps<TData, TValue> {
   data: TData[];
   isLoading?: boolean;
   onRowClick?: (row: TData) => void;
+  emptyState?: React.ReactNode;
 }
 
 export function DataTable<TData, TValue>({
@@ -75,6 +76,7 @@ export function DataTable<TData, TValue>({
   data,
   isLoading = false,
   onRowClick,
+  emptyState,
 }: DataTableProps<TData, TValue>) {
   const [sorting, setSorting] = useState<SortingState>([]);
 
@@ -156,8 +158,8 @@ export function DataTable<TData, TValue>({
               ))
             ) : (
               <TableRow>
-                <TableCell colSpan={columns.length} className="h-24 text-center">
-                  No results.
+                <TableCell colSpan={columns.length} className="h-64 text-center p-0 align-middle">
+                  {emptyState ? emptyState : <div className="py-12 text-muted-foreground">No results found.</div>}
                 </TableCell>
               </TableRow>
             )}
@@ -175,7 +177,7 @@ export function DataTable<TData, TValue>({
                 table.setPageSize(Number(value))
               }}
             >
-              <SelectTrigger className="h-8 w-[70px] bg-white">
+              <SelectTrigger className="h-8 w-[70px] bg-background">
                 <SelectValue placeholder={table.getState().pagination.pageSize} />
               </SelectTrigger>
               <SelectContent side="top">
@@ -200,7 +202,7 @@ export function DataTable<TData, TValue>({
             variant="outline"
             size="sm"
             onClick={() => exportDataToCSV(data, columns, `export_${new Date().toISOString().split('T')[0]}.csv`)}
-            className="h-8 hidden sm:flex text-emerald-600 hover:text-emerald-700 hover:bg-emerald-50 border-emerald-200"
+            className="h-8 hidden sm:flex text-emerald-600 hover:text-emerald-700 hover:bg-emerald-50 border-emerald-200 dark:text-emerald-400 dark:hover:text-emerald-300 dark:hover:bg-emerald-500/10 dark:border-emerald-500/20 transition-colors"
           >
             <Download className="mr-2 h-3 w-3" /> Export CSV
           </Button>
