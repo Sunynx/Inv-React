@@ -103,32 +103,53 @@ export default function ProcurementModal({ isOpen, onClose, document, onSaved }:
   const finalTotalAmount = isOverride ? Number(String(manualTotal).replace(/,/g, '')) : autoTotalAmount;
 
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
+    const files = Array.from(e.target.files || []);
+    if (files.length === 0) return;
 
     setUploading(true);
     try {
-      const fileExt = file.name.split('.').pop();
-      const fileName = `${Date.now()}-${Math.random().toString(36).substring(7)}.${fileExt}`;
-      const { data, error } = await supabase.storage
-        .from('pr-attachments')
-        .upload(fileName, file);
+      const uploadPromises = files.map(async (file) => {
+        let processedFile = file;
+        let fileExt = file.name.split('.').pop()?.toLowerCase() || '';
+        let originalName = file.name;
+        
+        if (fileExt === 'heic' || fileExt === 'heif' || file.type === 'image/heic' || file.type === 'image/heif') {
+          try {
+            const heic2anyModule = await import('heic2any');
+            const heic2any = heic2anyModule.default || heic2anyModule;
+            const converted = await heic2any({ blob: file, toType: 'image/jpeg', quality: 0.8 });
+            const convertedBlob = Array.isArray(converted) ? converted[0] : converted;
+            originalName = file.name.replace(/\.(heic|heif)$/i, '.jpg');
+            processedFile = new File([convertedBlob], originalName, { type: 'image/jpeg' });
+            fileExt = 'jpg';
+          } catch (err) {
+            console.error('HEIC conversion failed:', err);
+          }
+        }
+        
+        const fileName = `${Date.now()}-${Math.random().toString(36).substring(7)}.${fileExt}`;
+        const { error } = await supabase.storage
+          .from('pr-attachments')
+          .upload(fileName, processedFile);
 
-      if (error) throw error;
+        if (error) throw error;
 
-      const { data: { publicUrl } } = supabase.storage
-        .from('pr-attachments')
-        .getPublicUrl(fileName);
+        const { data: { publicUrl } } = supabase.storage
+          .from('pr-attachments')
+          .getPublicUrl(fileName);
 
-      const newAttachments = [...(metadata.attachments || []), { name: file.name, url: publicUrl }];
+        return { name: originalName, url: publicUrl };
+      });
+
+      const newFiles = await Promise.all(uploadPromises);
+      const newAttachments = [...(metadata.attachments || []), ...newFiles];
       updateMeta('attachments', newAttachments);
-      toast.success('อัปโหลดไฟล์สำเร็จ');
+      toast.success(`อัปโหลดไฟล์สำเร็จ ${newFiles.length} ไฟล์`);
     } catch (error: any) {
       console.error('Upload error:', error);
-      toast.error('ไม่สามารถอัปโหลดได้ โปรดตรวจสอบว่าได้สร้าง Bucket "pr-attachments" ไว้หรือยัง');
+      toast.error('ไม่สามารถอัปโหลดได้ โปรดตรวจสอบข้อผิดพลาด (หรืออาจจะยังไม่ได้สร้าง Bucket "pr-attachments")');
     } finally {
       setUploading(false);
-      // clear input
       e.target.value = '';
     }
   };
@@ -358,7 +379,7 @@ export default function ProcurementModal({ isOpen, onClose, document, onSaved }:
                 <div className="flex items-center justify-between mb-2">
                   <div className="font-semibold flex items-center gap-2"><Paperclip className="w-4 h-4" /> เอกสารแนบ (ใบเสนอราคา ฯลฯ)</div>
                   <div>
-                    <input type="file" id="pr-file-upload" className="hidden" onChange={handleFileUpload} disabled={uploading} />
+                    <input type="file" id="pr-file-upload" className="hidden" accept=".pdf,.xlsx,.xls,image/*,.heic,.heif" multiple onChange={handleFileUpload} disabled={uploading} />
                     <Label htmlFor="pr-file-upload" className={`cursor-pointer inline-flex items-center justify-center rounded-md text-xs font-medium transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50 bg-secondary text-secondary-foreground shadow-sm hover:bg-secondary/80 h-7 px-3 ${uploading ? 'opacity-50 pointer-events-none' : ''}`}>
                       {uploading ? <Loader2 className="w-3 h-3 mr-1 animate-spin" /> : <Plus className="w-3 h-3 mr-1" />} อัปโหลดไฟล์
                     </Label>

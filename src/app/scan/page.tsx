@@ -22,6 +22,16 @@ export default function ScanPage() {
   const [sheetMode, setSheetMode] = useState<'view' | 'edit'>('view');
 
   useEffect(() => {
+    // Run only once on mount to check for ?code= in URL
+    const params = new URLSearchParams(window.location.search);
+    const codeFromUrl = params.get('code');
+    if (codeFromUrl) {
+      setScanResult(codeFromUrl);
+      setTimeout(() => lookupAsset(codeFromUrl), 500);
+    }
+  }, []);
+
+  useEffect(() => {
     return () => {
       if (scanner) {
         scanner.stop();

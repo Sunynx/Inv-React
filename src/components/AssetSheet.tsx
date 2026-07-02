@@ -10,6 +10,7 @@ import * as z from 'zod';
 
 import { Camera, Upload, X, CheckCircle2, AlertCircle, Clock, Ban, ChevronLeft, ChevronRight, Edit, FileText, FileSpreadsheet, Paperclip, Cpu, Monitor, Wifi, Users, ShoppingCart, Image as ImageIcon, Wand2, Printer } from 'lucide-react';
 import SignatureCanvas from 'react-signature-canvas';
+import { QRCodeSVG } from 'qrcode.react';
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -419,6 +420,24 @@ export default function AssetSheet({ isOpen, onClose, assetId, mode = 'edit', on
                       <DetailItem label="Category" value={categories.find(c => c.id === formData.category_id)?.name} />
                       <DetailItem label="Department" value={departments.find(d => d.id === formData.department_id)?.name} />
                       <DetailItem label="Serial Number" value={formData.serial_number} />
+                      {formData.asset_code && (
+                        <div className="pt-2">
+                          <p className="text-xs text-muted-foreground mb-1">Asset QR Code</p>
+                          <div className="bg-white p-2 rounded-md border inline-block shadow-sm">
+                            <QRCodeSVG 
+                              value={typeof window !== 'undefined' ? `${window.location.origin}/scan?code=${formData.asset_code}` : ''} 
+                              size={80}
+                              level="H"
+                              imageSettings={{
+                                src: "/logorpm.png", 
+                                height: 18,
+                                width: 18,
+                                excavate: true,
+                              }}
+                            />
+                          </div>
+                        </div>
+                      )}
                     </div>
                   </div>
 
