@@ -54,7 +54,6 @@ export default function AssetsPage() {
   const [selectedAssetId, setSelectedAssetId] = useState<string | undefined>(undefined);
   const [isExportModalOpen, setIsExportModalOpen] = useState(false);
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
-  const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
 
   const { data: assets = [], isLoading } = useQuery({
     queryKey: ['assets'],
