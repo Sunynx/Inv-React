@@ -1,5 +1,5 @@
 'use client';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
@@ -33,6 +33,19 @@ const priorityConfig: Record<string, string> = {
   'เร่งด่วน': 'bg-red-200 text-red-800 dark:bg-red-950 dark:text-red-400',
 };
 
+function HighlightHandler({ onHighlight }: { onHighlight: (id: string) => void }) {
+  const searchParams = useSearchParams();
+  const highlightId = searchParams.get('highlight');
+
+  useEffect(() => {
+    if (highlightId) {
+      onHighlight(highlightId);
+    }
+  }, [highlightId, onHighlight]);
+
+  return null;
+}
+
 export default function TicketsPage() {
   const queryClient = useQueryClient();
   const [searchTerm, setSearchTerm] = useState('');
@@ -41,16 +54,6 @@ export default function TicketsPage() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedTicket, setSelectedTicket] = useState<any | null>(null);
   const [isExportModalOpen, setIsExportModalOpen] = useState(false);
-
-  const searchParams = useSearchParams();
-  const highlightId = searchParams.get('highlight');
-
-  useEffect(() => {
-    if (highlightId) {
-      setSelectedTicket({ id: highlightId });
-      setIsModalOpen(true);
-    }
-  }, [highlightId]);
 
   const { data: tickets = [], isLoading } = useQuery({
     queryKey: ['repair_tickets'],
@@ -236,6 +239,13 @@ export default function TicketsPage() {
         onClose={() => setIsExportModalOpen(false)} 
         initialDataTypes={['tickets']}
       />
+
+      <Suspense fallback={null}>
+        <HighlightHandler onHighlight={(id) => {
+          setSelectedTicket({ id });
+          setIsModalOpen(true);
+        }} />
+      </Suspense>
     </div>
   );
 }

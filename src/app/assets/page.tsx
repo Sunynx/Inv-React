@@ -1,5 +1,5 @@
 'use client';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
@@ -29,6 +29,19 @@ const statusConfig: Record<string, { icon: any; className: string }> = {
   'จำหน่าย': { icon: Ban, className: 'text-gray-500 bg-gray-50 border-gray-200/50' },
 };
 
+function HighlightHandler({ onHighlight }: { onHighlight: (id: string) => void }) {
+  const searchParams = useSearchParams();
+  const highlightId = searchParams.get('highlight');
+
+  useEffect(() => {
+    if (highlightId) {
+      onHighlight(highlightId);
+    }
+  }, [highlightId, onHighlight]);
+
+  return null;
+}
+
 export default function AssetsPage() {
   const queryClient = useQueryClient();
   const [searchTerm, setSearchTerm] = useState('');
@@ -41,17 +54,7 @@ export default function AssetsPage() {
   const [selectedAssetId, setSelectedAssetId] = useState<string | undefined>(undefined);
   const [isExportModalOpen, setIsExportModalOpen] = useState(false);
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
-
-  const searchParams = useSearchParams();
-  const highlightId = searchParams.get('highlight');
-
-  useEffect(() => {
-    if (highlightId) {
-      setSelectedAssetId(highlightId);
-      setSheetMode('view');
-      setIsSheetOpen(true);
-    }
-  }, [highlightId]);
+  const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
 
   const { data: assets = [], isLoading } = useQuery({
     queryKey: ['assets'],
@@ -368,6 +371,14 @@ export default function AssetsPage() {
           ))}
         </div>
       </div>
+
+      <Suspense fallback={null}>
+        <HighlightHandler onHighlight={(id) => {
+          setSelectedAssetId(id);
+          setSheetMode('view');
+          setIsSheetOpen(true);
+        }} />
+      </Suspense>
     </div>
   );
 }

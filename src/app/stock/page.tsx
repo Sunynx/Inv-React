@@ -1,5 +1,5 @@
 'use client';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
@@ -16,6 +16,19 @@ import StockTxModal from '@/components/StockTxModal';
 import { DataTable } from '@/components/DataTable';
 import { ColumnDef } from '@tanstack/react-table';
 
+function HighlightHandler({ onHighlight }: { onHighlight: (id: string) => void }) {
+  const searchParams = useSearchParams();
+  const highlightId = searchParams.get('highlight');
+
+  useEffect(() => {
+    if (highlightId) {
+      onHighlight(highlightId);
+    }
+  }, [highlightId, onHighlight]);
+
+  return null;
+}
+
 export default function StockPage() {
   const queryClient = useQueryClient();
   const [searchTerm, setSearchTerm] = useState('');
@@ -27,16 +40,6 @@ export default function StockPage() {
   const [isTxModalOpen, setIsTxModalOpen] = useState(false);
   const [txType, setTxType] = useState<'receive'|'distribute'>('receive');
   const [selectedTxItem, setSelectedTxItem] = useState<any | null>(null);
-
-  const searchParams = useSearchParams();
-  const highlightId = searchParams.get('highlight');
-
-  useEffect(() => {
-    if (highlightId) {
-      setSelectedItemId(highlightId);
-      setIsItemModalOpen(true);
-    }
-  }, [highlightId]);
 
   const { data: items = [], isLoading } = useQuery({
     queryKey: ['stock_items'],
@@ -204,6 +207,13 @@ export default function StockPage() {
         onClose={() => setIsExportModalOpen(false)} 
         initialDataTypes={['stock']}
       />
+
+      <Suspense fallback={null}>
+        <HighlightHandler onHighlight={(id) => {
+          setSelectedItemId(id);
+          setIsItemModalOpen(true);
+        }} />
+      </Suspense>
     </div>
   );
 }
