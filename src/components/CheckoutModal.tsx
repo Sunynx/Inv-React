@@ -60,6 +60,8 @@ export default function CheckoutModal({ isOpen, onClose, recordId }: { isOpen: b
     },
     onSuccess: () => {
       toast.success(recordId ? 'Record updated' : 'Checkout recorded');
+      queryClient.invalidateQueries({ queryKey: ['asset_checkouts'] });
+      queryClient.invalidateQueries({ queryKey: ['assets'] });
       onClose();
     },
     onError: (err: any) => toast.error('Error saving: ' + err.message)

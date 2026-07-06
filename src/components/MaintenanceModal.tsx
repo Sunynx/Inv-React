@@ -109,7 +109,7 @@ export default function MaintenanceModal({ isOpen, onClose, recordId }: { isOpen
               <div className="space-y-2">
                 <Label>Frequency (ความถี่)</Label>
                 <Select value={formData.frequency || 'monthly'} onValueChange={(v) => handleSelectChange('frequency', v)}>
-                  <SelectTrigger><SelectValue placeholder="Select Frequency..." /></SelectTrigger>
+                  <SelectTrigger><SelectValue placeholder="Select Frequency...">{({'daily':'Daily','weekly':'Weekly','monthly':'Monthly','quarterly':'Quarterly','yearly':'Yearly'} as Record<string,string>)[formData.frequency] || 'Select Frequency...'}</SelectValue></SelectTrigger>
                   <SelectContent>
                     <SelectItem value="daily">Daily</SelectItem>
                     <SelectItem value="weekly">Weekly</SelectItem>
@@ -128,7 +128,7 @@ export default function MaintenanceModal({ isOpen, onClose, recordId }: { isOpen
               <div className="space-y-2">
                 <Label>Status (สถานะ)</Label>
                 <Select value={formData.status || 'pending'} onValueChange={(v) => handleSelectChange('status', v)}>
-                  <SelectTrigger><SelectValue placeholder="Select Status..." /></SelectTrigger>
+                  <SelectTrigger><SelectValue placeholder="Select Status...">{({'pending':'รอคิว (Pending)','completed':'เสร็จสิ้น (Completed)','cancelled':'ยกเลิก (Cancelled)'} as Record<string,string>)[formData.status] || 'Select Status...'}</SelectValue></SelectTrigger>
                   <SelectContent>
                     <SelectItem value="pending">รอคิว (Pending)</SelectItem>
                     <SelectItem value="completed">เสร็จสิ้น (Completed)</SelectItem>

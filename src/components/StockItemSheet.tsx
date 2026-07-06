@@ -137,7 +137,9 @@ export default function StockItemSheet({ isOpen, onClose, itemId }: { isOpen: bo
                   <Controller name="category_id" control={form.control} render={({ field }) => (
                     <Select value={field.value || ''} onValueChange={field.onChange}>
                       <SelectTrigger className="h-9 shadow-sm bg-background">
-                        <SelectValue placeholder="Select..." />
+                        <SelectValue placeholder="Select...">
+                          {field.value ? categories.find(c => c.id === field.value)?.name : "Select..."}
+                        </SelectValue>
                       </SelectTrigger>
                       <SelectContent>
                         {categories.map(c => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}

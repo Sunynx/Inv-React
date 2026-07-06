@@ -8,7 +8,7 @@ import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 
-import { Camera, Upload, X, CheckCircle2, AlertCircle, Clock, Ban, ChevronLeft, ChevronRight, Edit, FileText, FileSpreadsheet, Paperclip, Cpu, Monitor, Wifi, Users, ShoppingCart, Image as ImageIcon, Wand2, Printer } from 'lucide-react';
+import { Camera, Upload, X, CheckCircle2, AlertCircle, Clock, Ban, ChevronLeft, ChevronRight, Edit, FileText, FileSpreadsheet, Paperclip, Cpu, Monitor, Wifi, Users, ShoppingCart, Image as ImageIcon, Wand2, Printer, PenLine } from 'lucide-react';
 import SignatureCanvas from 'react-signature-canvas';
 import { QRCodeSVG } from 'qrcode.react';
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
@@ -88,6 +88,9 @@ export default function AssetSheet({ isOpen, onClose, assetId, mode = 'edit', on
   const [referenceUrl, setReferenceUrl] = useState<string | null>(null);
   const [signatureUrl, setSignatureUrl] = useState<string | null>(null);
   const [newSignature, setNewSignature] = useState(false);
+  const [showSignDialog, setShowSignDialog] = useState(false);
+  const [savingSignature, setSavingSignature] = useState(false);
+  const viewSigCanvas = useRef<SignatureCanvas>(null);
 
   const form = useForm<AssetFormValues>({
     resolver: zodResolver(assetSchema),
@@ -110,6 +113,7 @@ export default function AssetSheet({ isOpen, onClose, assetId, mode = 'edit', on
   });
 
   const { departments = [], categories = [] } = lookups || {};
+  const isLoadingLookups = !lookups;
 
   const { data: assetData, isLoading: isLoadingAsset } = useQuery({
     queryKey: ['asset', assetId],
@@ -219,6 +223,12 @@ export default function AssetSheet({ isOpen, onClose, assetId, mode = 'edit', on
       
       const payload = { ...data, reference_url: referenceUrl, thumbnail_url: thumbnailUrl };
       
+      // Remove signature fields before saving to assets table
+      const sigUrl = payload.signature_url;
+      const isNewSig = payload.new_signature;
+      delete payload.signature_url;
+      delete payload.new_signature;
+      
       if (assetId) {
         const { error } = await supabase.from('assets').update(payload).eq('id', assetId);
         if (error) throw error;
@@ -239,12 +249,12 @@ export default function AssetSheet({ isOpen, onClose, assetId, mode = 'edit', on
          }
       }
       
-      if (signatureUrl) {
-        if (newSignature) {
-           const { error: sigError } = await supabase.from('signatures').insert([{ asset_id: finalAssetId, signature_url: signatureUrl }]);
+      if (sigUrl) {
+        if (isNewSig) {
+           const { error: sigError } = await supabase.from('signatures').insert([{ asset_id: finalAssetId, signature_url: sigUrl }]);
            if (sigError) throw sigError;
         }
-      } else if (signatureUrl === null && assetId) {
+      } else if (sigUrl === null && assetId) {
         await supabase.from('signatures').delete().eq('asset_id', assetId);
       }
 
@@ -275,6 +285,10 @@ export default function AssetSheet({ isOpen, onClose, assetId, mode = 'edit', on
       });
       toast.success(assetId ? 'Asset updated' : 'Asset created');
       queryClient.invalidateQueries({ queryKey: ['assets'] });
+      if (assetId) {
+        queryClient.invalidateQueries({ queryKey: ['asset', assetId] });
+      }
+      queryClient.invalidateQueries({ queryKey: ['dashboard_data'] });
       onClose();
     },
     onError: (err: any) => toast.error('Error: ' + err.message)
@@ -373,6 +387,10 @@ export default function AssetSheet({ isOpen, onClose, assetId, mode = 'edit', on
               </div>
               <div className="flex flex-col items-end gap-2 pr-8 mt-2 sm:mt-0 print:hidden">
                 <div className="flex items-center gap-2">
+                  <Button variant="outline" size="sm" onClick={() => setShowSignDialog(true)} className="gap-2 h-8 text-blue-600 border-blue-200 hover:bg-blue-50 hover:text-blue-700">
+                    <PenLine size={14} />
+                    เซ็นรับมอบ
+                  </Button>
                   <Button variant="outline" size="sm" onClick={() => window.print()} className="gap-2 h-8 text-slate-600">
                     <Printer size={14} />
                     พิมพ์
@@ -393,7 +411,7 @@ export default function AssetSheet({ isOpen, onClose, assetId, mode = 'edit', on
           </SheetHeader>
 
           <div className="p-6 space-y-8 flex-1">
-            {isLoadingAsset ? (
+            {isLoadingAsset || isLoadingLookups ? (
               <div className="py-12 text-center text-muted-foreground">Loading details...</div>
             ) : (
               <>
@@ -451,12 +469,19 @@ export default function AssetSheet({ isOpen, onClose, assetId, mode = 'edit', on
                       <DetailItem label="Previous User" value={formData.previous_user} />
                       <DetailItem label="Handover Signer" value={formData.assigned_user} />
                       <DetailItem label="Signer Position" value={formData.user_position} />
-                      {signatureUrl && (
+                      {signatureUrl ? (
                         <div className="pt-2 border-t mt-2">
-                          <p className="text-xs font-medium text-muted-foreground mb-1">Signer Signature</p>
+                          <p className="text-xs font-medium text-muted-foreground mb-1">ลายเซ็นผู้รับมอบ</p>
                           <div className="bg-white border rounded p-1 w-full max-w-[200px]">
                             <img src={signatureUrl} alt="Signature" className="w-full h-auto" />
                           </div>
+                        </div>
+                      ) : (
+                        <div className="pt-2 border-t mt-2">
+                          <button type="button" onClick={() => setShowSignDialog(true)} className="text-xs text-blue-600 hover:text-blue-800 font-medium flex items-center gap-1.5 hover:underline">
+                            <PenLine size={12} />
+                            เพิ่มลายเซ็น
+                          </button>
                         </div>
                       )}
                     </div>
@@ -556,6 +581,62 @@ export default function AssetSheet({ isOpen, onClose, assetId, mode = 'edit', on
             <img src={images[selectedImageIdx]} alt="Full Size" className="max-w-full max-h-[90vh] object-contain rounded-md shadow-2xl animate-in zoom-in-95 duration-200" onClick={(e) => e.stopPropagation()} />
           </div>
         )}
+
+        {showSignDialog && (
+          <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-in fade-in duration-200" onClick={() => setShowSignDialog(false)}>
+            <div className="bg-background rounded-2xl shadow-2xl border border-border w-full max-w-md animate-in zoom-in-95 duration-200" onClick={(e) => e.stopPropagation()}>
+              <div className="p-5 border-b border-border">
+                <h3 className="text-lg font-bold text-foreground flex items-center gap-2">
+                  <PenLine size={18} className="text-blue-600" />
+                  เซ็นรับมอบทรัพย์สิน
+                </h3>
+                <p className="text-xs text-muted-foreground mt-1">
+                  ผู้รับมอบ: <span className="font-medium text-foreground">{formData.assigned_user || '—'}</span> · ตำแหน่ง: <span className="font-medium text-foreground">{formData.user_position || '—'}</span>
+                </p>
+              </div>
+              <div className="p-5 space-y-3">
+                <div className="border border-input rounded-lg bg-white overflow-hidden shadow-sm h-40 w-full cursor-crosshair relative">
+                  <SignatureCanvas ref={viewSigCanvas} penColor="blue" canvasProps={{ className: "w-full h-full" }} />
+                  <div className="absolute bottom-2 right-3 text-[10px] text-muted-foreground pointer-events-none">เซ็นชื่อที่นี่</div>
+                </div>
+                <button type="button" onClick={() => viewSigCanvas.current?.clear()} className="text-[11px] text-primary hover:text-primary/80 underline">
+                  ล้างลายเซ็น
+                </button>
+              </div>
+              <div className="p-4 border-t border-border flex justify-end gap-3 bg-muted/20 rounded-b-2xl">
+                <Button variant="outline" size="sm" onClick={() => setShowSignDialog(false)}>ยกเลิก</Button>
+                <Button size="sm" disabled={savingSignature} className="bg-blue-600 hover:bg-blue-700 text-white gap-2" onClick={async () => {
+                  if (!viewSigCanvas.current || viewSigCanvas.current.isEmpty()) {
+                    toast.error('กรุณาเซ็นชื่อก่อนบันทึก');
+                    return;
+                  }
+                  if (!assetId) return;
+                  setSavingSignature(true);
+                  try {
+                    const sigDataUrl = viewSigCanvas.current.getTrimmedCanvas().toDataURL('image/png');
+                    const { error } = await supabase.from('signatures').upsert([{ asset_id: assetId, signature_url: sigDataUrl }], { onConflict: 'asset_id' });
+                    if (error) {
+                      await supabase.from('signatures').delete().eq('asset_id', assetId);
+                      const { error: insertError } = await supabase.from('signatures').insert([{ asset_id: assetId, signature_url: sigDataUrl }]);
+                      if (insertError) throw insertError;
+                    }
+                    setSignatureUrl(sigDataUrl);
+                    queryClient.invalidateQueries({ queryKey: ['asset', assetId] });
+                    toast.success('บันทึกลายเซ็นสำเร็จ');
+                    setShowSignDialog(false);
+                  } catch (err: any) {
+                    toast.error('เกิดข้อผิดพลาด: ' + err.message);
+                  } finally {
+                    setSavingSignature(false);
+                  }
+                }}>
+                  <PenLine size={14} />
+                  {savingSignature ? 'กำลังบันทึก...' : 'บันทึกลายเซ็น'}
+                </Button>
+              </div>
+            </div>
+          </div>
+        )}
       </>
     );
   }
@@ -582,7 +663,7 @@ export default function AssetSheet({ isOpen, onClose, assetId, mode = 'edit', on
         </SheetHeader>
 
         <div className="flex-1 overflow-y-auto p-6 scroll-smooth">
-          {isLoadingAsset ? (
+          {isLoadingAsset || isLoadingLookups ? (
             <div className="py-12 text-center text-muted-foreground flex items-center justify-center h-full">กำลังโหลดข้อมูล...</div>
           ) : (
             <form id="asset-form" onSubmit={form.handleSubmit(onSubmit)} className="max-w-4xl mx-auto space-y-6 pb-8">
@@ -622,7 +703,11 @@ export default function AssetSheet({ isOpen, onClose, assetId, mode = 'edit', on
                 <div className="space-y-1.5"><Label className="text-sm font-bold">ประเภทอุปกรณ์</Label>
                   <Controller name="category_id" control={form.control} render={({ field }) => (
                     <Select value={field.value || ''} onValueChange={field.onChange}>
-                      <SelectTrigger className="w-full"><SelectValue placeholder="-- เลือก --" /></SelectTrigger>
+                      <SelectTrigger className="w-full">
+                        <SelectValue placeholder="-- เลือก --">
+                          {field.value ? categories.find(c => c.id === field.value)?.name : "-- เลือก --"}
+                        </SelectValue>
+                      </SelectTrigger>
                       <SelectContent>{categories.map(c => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}</SelectContent>
                     </Select>
                   )} />
@@ -631,7 +716,11 @@ export default function AssetSheet({ isOpen, onClose, assetId, mode = 'edit', on
                 <div className="space-y-1.5"><Label className="text-sm font-bold">แผนก</Label>
                   <Controller name="department_id" control={form.control} render={({ field }) => (
                     <Select value={field.value || ''} onValueChange={field.onChange}>
-                      <SelectTrigger className="w-full"><SelectValue placeholder="-- เลือก --" /></SelectTrigger>
+                      <SelectTrigger className="w-full">
+                        <SelectValue placeholder="-- เลือก --">
+                          {field.value ? departments.find(d => d.id === field.value)?.name : "-- เลือก --"}
+                        </SelectValue>
+                      </SelectTrigger>
                       <SelectContent>{departments.map(d => <SelectItem key={d.id} value={d.id}>{d.name}</SelectItem>)}</SelectContent>
                     </Select>
                   )} />

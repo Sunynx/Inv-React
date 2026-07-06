@@ -343,7 +343,7 @@ export default function ProcurementReceiveModal({ isOpen, onClose, document, onS
                           <div className="md:col-span-2">
                             <Label className="text-xs text-muted-foreground mb-1 block">หมวดหมู่</Label>
                             <Select value={asset.category_id} onValueChange={v => updateAssetField(itemIdx, assetIdx, 'category_id', v)}>
-                              <SelectTrigger className="h-9 text-sm"><SelectValue placeholder="เลือกหมวดหมู่..." /></SelectTrigger>
+                              <SelectTrigger className="h-9 text-sm"><SelectValue placeholder="เลือกหมวดหมู่...">{asset.category_id ? categories.find(c => c.id === asset.category_id)?.name : 'เลือกหมวดหมู่...'}</SelectValue></SelectTrigger>
                               <SelectContent>
                                 {categories.map(c => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}
                               </SelectContent>
@@ -353,7 +353,7 @@ export default function ProcurementReceiveModal({ isOpen, onClose, document, onS
                           <div className="md:col-span-2">
                             <Label className="text-xs text-muted-foreground mb-1 block">แผนก</Label>
                             <Select value={asset.department_id} onValueChange={v => updateAssetField(itemIdx, assetIdx, 'department_id', v)}>
-                              <SelectTrigger className="h-9 text-sm"><SelectValue placeholder="เลือกแผนก..." /></SelectTrigger>
+                              <SelectTrigger className="h-9 text-sm"><SelectValue placeholder="เลือกแผนก...">{asset.department_id ? departments.find(d => d.id === asset.department_id)?.name : 'เลือกแผนก...'}</SelectValue></SelectTrigger>
                               <SelectContent>
                                 {departments.map(d => <SelectItem key={d.id} value={d.id}>{d.name}</SelectItem>)}
                               </SelectContent>
@@ -396,7 +396,7 @@ export default function ProcurementReceiveModal({ isOpen, onClose, document, onS
                       <div className="md:col-span-3">
                         <Label className="text-[10px] text-muted-foreground mb-1 block">หมวดหมู่ Stock</Label>
                         <Select value={item.stock_category_id} onValueChange={v => updateStockField(itemIdx, 'stock_category_id', v)}>
-                          <SelectTrigger className="h-8 text-xs"><SelectValue placeholder="เลือกหมวดหมู่..." /></SelectTrigger>
+                          <SelectTrigger className="h-8 text-xs"><SelectValue placeholder="เลือกหมวดหมู่...">{item.stock_category_id ? categories.find(c => c.id === item.stock_category_id)?.name : 'เลือกหมวดหมู่...'}</SelectValue></SelectTrigger>
                           <SelectContent>
                             {categories.map(c => <SelectItem key={c.id} value={c.id} className="text-xs">{c.name}</SelectItem>)}
                           </SelectContent>

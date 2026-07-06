@@ -152,7 +152,7 @@ export default function TicketModal({ isOpen, onClose, ticketId }: { isOpen: boo
               <Label>Asset (อุปกรณ์ที่เสีย)</Label>
               <Controller name="asset_id" control={form.control} render={({ field }) => (
                 <Select value={field.value || ''} onValueChange={field.onChange}>
-                  <SelectTrigger><SelectValue placeholder="Select an Asset..." /></SelectTrigger>
+                  <SelectTrigger><SelectValue placeholder="Select an Asset...">{field.value ? (() => { const a = assets.find(a => a.id === field.value); return a ? `[${a.asset_code}] ${a.name}` : 'Select an Asset...'; })() : 'Select an Asset...'}</SelectValue></SelectTrigger>
                   <SelectContent>
                     {assets.map(a => <SelectItem key={a.id} value={a.id}>[{a.asset_code}] {a.name}</SelectItem>)}
                   </SelectContent>
@@ -217,7 +217,7 @@ export default function TicketModal({ isOpen, onClose, ticketId }: { isOpen: boo
               <div className="flex gap-3">
                 <div className="flex-1">
                   <Select value={selectedPartId} onValueChange={setSelectedPartId}>
-                    <SelectTrigger><SelectValue placeholder="Select Part to Deduct..." /></SelectTrigger>
+                    <SelectTrigger><SelectValue placeholder="Select Part to Deduct...">{selectedPartId ? (() => { const item = stockItems.find(i => i.id === selectedPartId); return item ? `${item.name} (${item.quantity} ${item.unit} in stock)` : 'Select Part to Deduct...'; })() : 'Select Part to Deduct...'}</SelectValue></SelectTrigger>
                     <SelectContent>
                       {stockItems.map(item => (
                         <SelectItem key={item.id} value={item.id}>{item.name} ({item.quantity} {item.unit} in stock)</SelectItem>
