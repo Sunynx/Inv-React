@@ -1,5 +1,6 @@
 'use client';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { useSearchParams } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Search, Plus, ArrowDownToLine, ArrowUpFromLine, CheckCircle2, AlertTriangle, MoreHorizontal, Download } from 'lucide-react';
@@ -26,6 +27,16 @@ export default function StockPage() {
   const [isTxModalOpen, setIsTxModalOpen] = useState(false);
   const [txType, setTxType] = useState<'receive'|'distribute'>('receive');
   const [selectedTxItem, setSelectedTxItem] = useState<any | null>(null);
+
+  const searchParams = useSearchParams();
+  const highlightId = searchParams.get('highlight');
+
+  useEffect(() => {
+    if (highlightId) {
+      setSelectedItemId(highlightId);
+      setIsItemModalOpen(true);
+    }
+  }, [highlightId]);
 
   const { data: items = [], isLoading } = useQuery({
     queryKey: ['stock_items'],

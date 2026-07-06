@@ -59,13 +59,13 @@ export async function syncNotifications() {
     // 4. Expiring Licenses
     const { data: licenses } = await supabase
       .from('licenses')
-      .select('id, software_name, expiration_date')
-      .not('expiration_date', 'is', null)
-      .lt('expiration_date', thirtyDaysFromNow.toISOString())
-      .gt('expiration_date', now.toISOString());
+      .select('id, name, expiry_date')
+      .not('expiry_date', 'is', null)
+      .lt('expiry_date', thirtyDaysFromNow.toISOString())
+      .gt('expiry_date', now.toISOString());
 
     licenses?.forEach(l => {
-      const msg = `${l.software_name} license expires on ${l.expiration_date}.`;
+      const msg = `${l.name} license expires on ${l.expiry_date}.`;
       if (!existingMessages.has(msg)) {
         notesToInsert.push({ title: 'License Expiring Soon', message: msg, type: 'license', severity: 'warning', link_page: '/licenses' });
       }
@@ -77,14 +77,14 @@ export async function syncNotifications() {
     
     const { data: maintenance } = await supabase
       .from('maintenance_schedules')
-      .select('id, maintenance_type, scheduled_date, status, assets(name)')
-      .neq('status', 'เสร็จสิ้น')
-      .neq('status', 'ยกเลิก')
-      .lt('scheduled_date', sevenDaysFromNow.toISOString());
+      .select('id, title, next_due_at, status, assets(name)')
+      .neq('status', 'completed')
+      .neq('status', 'cancelled')
+      .lt('next_due_at', sevenDaysFromNow.toISOString());
 
     maintenance?.forEach(m => {
-      const isOverdue = new Date(m.scheduled_date) < now;
-      const msg = `${m.maintenance_type} for ${m.assets?.name || 'Asset'} ${isOverdue ? 'was due' : 'is due'} on ${m.scheduled_date}.`;
+      const isOverdue = new Date(m.next_due_at) < now;
+      const msg = `${m.title} for ${m.assets?.name || 'Asset'} ${isOverdue ? 'was due' : 'is due'} on ${m.next_due_at}.`;
       if (!existingMessages.has(msg)) {
         notesToInsert.push({ 
           title: isOverdue ? 'Overdue Maintenance' : 'Upcoming Maintenance', 

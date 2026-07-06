@@ -1,5 +1,6 @@
 'use client';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { useSearchParams } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Search, Plus, MoreHorizontal, Edit, Trash2, CheckCircle2, AlertCircle, Clock, Ban, Download, Printer } from 'lucide-react';
@@ -40,6 +41,17 @@ export default function AssetsPage() {
   const [selectedAssetId, setSelectedAssetId] = useState<string | undefined>(undefined);
   const [isExportModalOpen, setIsExportModalOpen] = useState(false);
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
+
+  const searchParams = useSearchParams();
+  const highlightId = searchParams.get('highlight');
+
+  useEffect(() => {
+    if (highlightId) {
+      setSelectedAssetId(highlightId);
+      setSheetMode('view');
+      setIsSheetOpen(true);
+    }
+  }, [highlightId]);
 
   const { data: assets = [], isLoading } = useQuery({
     queryKey: ['assets'],

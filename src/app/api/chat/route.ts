@@ -123,9 +123,9 @@ const aiTools = {
       const thirtyDays = new Date();
       thirtyDays.setDate(thirtyDays.getDate() + 30);
       const { data, error } = await supabase.from('licenses')
-        .select('software_name, license_key, expiration_date')
-        .not('expiration_date', 'is', null)
-        .lt('expiration_date', thirtyDays.toISOString());
+        .select('name, license_key, expiry_date')
+        .not('expiry_date', 'is', null)
+        .lt('expiry_date', thirtyDays.toISOString());
       if (error) return { success: false, error: error.message };
       return { success: true, licenses: data };
     }
@@ -135,13 +135,13 @@ const aiTools = {
     parameters: z.object({}),
     execute: async () => {
       const { data, error } = await supabase.from('maintenance_schedules')
-        .select('maintenance_type, scheduled_date, status, assets(name)')
-        .neq('status', 'เสร็จสิ้น')
-        .order('scheduled_date', { ascending: true })
+        .select('title, next_due_at, status, assets(name)')
+        .neq('status', 'completed')
+        .order('next_due_at', { ascending: true })
         .limit(10);
       if (error) return { success: false, error: error.message };
       return { success: true, maintenance: data.map(m => ({
-        type: m.maintenance_type, asset: m.assets?.name, date: m.scheduled_date, status: m.status
+        type: m.title, asset: m.assets?.name, date: m.next_due_at, status: m.status
       })) };
     }
   }),

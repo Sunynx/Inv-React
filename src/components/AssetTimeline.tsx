@@ -118,6 +118,12 @@ export default function AssetTimeline({ assetId }: { assetId: string }) {
                   </div>
                 </div>
               )}
+              {tr.signature_url && (
+                <div className="mt-2 pt-2 border-t border-border/40">
+                  <span className="text-xs text-muted-foreground font-semibold uppercase tracking-wider block mb-1">Signature</span>
+                  <img src={tr.signature_url} alt="Transfer Signature" className="h-12 object-contain dark:invert" />
+                </div>
+              )}
             </div>
           );
 
@@ -126,7 +132,7 @@ export default function AssetTimeline({ assetId }: { assetId: string }) {
             date: new Date(tr.transfer_date || tr.created_at),
             type: 'transfer',
             title: 'Asset Transferred',
-            description: (hasUserChange || hasDeptChange || hasLocChange) ? descNode : `From: ${tr.from_location || 'Unknown'} → To: ${tr.to_location}`,
+            description: (hasUserChange || hasDeptChange || hasLocChange || tr.signature_url) ? descNode : `From: ${tr.from_location || 'Unknown'} → To: ${tr.to_location}`,
             icon: ArrowRightLeft,
             color: 'bg-purple-500'
           });

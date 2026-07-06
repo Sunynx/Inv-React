@@ -56,9 +56,11 @@ export default function TransferModal({ isOpen, onClose, recordId }: { isOpen: b
         setFormData(recordData);
       } else if (!recordId) {
         setFormData({ transfer_date: new Date().toISOString().split('T')[0] });
+        setTimeout(() => sigCanvas.current?.clear(), 50);
       }
     } else {
       setFormData({});
+      setTimeout(() => sigCanvas.current?.clear(), 50);
     }
   }, [isOpen, recordId, recordData]);
 
@@ -259,8 +261,11 @@ export default function TransferModal({ isOpen, onClose, recordId }: { isOpen: b
               <Label className="text-blue-600 font-semibold dark:text-blue-400">Digital Signature (ลายเซ็นผู้รับมอบอุปกรณ์)</Label>
               
               {formData.signature_url ? (
-                <div className="border rounded-md bg-muted/30 p-4 flex flex-col items-center">
+                <div className="border rounded-md bg-muted/30 p-4 flex flex-col items-center relative">
                   <img src={formData.signature_url} alt="Signature" className="h-24 object-contain dark:invert" />
+                  <Button type="button" variant="ghost" size="sm" onClick={() => setFormData({...formData, signature_url: null})} className="absolute top-2 right-2 text-xs">
+                    Clear
+                  </Button>
                 </div>
               ) : (
                 <>

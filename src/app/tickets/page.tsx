@@ -1,5 +1,6 @@
 'use client';
 import { useState, useEffect } from 'react';
+import { useSearchParams } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Search, Plus, MoreHorizontal, Edit, Trash2, CheckCircle2, AlertCircle, Clock, Wrench, Ban, Download } from 'lucide-react';
@@ -40,6 +41,16 @@ export default function TicketsPage() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedTicket, setSelectedTicket] = useState<any | null>(null);
   const [isExportModalOpen, setIsExportModalOpen] = useState(false);
+
+  const searchParams = useSearchParams();
+  const highlightId = searchParams.get('highlight');
+
+  useEffect(() => {
+    if (highlightId) {
+      setSelectedTicket({ id: highlightId });
+      setIsModalOpen(true);
+    }
+  }, [highlightId]);
 
   const { data: tickets = [], isLoading } = useQuery({
     queryKey: ['repair_tickets'],
