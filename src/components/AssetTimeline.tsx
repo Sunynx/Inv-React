@@ -11,7 +11,7 @@ export default function AssetTimeline({ assetId }: { assetId: string }) {
       const [ticketsRes, transfersRes, assetRes, auditRes, deptsRes] = await Promise.all([
         supabase.from('repair_tickets').select('*').eq('asset_id', assetId),
         supabase.from('asset_transfers').select('*').eq('asset_id', assetId),
-        supabase.from('assets').select('created_at, created_by').eq('id', assetId).single(),
+        supabase.from('assets').select('created_at').eq('id', assetId).single(),
         supabase.from('audit_log').select('*').eq('asset_id', assetId),
         supabase.from('departments').select('id, name')
       ]);
@@ -30,7 +30,7 @@ export default function AssetTimeline({ assetId }: { assetId: string }) {
           description: (
             <div className="flex items-center gap-2 mt-1.5 p-2 rounded-md bg-emerald-500/10 border border-emerald-500/20 text-emerald-700 dark:text-emerald-400">
               <User className="w-4 h-4 shrink-0" />
-              <span className="text-sm">{assetRes.data.created_by ? `Added by ${assetRes.data.created_by}` : 'Initial record created'}</span>
+              <span className="text-sm">Initial record created</span>
             </div>
           ),
           icon: Box,
