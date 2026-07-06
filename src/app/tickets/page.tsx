@@ -1,5 +1,5 @@
 'use client';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabase';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Search, Plus, MoreHorizontal, Edit, Trash2, CheckCircle2, AlertCircle, Clock, Wrench, Ban, Download } from 'lucide-react';
@@ -26,8 +26,10 @@ const statusConfig: Record<string, { icon: any; className: string }> = {
 const priorityConfig: Record<string, string> = {
   'ต่ำ': 'bg-gray-100 text-gray-600',
   'ปกติ': 'bg-blue-100 text-blue-700',
-  'สูง': 'bg-red-100 text-red-700',
-  'เร่งด่วน': 'bg-red-200 text-red-800',
+  'ต่ำ': 'bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-400',
+  'ปกติ': 'bg-blue-100 text-blue-700 dark:bg-blue-900/50 dark:text-blue-300',
+  'สูง': 'bg-red-100 text-red-700 dark:bg-red-900/50 dark:text-red-300',
+  'เร่งด่วน': 'bg-red-200 text-red-800 dark:bg-red-950 dark:text-red-400',
 };
 
 export default function TicketsPage() {
@@ -182,7 +184,7 @@ export default function TicketsPage() {
 
       <Card className="shadow-sm border-border/60 rounded-xl overflow-hidden bg-card border-0 transition-colors duration-300">
         {/* Toolbar */}
-        <div className="p-4 border-b border-gray-100 flex flex-col md:flex-row items-center justify-between gap-4">
+        <div className="p-4 border-b border-border/50 flex flex-col md:flex-row items-center justify-between gap-4">
           <Tabs.Root value={filterTab} onValueChange={setFilterTab} className="w-full md:w-auto">
             <Tabs.List className="flex gap-1 flex-wrap">
               {[
@@ -191,8 +193,8 @@ export default function TicketsPage() {
                 { value: 'กำลังดำเนินการ', label: 'กำลังดำเนินการ', count: countByStatus('กำลังดำเนินการ') },
                 { value: 'เสร็จสิ้น', label: 'เสร็จสิ้น', count: countByStatus('เสร็จสิ้น') },
               ].map(tab => (
-                <Tabs.Trigger key={tab.value} value={tab.value} className="px-3 py-1.5 text-sm font-medium text-gray-500 hover:text-gray-900 data-[state=active]:text-gray-900 data-[state=active]:bg-gray-100 rounded-md transition-colors flex items-center gap-2">
-                  {tab.label} <span className="bg-gray-200 text-gray-600 px-1.5 py-0.5 rounded-full text-[10px] font-semibold">{tab.count}</span>
+                <Tabs.Trigger key={tab.value} value={tab.value} className="px-3 py-1.5 text-sm font-medium text-muted-foreground hover:text-foreground data-[state=active]:text-foreground data-[state=active]:bg-muted rounded-md transition-colors flex items-center gap-2">
+                  {tab.label} <span className="bg-muted text-muted-foreground px-1.5 py-0.5 rounded-full text-[10px] font-semibold">{tab.count}</span>
                 </Tabs.Trigger>
               ))}
             </Tabs.List>
@@ -200,19 +202,19 @@ export default function TicketsPage() {
 
           <div className="flex flex-wrap items-center gap-3 w-full md:w-auto mt-3 md:mt-0">
             <div className="relative w-full md:w-64">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
-              <Input placeholder="Search issue or asset..." className="pl-9 h-9 bg-gray-50 border-gray-200 text-sm" value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} />
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Input placeholder="Search issue or asset..." className="pl-9 h-9 bg-background border-input text-sm" value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} />
             </div>
-            <Button variant="outline" size="sm" className="h-9 shrink-0" onClick={() => setIsExportModalOpen(true)}>
+            <Button variant="outline" size="sm" className="h-9 shrink-0 flex-1 md:flex-none" onClick={() => setIsExportModalOpen(true)}>
               <Download className="w-4 h-4 mr-1.5" /> Export
             </Button>
-            <Button size="sm" className="h-9 shrink-0 bg-primary hover:bg-primary/90 text-primary-foreground" onClick={() => { setSelectedTicket(null); setIsModalOpen(true); }}>
+            <Button size="sm" className="h-9 shrink-0 flex-1 md:flex-none bg-primary hover:bg-primary/90 text-primary-foreground" onClick={() => { setSelectedTicket(null); setIsModalOpen(true); }}>
               <Plus className="w-4 h-4 mr-1.5" /> New Ticket
             </Button>
           </div>
         </div>
 
-        <div className="p-4 bg-gray-50/30">
+        <div className="p-4 bg-muted/10">
           <DataTable columns={columns} data={filteredTickets} isLoading={isLoading} />
         </div>
       </Card>

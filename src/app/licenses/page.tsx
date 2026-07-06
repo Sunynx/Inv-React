@@ -141,7 +141,7 @@ export default function LicensesPage() {
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight text-gray-900">Software Licenses</h1>
+          <h1 className="text-3xl font-bold tracking-tight text-foreground">Software Licenses</h1>
           <p className="text-muted-foreground mt-1">Manage and track software license keys and expirations</p>
         </div>
         <Button onClick={() => { setSelectedRecord(null); setIsModalOpen(true); }} className="bg-primary hover:bg-primary/90 text-primary-foreground">

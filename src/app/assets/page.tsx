@@ -237,9 +237,9 @@ export default function AssetsPage() {
               <Input placeholder="ค้นหาชื่อ, รหัส, สถานที่..." className="pl-10 h-10 bg-white/60 dark:bg-slate-900/60 border-slate-200/60 shadow-sm focus:ring-2 focus:ring-blue-500/20 text-sm w-full rounded-xl transition-all" value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} />
             </div>
 
-            <div className="flex flex-wrap items-center gap-3 w-full lg:w-auto justify-start lg:justify-end">
+            <div className="grid grid-cols-2 sm:flex sm:flex-wrap items-center gap-3 w-full lg:w-auto justify-start lg:justify-end">
               <Select value={filterDepartment} onValueChange={setFilterDepartment}>
-                <SelectTrigger className="h-10 bg-white dark:bg-slate-900 border-slate-200/60 dark:border-slate-800/60 shadow-sm text-sm w-[140px] flex justify-between shrink-0 rounded-xl transition-all">
+                <SelectTrigger className="h-10 bg-white dark:bg-slate-900 border-slate-200/60 dark:border-slate-800/60 shadow-sm text-sm w-full sm:w-[140px] flex justify-between shrink-0 rounded-xl transition-all">
                   <span className="truncate">
                     {filterDepartment === 'all' ? 'ทุกแผนก' : filterDepartment}
                   </span>
@@ -251,7 +251,7 @@ export default function AssetsPage() {
               </Select>
 
               <Select value={filterCategory} onValueChange={setFilterCategory}>
-                <SelectTrigger className="h-10 bg-white dark:bg-slate-900 border-slate-200/60 dark:border-slate-800/60 shadow-sm text-sm w-[140px] flex justify-between shrink-0 rounded-xl transition-all">
+                <SelectTrigger className="h-10 bg-white dark:bg-slate-900 border-slate-200/60 dark:border-slate-800/60 shadow-sm text-sm w-full sm:w-[140px] flex justify-between shrink-0 rounded-xl transition-all">
                   <span className="truncate">
                     {filterCategory === 'all' ? 'ทุกประเภท' : filterCategory}
                   </span>
@@ -262,7 +262,7 @@ export default function AssetsPage() {
                 </SelectContent>
               </Select>
 
-              <div className="w-[140px] shrink-0">
+              <div className="col-span-2 sm:col-span-1 w-full sm:w-[140px] shrink-0">
                 <Select value={sortBy} onValueChange={setSortBy}>
                   <SelectTrigger className="h-10 bg-white dark:bg-slate-900 border-slate-200/60 dark:border-slate-800/60 shadow-sm text-sm w-full flex justify-between rounded-xl transition-all">
                     <span className="truncate">
@@ -280,7 +280,7 @@ export default function AssetsPage() {
                 </Select>
               </div>
               
-              <div className="flex items-center gap-2 shrink-0 ml-auto lg:ml-2">
+              <div className="col-span-2 sm:col-span-1 flex items-center gap-2 shrink-0 justify-end w-full sm:w-auto mt-2 sm:mt-0">
                 <Button variant="outline" size="sm" className="h-10 rounded-xl border-slate-200 hover:bg-slate-50 transition-all" onClick={() => setIsExportModalOpen(true)}>
                   <Download className="w-4 h-4 mr-1.5 text-slate-500" /> ส่งออก
                 </Button>

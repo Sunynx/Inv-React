@@ -179,10 +179,10 @@ export default function PRDashboardPage() {
               {monthlyData.length > 0 ? (
                 <ResponsiveContainer width="100%" height="100%">
                   <BarChart data={monthlyData} margin={{ top: 10, right: 10, left: 0, bottom: 20 }}>
-                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#eee" />
-                    <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: '#666' }} dy={10} />
-                    <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: '#666' }} tickFormatter={(val) => `฿${(val/1000)}k`} />
-                    <RechartsTooltip cursor={{ fill: '#f4f4f5' }} formatter={(val: number) => [`฿${val.toLocaleString()}`, 'ยอดจัดซื้อ']} />
+                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="var(--border)" />
+                    <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: 'var(--muted-foreground)' }} dy={10} />
+                    <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: 'var(--muted-foreground)' }} tickFormatter={(val) => `฿${(val/1000)}k`} />
+                    <RechartsTooltip cursor={{ fill: 'var(--muted)', opacity: 0.4 }}  contentStyle={{ borderRadius: '8px', border: '1px solid var(--border)', backgroundColor: 'var(--card)', color: 'var(--card-foreground)' }} formatter={(val: number) => [`฿${val.toLocaleString()}`, 'ยอดจัดซื้อ']} />
                     <Bar dataKey="total" fill="#3b82f6" radius={[4, 4, 0, 0]} maxBarSize={50} />
                   </BarChart>
                 </ResponsiveContainer>
@@ -217,8 +217,8 @@ export default function PRDashboardPage() {
                         <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                       ))}
                     </Pie>
-                    <RechartsTooltip formatter={(val: number) => [`฿${val.toLocaleString()}`, 'ยอดรวม']} />
-                    <Legend verticalAlign="bottom" height={36} iconType="circle" wrapperStyle={{ fontSize: '12px' }} />
+                    <RechartsTooltip  contentStyle={{ borderRadius: '8px', border: '1px solid var(--border)', backgroundColor: 'var(--card)', color: 'var(--card-foreground)' }} formatter={(val: number) => [`฿${val.toLocaleString()}`, 'ยอดรวม']} />
+                    <Legend verticalAlign="bottom" height={36} iconType="circle" wrapperStyle={{ fontSize: '12px' }} formatter={(val) => <span className="text-foreground">{val}</span>} />
                   </PieChart>
                 </ResponsiveContainer>
               ) : (
@@ -254,8 +254,8 @@ export default function PRDashboardPage() {
                         <Cell key={`cell-${index}`} fill={STATUS_COLORS[entry.name] || '#9ca3af'} />
                       ))}
                     </Pie>
-                    <RechartsTooltip formatter={(val: number) => [`${val.toLocaleString()} รายการ`, 'จำนวน']} />
-                    <Legend verticalAlign="bottom" height={36} iconType="circle" wrapperStyle={{ fontSize: '12px' }} />
+                    <RechartsTooltip  contentStyle={{ borderRadius: '8px', border: '1px solid var(--border)', backgroundColor: 'var(--card)', color: 'var(--card-foreground)' }} formatter={(val: number) => [`${val.toLocaleString()} รายการ`, 'จำนวน']} />
+                    <Legend verticalAlign="bottom" height={36} iconType="circle" wrapperStyle={{ fontSize: '12px' }} formatter={(val) => <span className="text-foreground">{val}</span>} />
                   </PieChart>
                 </ResponsiveContainer>
               ) : (
@@ -275,10 +275,10 @@ export default function PRDashboardPage() {
               {topItemsData.length > 0 ? (
                 <ResponsiveContainer width="100%" height="100%">
                   <BarChart data={topItemsData} layout="vertical" margin={{ top: 0, right: 20, left: -20, bottom: 0 }}>
-                    <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="#888888" strokeOpacity={0.2} />
-                    <XAxis type="number" axisLine={false} tickLine={false} tick={{ fontSize: 11, fill: '#888888' }} allowDecimals={false} />
-                    <YAxis dataKey="name" type="category" axisLine={false} tickLine={false} tick={{ fontSize: 11, fill: '#888888' }} width={120} />
-                    <RechartsTooltip contentStyle={{ borderRadius: '8px', border: '1px solid var(--border)', backgroundColor: 'var(--card)', color: 'var(--card-foreground)' }} cursor={{ fill: '#888888', opacity: 0.1 }} formatter={(val: number) => [`${val.toLocaleString()} ชิ้น`, 'จำนวนที่สั่ง']} />
+                    <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="var(--border)" />
+                    <XAxis type="number" axisLine={false} tickLine={false} tick={{ fontSize: 11, fill: 'var(--muted-foreground)' }} allowDecimals={false} />
+                    <YAxis dataKey="name" type="category" axisLine={false} tickLine={false} tick={{ fontSize: 11, fill: 'var(--muted-foreground)' }} width={120} />
+                    <RechartsTooltip contentStyle={{ borderRadius: '8px', border: '1px solid var(--border)', backgroundColor: 'var(--card)', color: 'var(--card-foreground)' }} cursor={{ fill: 'var(--muted-foreground)', opacity: 0.1 }} formatter={(val: number) => [`${val.toLocaleString()} ชิ้น`, 'จำนวนที่สั่ง']} />
                     <Bar dataKey="count" fill="#8b5cf6" radius={[0, 4, 4, 0]} maxBarSize={30} />
                   </BarChart>
                 </ResponsiveContainer>
@@ -305,9 +305,9 @@ export default function PRDashboardPage() {
                         <stop offset="95%" stopColor="#f59e0b" stopOpacity={0}/>
                       </linearGradient>
                     </defs>
-                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#888888" strokeOpacity={0.2} />
-                    <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 11, fill: '#888888' }} dy={10} minTickGap={20} />
-                    <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 11, fill: '#888888' }} allowDecimals={false} />
+                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="var(--border)" />
+                    <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 11, fill: 'var(--muted-foreground)' }} dy={10} minTickGap={20} />
+                    <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 11, fill: 'var(--muted-foreground)' }} allowDecimals={false} />
                     <RechartsTooltip contentStyle={{ borderRadius: '8px', border: '1px solid var(--border)', backgroundColor: 'var(--card)', color: 'var(--card-foreground)' }} cursor={{ stroke: '#f59e0b', strokeWidth: 1, strokeDasharray: '3 3' }} formatter={(val: number) => [val, 'จำนวนใบสั่งซื้อ']} />
                     <Area type="monotone" dataKey="count" stroke="#f59e0b" strokeWidth={3} fillOpacity={1} fill="url(#colorCount)" activeDot={{ r: 6, fill: '#f59e0b', stroke: '#fff', strokeWidth: 2 }} />
                   </AreaChart>

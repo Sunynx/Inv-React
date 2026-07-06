@@ -112,7 +112,7 @@ export default function ScanPage() {
   return (
     <div className="max-w-2xl mx-auto space-y-6">
       <div className="text-center">
-        <h1 className="text-3xl font-bold tracking-tight text-gray-900">Scan QR Code</h1>
+        <h1 className="text-3xl font-bold tracking-tight text-foreground">Scan QR Code</h1>
         <p className="text-muted-foreground mt-2">Scan an asset's QR code to view and edit its details.</p>
       </div>
 

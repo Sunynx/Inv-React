@@ -15,6 +15,7 @@ import {
   Download, Calendar, TrendingUp, TrendingDown, Clock, Activity, HardDrive, Wrench, Shield, Box, Search, Send, Bot, AlertCircle, Command
 } from 'lucide-react';
 import { format } from 'date-fns';
+import Link from 'next/link';
 import { Input } from '@/components/ui/input';
 import { useRouter } from 'next/navigation';
 import toast from 'react-hot-toast';
@@ -290,6 +291,7 @@ export default function Dashboard() {
   const priorityStats = dashboardData?.priorityStats || [];
   const deptCatBreakdown = dashboardData?.deptCatBreakdown || [];
   const assetDetailsStr = dashboardData?.assetDetailsStr || '';
+  const recentAssets = dashboardData?.recentAssets || [];
 
   return (
     <div className="space-y-6">
@@ -415,7 +417,7 @@ export default function Dashboard() {
                           <stop offset="95%" stopColor="var(--color-retired)" stopOpacity={0.1}/>
                         </linearGradient>
                       </defs>
-                      <CartesianGrid vertical={false} strokeDasharray="3 3" />
+                      <CartesianGrid vertical={false} horizontal={true} strokeDasharray="3 3" stroke="var(--border)" strokeOpacity={0.5} />
                       <XAxis dataKey="name" axisLine={false} tickLine={false} tickMargin={8} />
                       <YAxis axisLine={false} tickLine={false} tickMargin={8} />
                       <ChartTooltip content={<ChartTooltipContent />} />
@@ -502,9 +504,11 @@ export default function Dashboard() {
                         nameKey="name"
                         cx="50%"
                         cy="50%"
-                        innerRadius={60}
+                        innerRadius={65}
                         outerRadius={80}
-                        paddingAngle={5}
+                        paddingAngle={3}
+                        stroke="var(--background)"
+                        strokeWidth={3}
                       />
                       <ChartLegend content={<ChartLegendContent />} className="mt-4" />
                     </PieChart>
@@ -796,10 +800,11 @@ export default function Dashboard() {
                         nameKey="safeId"
                         cx="50%"
                         cy="50%"
-                        innerRadius={60}
+                        innerRadius={65}
                         outerRadius={90}
-                        paddingAngle={2}
-                        label={({percent}: any) => percent ? `${(percent * 100).toFixed(0)}%` : null}
+                        paddingAngle={3}
+                        stroke="var(--background)"
+                        strokeWidth={3}
                       />
                       <ChartLegend content={<ChartLegendContent />} className="flex-wrap" />
                     </PieChart>
@@ -828,7 +833,7 @@ export default function Dashboard() {
                       data={departments.filter(d => d.assetCount > 0).slice(0, 5).map(d => ({ name: d.name.substring(0, 15), assets: d.assetCount }))}
                       margin={{ top: 10, right: 30, left: 10, bottom: 0 }}
                     >
-                      <CartesianGrid strokeDasharray="3 3" horizontal={true} vertical={true} stroke="#e5e7eb" />
+                      <CartesianGrid strokeDasharray="3 3" horizontal={false} vertical={true} stroke="var(--border)" strokeOpacity={0.5} />
                       <XAxis type="number" tick={{ fontSize: 12 }} />
                       <YAxis dataKey="name" type="category" width={80} tick={{ fontSize: 12 }} />
                       <ChartTooltip content={<ChartTooltipContent />} cursor={false} />
@@ -860,7 +865,7 @@ export default function Dashboard() {
                       data={departments.filter(d => d.totalValue > 0).sort((a,b) => b.totalValue - a.totalValue).slice(0, 5).map(d => ({ name: d.name.substring(0, 10), value: d.totalValue }))}
                       margin={{ top: 10, right: 10, left: 0, bottom: 20 }}
                     >
-                      <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e5e7eb" />
+                      <CartesianGrid strokeDasharray="3 3" horizontal={true} vertical={false} stroke="var(--border)" strokeOpacity={0.5} />
                       <XAxis dataKey="name" tick={{ fontSize: 12 }} angle={-45} textAnchor="end" />
                       <YAxis tick={{ fontSize: 12 }} tickFormatter={(val) => `฿${(val/1000).toFixed(0)}k`} />
                       <ChartTooltip content={<ChartTooltipContent />} cursor={false} />
@@ -890,7 +895,7 @@ export default function Dashboard() {
                     className="h-[300px] w-full"
                   >
                     <LineChart data={chartData} margin={{ top: 10, right: 30, left: 10, bottom: 0 }}>
-                      <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e5e7eb" />
+                      <CartesianGrid strokeDasharray="3 3" horizontal={true} vertical={false} stroke="var(--border)" strokeOpacity={0.5} />
                       <XAxis dataKey="name" tick={{ fontSize: 12 }} />
                       <YAxis tick={{ fontSize: 12 }} />
                       <ChartTooltip content={<ChartTooltipContent />} cursor={false} />

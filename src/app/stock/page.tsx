@@ -170,10 +170,10 @@ export default function StockPage() {
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input placeholder="Search..." className="pl-9 h-9 bg-background border-input text-sm transition-colors" value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} />
             </div>
-            <Button variant="outline" size="sm" className="h-9 shrink-0" onClick={() => setIsExportModalOpen(true)}>
+            <Button variant="outline" size="sm" className="h-9 shrink-0 flex-1 md:flex-none" onClick={() => setIsExportModalOpen(true)}>
               <Download className="w-4 h-4 mr-1.5" /> Export
             </Button>
-            <Button size="sm" className="h-9 shrink-0 bg-primary hover:bg-primary/90 text-primary-foreground" onClick={() => { setSelectedItemId(undefined); setIsItemModalOpen(true); }}>
+            <Button size="sm" className="h-9 shrink-0 flex-1 md:flex-none bg-primary hover:bg-primary/90 text-primary-foreground" onClick={() => { setSelectedItemId(undefined); setIsItemModalOpen(true); }}>
               <Plus className="w-4 h-4 mr-1.5" /> Add Item
             </Button>
           </div>

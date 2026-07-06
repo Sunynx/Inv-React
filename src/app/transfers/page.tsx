@@ -15,10 +15,19 @@ import { ColumnDef } from '@tanstack/react-table';
 export default function TransfersPage() {
   const queryClient = useQueryClient();
   const [searchTerm, setSearchTerm] = useState('');
-  const [filterStatus, setFilterStatus] = useState('all');
   
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedRecord, setSelectedRecord] = useState<any | null>(null);
+
+  const { data: departments = [] } = useQuery({
+    queryKey: ['departments_lookup'],
+    queryFn: async () => {
+      const { data } = await supabase.from('departments').select('id, name').order('name');
+      return data || [];
+    }
+  });
+
+  const getDeptName = (id: string) => departments.find((d: any) => d.id === id)?.name || id;
 
   const { data: records = [], isLoading } = useQuery({
     queryKey: ['asset_transfers'],
@@ -54,6 +63,8 @@ export default function TransfersPage() {
     const matchSearch = r.notes?.toLowerCase().includes(searchTerm.toLowerCase()) ||
                         r.from_location?.toLowerCase().includes(searchTerm.toLowerCase()) ||
                         r.to_location?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                        r.from_user?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                        r.to_user?.toLowerCase().includes(searchTerm.toLowerCase()) ||
                         r.assets?.name?.toLowerCase().includes(searchTerm.toLowerCase());
     return matchSearch;
   });
@@ -77,14 +88,48 @@ export default function TransfersPage() {
       }
     },
     {
-      accessorKey: 'from_location',
-      header: 'From Location',
-      cell: ({ row }) => <span className="text-muted-foreground">{row.original.from_location || '-'}</span>
+      id: 'user_change',
+      header: 'User Change',
+      cell: ({ row }) => {
+        const r = row.original;
+        if (!r.from_user && !r.to_user) return <span className="text-muted-foreground">-</span>;
+        return (
+          <div className="flex flex-col text-sm">
+            {r.from_user && <span className="text-muted-foreground line-through decoration-muted-foreground/50">{r.from_user}</span>}
+            <span className="text-primary font-medium">{r.to_user || '-'}</span>
+          </div>
+        );
+      }
     },
     {
-      accessorKey: 'to_location',
-      header: 'To Location',
-      cell: ({ row }) => <span className="text-primary font-medium">{row.original.to_location || '-'}</span>
+      id: 'dept_change',
+      header: 'Department Change',
+      cell: ({ row }) => {
+        const r = row.original;
+        if (!r.from_department_id && !r.to_department_id) return <span className="text-muted-foreground">-</span>;
+        const fromName = r.from_department_id ? getDeptName(r.from_department_id) : '';
+        const toName = r.to_department_id ? getDeptName(r.to_department_id) : '';
+        return (
+          <div className="flex flex-col text-sm">
+            {fromName && <span className="text-muted-foreground line-through decoration-muted-foreground/50">{fromName}</span>}
+            <span className="text-primary font-medium">{toName || '-'}</span>
+          </div>
+        );
+      }
+    },
+    {
+      id: 'location_change',
+      header: 'Location Change',
+      cell: ({ row }) => {
+        const r = row.original;
+        if (!r.from_location && !r.to_location) return <span className="text-muted-foreground">-</span>;
+        return (
+          <div className="flex flex-col text-sm">
+            {r.from_location && <span className="text-muted-foreground line-through decoration-muted-foreground/50">{r.from_location}</span>}
+            <span className="text-primary font-medium">{r.to_location || '-'}</span>
+          </div>
+        );
+      }
     },
     {
       accessorKey: 'transfer_date',
@@ -94,11 +139,6 @@ export default function TransfersPage() {
           {row.original.transfer_date ? format(new Date(row.original.transfer_date), 'dd MMM yyyy') : '-'}
         </span>
       )
-    },
-    {
-      accessorKey: 'transferred_by',
-      header: 'Transferred By',
-      cell: ({ row }) => <span className="text-muted-foreground">{row.original.transferred_by || '-'}</span>
     },
     {
       id: 'actions',
@@ -123,7 +163,7 @@ export default function TransfersPage() {
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight text-gray-900">Asset Transfers</h1>
+          <h1 className="text-3xl font-bold tracking-tight text-foreground">Asset Transfers</h1>
           <p className="text-muted-foreground mt-1">Track asset movements and relocation history</p>
         </div>
         <Button onClick={() => { setSelectedRecord(null); setIsModalOpen(true); }} className="bg-primary hover:bg-primary/90 text-primary-foreground">
@@ -137,7 +177,7 @@ export default function TransfersPage() {
             <div className="relative flex-1">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input 
-                placeholder="Search by asset, location or notes..."
+                placeholder="Search by user, asset, location or notes..."
                 className="pl-10"
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}

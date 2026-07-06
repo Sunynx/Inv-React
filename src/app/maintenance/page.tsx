@@ -137,7 +137,7 @@ export default function MaintenancePage() {
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight text-gray-900">Maintenance (PM)</h1>
+          <h1 className="text-3xl font-bold tracking-tight text-foreground">Maintenance (PM)</h1>
           <p className="text-muted-foreground mt-1">Schedule and track preventive maintenance</p>
         </div>
         <Button onClick={() => { setSelectedRecord(null); setIsModalOpen(true); }} className="bg-primary hover:bg-primary/90 text-primary-foreground">

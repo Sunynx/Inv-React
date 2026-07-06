@@ -229,8 +229,8 @@ export default function ProcurementPage() {
                   { value: 'ได้รับของแล้ว', label: 'ได้รับของแล้ว', count: countByStatus('ได้รับของแล้ว') },
                   { value: 'ยกเลิก', label: 'ยกเลิก', count: countByStatus('ยกเลิก') },
                 ].map(tab => (
-                  <Tabs.Trigger key={tab.value} value={tab.value} className="px-3 py-1.5 text-sm font-medium text-gray-500 hover:text-gray-900 data-[state=active]:text-gray-900 data-[state=active]:bg-gray-100 rounded-md transition-colors flex items-center gap-2">
-                    {tab.label} <span className="bg-gray-200 text-gray-600 px-1.5 py-0.5 rounded-full text-[10px] font-semibold">{tab.count}</span>
+                  <Tabs.Trigger key={tab.value} value={tab.value} className="px-3 py-1.5 text-sm font-medium text-muted-foreground hover:text-foreground data-[state=active]:text-foreground data-[state=active]:bg-muted rounded-md transition-colors flex items-center gap-2">
+                    {tab.label} <span className="bg-muted text-muted-foreground px-1.5 py-0.5 rounded-full text-[10px] font-semibold">{tab.count}</span>
                   </Tabs.Trigger>
                 ))}
               </Tabs.List>

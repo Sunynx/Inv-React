@@ -378,31 +378,31 @@ export default function AssetSheet({ isOpen, onClose, assetId, mode = 'edit', on
         >
           <SheetContent className="!w-full sm:!w-[50vw] sm:!max-w-[50vw] p-0 flex flex-col bg-background text-foreground overflow-y-auto border-l border-border transition-colors duration-300">
           <SheetHeader className="p-6 pb-5 border-b border-border bg-muted/10">
-            <div className="flex justify-between items-start gap-4">
-              <div>
-                <h2 className="text-2xl font-bold tracking-tight text-foreground">{formData.name || 'Unknown Asset'}</h2>
-                <p className="text-sm font-medium text-muted-foreground mt-1 flex items-center gap-2">
-                  <span className="font-mono bg-muted px-2 py-0.5 rounded-md">{formData.asset_code || '-'}</span>
+            <div className="flex flex-col md:flex-row justify-between items-start gap-4 pr-6 sm:pr-8">
+              <div className="flex-1 min-w-0 w-full">
+                <h2 className="text-xl sm:text-2xl font-bold tracking-tight text-foreground break-words">{formData.name || 'Unknown Asset'}</h2>
+                <p className="text-sm font-medium text-muted-foreground mt-1 flex flex-wrap items-center gap-2">
+                  <span className="font-mono bg-muted px-2 py-0.5 rounded-md break-all">{formData.asset_code || '-'}</span>
                 </p>
               </div>
-              <div className="flex flex-col items-end gap-2 pr-8 mt-2 sm:mt-0 print:hidden">
-                <div className="flex items-center gap-2">
-                  <Button variant="outline" size="sm" onClick={() => setShowSignDialog(true)} className="gap-2 h-8 text-blue-600 border-blue-200 hover:bg-blue-50 hover:text-blue-700">
+              <div className="flex flex-col items-start md:items-end gap-2 mt-1 md:mt-0 print:hidden w-full md:w-auto">
+                <div className="flex flex-wrap items-center gap-2 w-full">
+                  <Button variant="outline" size="sm" onClick={() => setShowSignDialog(true)} className="gap-1.5 h-8 text-blue-600 border-blue-200 hover:bg-blue-50 hover:text-blue-700 flex-1 sm:flex-none justify-center">
                     <PenLine size={14} />
-                    เซ็นรับมอบ
+                    <span className="truncate">เซ็นรับมอบ</span>
                   </Button>
-                  <Button variant="outline" size="sm" onClick={() => window.print()} className="gap-2 h-8 text-slate-600">
+                  <Button variant="outline" size="sm" onClick={() => window.print()} className="gap-1.5 h-8 text-slate-600 flex-1 sm:flex-none justify-center">
                     <Printer size={14} />
-                    พิมพ์
+                    <span className="truncate">พิมพ์</span>
                   </Button>
                   {onEdit && (
-                    <Button variant="outline" size="sm" onClick={onEdit} className="gap-2 h-8">
+                    <Button variant="outline" size="sm" onClick={onEdit} className="gap-1.5 h-8 flex-1 sm:flex-none justify-center">
                       <Edit size={14} />
-                      แก้ไข
+                      <span className="truncate">แก้ไข</span>
                     </Button>
                   )}
                 </div>
-                <div className={`px-3 py-1 rounded-full text-xs font-semibold flex items-center gap-2 border shadow-sm ${config.className}`}>
+                <div className={`px-3 py-1 rounded-full text-xs font-semibold flex items-center gap-2 border shadow-sm w-fit ${config.className}`}>
                   <StatusIcon size={14} />
                   {formData.status}
                 </div>
