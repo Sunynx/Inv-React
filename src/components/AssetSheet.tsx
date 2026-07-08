@@ -709,12 +709,10 @@ export default function AssetSheet({ isOpen, onClose, assetId, mode = 'edit', on
                   setSavingSignature(true);
                   try {
                     const sigDataUrl = viewSigCanvas.current.getTrimmedCanvas().toDataURL('image/png');
-                    const { error } = await supabase.from('signatures').upsert([{ asset_id: assetId, signature_url: sigDataUrl }], { onConflict: 'asset_id' });
-                    if (error) {
-                      await supabase.from('signatures').delete().eq('asset_id', assetId);
-                      const { error: insertError } = await supabase.from('signatures').insert([{ asset_id: assetId, signature_url: sigDataUrl }]);
-                      if (insertError) throw insertError;
-                    }
+                    await supabase.from('signatures').delete().eq('asset_id', assetId);
+                    const { error } = await supabase.from('signatures').insert([{ asset_id: assetId, signature_url: sigDataUrl }]);
+                    if (error) throw error;
+                    
                     setSignatureUrl(sigDataUrl);
                     queryClient.invalidateQueries({ queryKey: ['asset', assetId] });
                     toast.success('บันทึกลายเซ็นสำเร็จ');

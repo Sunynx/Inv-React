@@ -72,14 +72,14 @@ export default function TransferModal({ isOpen, onClose, recordId }: { isOpen: b
 
         // Automatically update the main asset's signature to the new owner's signature
         if (payload.asset_id) {
-          const { error: sigError } = await supabase.from('signatures').upsert([{ 
+          await supabase.from('signatures').delete().eq('asset_id', payload.asset_id);
+          const { error: sigError } = await supabase.from('signatures').insert([{ 
             asset_id: payload.asset_id, 
             signature_url: sigUrl 
-          }], { onConflict: 'asset_id' });
+          }]);
           
           if (sigError) {
-            await supabase.from('signatures').delete().eq('asset_id', payload.asset_id);
-            await supabase.from('signatures').insert([{ asset_id: payload.asset_id, signature_url: sigUrl }]);
+            throw sigError;
           }
         }
       }

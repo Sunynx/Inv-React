@@ -96,6 +96,12 @@ export default function TicketModal({ isOpen, onClose, ticketId }: { isOpen: boo
 
   const saveMutation = useMutation({
     mutationFn: async (payload: any) => {
+      const validStatuses = ['เปิด', 'กำลังดำเนินการ', 'รอะไหล่', 'เสร็จสิ้น', 'ยกเลิก'];
+      if (!validStatuses.includes(payload.status)) payload.status = 'เปิด';
+      
+      const validPriorities = ['ต่ำ', 'ปกติ', 'สูง', 'เร่งด่วน'];
+      if (!validPriorities.includes(payload.priority)) payload.priority = 'ปกติ';
+
       if (payload.status === 'เสร็จสิ้น' || payload.status === 'ยกเลิก') {
         if (!payload.resolved_at) payload.resolved_at = new Date().toISOString();
       } else {
