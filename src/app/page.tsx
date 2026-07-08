@@ -1,5 +1,5 @@
 'use client';
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { supabase } from '@/lib/supabase';
 import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -12,9 +12,9 @@ import {
 } from 'recharts';
 import { ChartContainer, ChartTooltip, ChartTooltipContent, ChartLegend, ChartLegendContent } from "@/components/ui/chart";
 import { 
-  Download, Calendar, TrendingUp, TrendingDown, Clock, Activity, HardDrive, Wrench, Shield, Box, Search, Send, Bot, AlertCircle, Command
+  Download, Calendar, TrendingUp, TrendingDown, Clock, Activity, HardDrive, Wrench, Shield, Box, Search, Send, Bot, AlertCircle, Command, Filter
 } from 'lucide-react';
-import { format } from 'date-fns';
+import { format, subDays, isAfter } from 'date-fns';
 import Link from 'next/link';
 import { Input } from '@/components/ui/input';
 import { useRouter } from 'next/navigation';
@@ -32,6 +32,7 @@ export default function Dashboard() {
   const [chatMessages, setChatMessages] = useState<{role: 'user'|'ai', text: string}[]>([]);
   const [isAiLoading, setIsAiLoading] = useState(false);
   const [isExportModalOpen, setIsExportModalOpen] = useState(false);
+  const [dateRange, setDateRange] = useState<'all' | '30d' | '90d' | '1y'>('all');
   const router = useRouter();
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const searchInputRef = useRef<HTMLInputElement>(null);
@@ -134,7 +135,7 @@ export default function Dashboard() {
   }, [globalSearch]);
 
   const { data: dashboardData, isLoading } = useQuery({
-    queryKey: ['dashboard_data'],
+    queryKey: ['dashboard_data', dateRange],
     queryFn: async () => {
       const [assetsRes, deptsRes, catsRes, ticketsRes] = await Promise.all([
         supabase.from('assets').select('status, created_at, department_id, category_id, price, name, asset_code, model, cpu, ram, storage, purchase_date, warranty_expiry'),
@@ -143,10 +144,18 @@ export default function Dashboard() {
         supabase.from('repair_tickets').select(`*, assets(name)`).order('created_at', { ascending: false })
       ]);
 
-      const assets = assetsRes.data || [];
+      let assets = assetsRes.data || [];
       const depts = deptsRes.data || [];
       const cats = catsRes.data || [];
-      const tickets = ticketsRes.data || [];
+      let tickets = ticketsRes.data || [];
+
+      if (dateRange !== 'all') {
+        const now = new Date();
+        const days = dateRange === '30d' ? 30 : dateRange === '90d' ? 90 : 365;
+        const cutoff = subDays(now, days);
+        assets = assets.filter(a => isAfter(new Date(a.created_at || a.purchase_date || now), cutoff));
+        tickets = tickets.filter(t => isAfter(new Date(t.created_at || now), cutoff));
+      }
 
       // Calculate Stats
       const t = assets.length;
@@ -280,7 +289,8 @@ export default function Dashboard() {
         assetDetailsStr: assetDetailsStr,
         expiringAssets: expiringAssets
       };
-    }
+    },
+    enabled: !!dateRange
   });
 
   const stats = dashboardData?.stats || { total: 0, active: 0, repair: 0, spare: 0, fromLastMonth: 0, newAssetsThisWeek: 0, newTicketsThisWeek: 0, activeRate: 0, spareRate: 0, repairRate: 0 };
@@ -297,8 +307,8 @@ export default function Dashboard() {
     <div className="space-y-6">
       
       {/* Top Header */}
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 border-b border-slate-200/60 dark:border-slate-800/60 pb-6 mb-6">
-        <div>
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 border-b border-slate-200/60 dark:border-slate-800/60 pb-6 mb-6">
+        <div className="shrink-0">
           <h1 className="text-3xl font-bold tracking-tight text-slate-900 dark:text-white">Dashboard</h1>
           <p className="text-sm text-slate-500 mt-1">Overview of your IT assets and operations</p>
         </div>
@@ -359,8 +369,28 @@ export default function Dashboard() {
           )}
         </div>
 
-        <div className="flex items-center gap-3">
-          <Button variant="outline" size="sm" className="h-10 rounded-xl bg-white shadow-sm border-slate-200 hover:bg-slate-50 transition-all" onClick={() => setIsExportModalOpen(true)}>
+        <div className="flex flex-wrap items-center gap-3 shrink-0">
+          <div className="bg-slate-100/80 dark:bg-slate-800/80 p-1 rounded-xl flex">
+            {[
+              { id: 'all', label: 'All Time' },
+              { id: '30d', label: '30 Days' },
+              { id: '90d', label: '90 Days' },
+              { id: '1y', label: '1 Year' },
+            ].map(range => (
+              <button
+                key={range.id}
+                onClick={() => setDateRange(range.id as any)}
+                className={`px-3 py-1.5 text-xs font-semibold rounded-lg transition-all ${
+                  dateRange === range.id 
+                  ? 'bg-white dark:bg-slate-700 shadow-sm text-blue-600 dark:text-blue-400' 
+                  : 'text-slate-500 hover:text-slate-700 dark:hover:text-slate-300'
+                }`}
+              >
+                {range.label}
+              </button>
+            ))}
+          </div>
+          <Button variant="outline" size="sm" className="h-9 rounded-xl bg-white shadow-sm border-slate-200 hover:bg-slate-50 transition-all" onClick={() => setIsExportModalOpen(true)}>
             <Download className="mr-2 h-4 w-4 text-slate-500" /> Export
           </Button>
         </div>
@@ -463,7 +493,20 @@ export default function Dashboard() {
                       ]} margin={{ top: 0, right: 0, left: 0, bottom: 0 }}>
                         <XAxis dataKey="name" axisLine={false} tickLine={false} />
                         <ChartTooltip content={<ChartTooltipContent hideLabel />} cursor={false} />
-                        <Bar dataKey="value" radius={[4, 4, 0, 0]} barSize={40} />
+                        <Bar 
+                          dataKey="value" 
+                          radius={[4, 4, 0, 0]} 
+                          barSize={40} 
+                          className="cursor-pointer hover:opacity-80 transition-opacity"
+                          onClick={(data: any) => {
+                            if (!data || !data.name) return;
+                            const statusMap: Record<string, string> = { 'Active': 'ใช้งาน', 'Spare': 'สำรอง', 'Repair': 'ส่งซ่อม' };
+                            const mappedStatus = statusMap[data.name];
+                            if (mappedStatus) {
+                              router.push(`/assets?status=${mappedStatus}`);
+                            }
+                          }}
+                        />
                       </BarChart>
                     </ChartContainer>
                   </>

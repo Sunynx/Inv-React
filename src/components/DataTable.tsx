@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import {
   ColumnDef,
   flexRender,
@@ -9,6 +9,7 @@ import {
   getPaginationRowModel,
   getSortedRowModel,
   SortingState,
+  RowSelectionState,
 } from '@tanstack/react-table';
 
 import {
@@ -69,6 +70,8 @@ interface DataTableProps<TData, TValue> {
   isLoading?: boolean;
   onRowClick?: (row: TData) => void;
   emptyState?: React.ReactNode;
+  enableRowSelection?: boolean;
+  onRowSelectionChange?: (selectedRows: TData[]) => void;
 }
 
 export function DataTable<TData, TValue>({
@@ -77,8 +80,11 @@ export function DataTable<TData, TValue>({
   isLoading = false,
   onRowClick,
   emptyState,
+  enableRowSelection = false,
+  onRowSelectionChange,
 }: DataTableProps<TData, TValue>) {
   const [sorting, setSorting] = useState<SortingState>([]);
+  const [rowSelection, setRowSelection] = useState<RowSelectionState>({});
 
   const table = useReactTable({
     data,
@@ -86,14 +92,24 @@ export function DataTable<TData, TValue>({
     getCoreRowModel: getCoreRowModel(),
     getPaginationRowModel: getPaginationRowModel(),
     onSortingChange: setSorting,
+    onRowSelectionChange: setRowSelection,
     getSortedRowModel: getSortedRowModel(),
+    enableRowSelection,
     state: {
       sorting,
+      rowSelection,
     },
     initialState: {
       pagination: { pageSize: 15 },
     }
   });
+
+  useEffect(() => {
+    if (onRowSelectionChange) {
+      const selectedRows = table.getSelectedRowModel().rows.map(row => row.original);
+      onRowSelectionChange(selectedRows);
+    }
+  }, [rowSelection, table, onRowSelectionChange]);
 
   return (
     <div className="space-y-4">

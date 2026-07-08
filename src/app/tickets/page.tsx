@@ -3,7 +3,7 @@ import { useState, useEffect, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { Search, Plus, MoreHorizontal, Edit, Trash2, CheckCircle2, AlertCircle, Clock, Wrench, Ban, Download } from 'lucide-react';
+import { Search, Plus, MoreHorizontal, Edit, Trash2, CheckCircle2, AlertCircle, Clock, Wrench, Ban, Download, LayoutGrid, List } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -12,6 +12,7 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSepara
 import * as Tabs from '@radix-ui/react-tabs';
 import TicketModal from '@/components/TicketModal';
 import ReportExportModal from '@/components/ReportExportModal';
+import TicketKanbanBoard from '@/components/TicketKanbanBoard';
 import { format } from 'date-fns';
 import { DataTable } from '@/components/DataTable';
 import { ColumnDef } from '@tanstack/react-table';
@@ -50,6 +51,7 @@ export default function TicketsPage() {
   const queryClient = useQueryClient();
   const [searchTerm, setSearchTerm] = useState('');
   const [filterTab, setFilterTab] = useState('all');
+  const [viewMode, setViewMode] = useState<'list' | 'kanban'>('kanban');
 
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedTicket, setSelectedTicket] = useState<any | null>(null);
@@ -219,6 +221,22 @@ export default function TicketsPage() {
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input placeholder="Search issue or asset..." className="pl-9 h-9 bg-background border-input text-sm" value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} />
             </div>
+            
+            <div className="flex bg-muted/50 p-1 rounded-md">
+              <button 
+                onClick={() => setViewMode('kanban')} 
+                className={`p-1.5 rounded-sm transition-colors ${viewMode === 'kanban' ? 'bg-background shadow-sm text-foreground' : 'text-muted-foreground hover:text-foreground'}`}
+              >
+                <LayoutGrid className="w-4 h-4" />
+              </button>
+              <button 
+                onClick={() => setViewMode('list')} 
+                className={`p-1.5 rounded-sm transition-colors ${viewMode === 'list' ? 'bg-background shadow-sm text-foreground' : 'text-muted-foreground hover:text-foreground'}`}
+              >
+                <List className="w-4 h-4" />
+              </button>
+            </div>
+
             <Button variant="outline" size="sm" className="h-9 shrink-0 flex-1 md:flex-none" onClick={() => setIsExportModalOpen(true)}>
               <Download className="w-4 h-4 mr-1.5" /> Export
             </Button>
@@ -228,8 +246,16 @@ export default function TicketsPage() {
           </div>
         </div>
 
-        <div className="p-4 bg-muted/10">
-          <DataTable columns={columns} data={filteredTickets} isLoading={isLoading} />
+        <div className={`p-4 ${viewMode === 'list' ? 'bg-muted/10' : 'bg-background'}`}>
+          {viewMode === 'kanban' ? (
+            <TicketKanbanBoard 
+              tickets={filteredTickets} 
+              onTicketClick={(t) => { setSelectedTicket(t); setIsModalOpen(true); }}
+              onStatusChange={refreshData}
+            />
+          ) : (
+            <DataTable columns={columns} data={filteredTickets} isLoading={isLoading} />
+          )}
         </div>
       </Card>
 

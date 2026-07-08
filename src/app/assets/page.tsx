@@ -3,7 +3,7 @@ import { useState, useEffect, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { Search, Plus, MoreHorizontal, Edit, Trash2, CheckCircle2, AlertCircle, Clock, Ban, Download, Printer } from 'lucide-react';
+import { Search, Plus, MoreHorizontal, Edit, Trash2, CheckCircle2, AlertCircle, Clock, Ban, Download, Printer, CheckSquare } from 'lucide-react';
 import { QRCodeSVG } from 'qrcode.react';
 import toast from 'react-hot-toast';
 import AssetSheet from '@/components/AssetSheet';
@@ -19,6 +19,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import * as Tabs from '@radix-ui/react-tabs';
 import { DataTable } from '@/components/DataTable';
 import { ColumnDef } from '@tanstack/react-table';
+import { Checkbox } from '@/components/ui/checkbox';
 
 const statusConfig: Record<string, { icon: any; className: string }> = {
   'ใช้งาน': { icon: CheckCircle2, className: 'text-emerald-600 bg-emerald-50 border-emerald-200/50' },
@@ -29,15 +30,19 @@ const statusConfig: Record<string, { icon: any; className: string }> = {
   'จำหน่าย': { icon: Ban, className: 'text-gray-500 bg-gray-50 border-gray-200/50' },
 };
 
-function HighlightHandler({ onHighlight }: { onHighlight: (id: string) => void }) {
+function HighlightHandler({ onHighlight, onFilterStatus }: { onHighlight: (id: string) => void, onFilterStatus: (status: string) => void }) {
   const searchParams = useSearchParams();
   const highlightId = searchParams.get('highlight');
+  const statusFilter = searchParams.get('status');
 
   useEffect(() => {
     if (highlightId) {
       onHighlight(highlightId);
     }
-  }, [highlightId, onHighlight]);
+    if (statusFilter) {
+      onFilterStatus(statusFilter);
+    }
+  }, [highlightId, statusFilter, onHighlight, onFilterStatus]);
 
   return null;
 }
@@ -54,6 +59,8 @@ export default function AssetsPage() {
   const [selectedAssetId, setSelectedAssetId] = useState<string | undefined>(undefined);
   const [isExportModalOpen, setIsExportModalOpen] = useState(false);
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
+  const [selectedRows, setSelectedRows] = useState<any[]>([]);
+  const [bulkDeleteConfirm, setBulkDeleteConfirm] = useState(false);
 
   const { data: assets = [], isLoading } = useQuery({
     queryKey: ['assets'],
@@ -80,6 +87,34 @@ export default function AssetsPage() {
         details: formatAuditDetails('delete', deletedAsset?.name || 'Unknown'),
       });
       toast.success('Asset deleted');
+      queryClient.invalidateQueries({ queryKey: ['assets'] });
+    },
+    onError: (err: any) => toast.error('Error: ' + err.message)
+  });
+
+  const bulkDeleteMutation = useMutation({
+    mutationFn: async (ids: string[]) => {
+      const { error } = await supabase.from('assets').delete().in('id', ids);
+      if (error) throw error;
+      return ids;
+    },
+    onSuccess: (deletedIds) => {
+      toast.success(`Deleted ${deletedIds.length} assets`);
+      setSelectedRows([]);
+      queryClient.invalidateQueries({ queryKey: ['assets'] });
+    },
+    onError: (err: any) => toast.error('Error: ' + err.message)
+  });
+
+  const bulkUpdateStatusMutation = useMutation({
+    mutationFn: async ({ ids, status }: { ids: string[], status: string }) => {
+      const { error } = await supabase.from('assets').update({ status }).in('id', ids);
+      if (error) throw error;
+      return { ids, status };
+    },
+    onSuccess: ({ ids, status }) => {
+      toast.success(`Updated status to ${status} for ${ids.length} assets`);
+      setSelectedRows([]);
       queryClient.invalidateQueries({ queryKey: ['assets'] });
     },
     onError: (err: any) => toast.error('Error: ' + err.message)
@@ -135,6 +170,28 @@ export default function AssetsPage() {
   const uniqueCategories = Array.from(new Set(assets.map(a => a.categories?.name).filter(Boolean))) as string[];
 
   const columns: ColumnDef<any>[] = [
+    {
+      id: 'select',
+      header: ({ table }) => (
+        <Checkbox
+          checked={table.getIsAllPageRowsSelected() || (table.getIsSomePageRowsSelected() && "indeterminate")}
+          onCheckedChange={(value) => table.toggleAllPageRowsSelected(!!value)}
+          aria-label="Select all"
+          className="translate-y-[2px]"
+        />
+      ),
+      cell: ({ row }) => (
+        <Checkbox
+          checked={row.getIsSelected()}
+          onCheckedChange={(value) => row.toggleSelected(!!value)}
+          aria-label="Select row"
+          className="translate-y-[2px]"
+          onClick={(e) => e.stopPropagation()}
+        />
+      ),
+      enableSorting: false,
+      enableHiding: false,
+    },
     {
       accessorKey: 'name',
       header: 'ทรัพย์สิน',
@@ -309,11 +366,45 @@ export default function AssetsPage() {
           </div>
         </div>
 
+        {selectedRows.length > 0 && (
+          <div className="bg-blue-50 dark:bg-blue-900/20 border-b border-blue-100 dark:border-blue-800/30 px-5 py-3 flex flex-wrap items-center justify-between gap-4 transition-all duration-300 animate-in slide-in-from-top-2">
+            <div className="flex items-center gap-2">
+              <CheckSquare className="w-5 h-5 text-blue-600 dark:text-blue-400" />
+              <span className="font-semibold text-blue-900 dark:text-blue-300 text-sm">{selectedRows.length} items selected</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <Select onValueChange={(val) => {
+                if (val) {
+                  bulkUpdateStatusMutation.mutate({ ids: selectedRows.map(r => r.id), status: val });
+                }
+              }}>
+                <SelectTrigger className="h-9 w-[160px] bg-white dark:bg-slate-800 text-sm border-blue-200 dark:border-blue-700">
+                  <SelectValue placeholder="Update Status..." />
+                </SelectTrigger>
+                <SelectContent>
+                  {['ใช้งาน', 'ส่งซ่อม', 'สำรอง', 'ส่งคืน', 'ชำรุด', 'จำหน่าย'].map(s => (
+                    <SelectItem key={s} value={s}>{s}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+
+              <Button variant="outline" size="sm" className="h-9 border-blue-200 hover:bg-blue-100 text-blue-700 transition-colors" onClick={() => window.print()}>
+                <Printer className="w-4 h-4 mr-2" /> Print QR
+              </Button>
+              <Button variant="destructive" size="sm" className="h-9" onClick={() => setBulkDeleteConfirm(true)}>
+                <Trash2 className="w-4 h-4 mr-2" /> Delete
+              </Button>
+            </div>
+          </div>
+        )}
+
         <div className="p-1 bg-slate-50/50 dark:bg-slate-900/50">
           <DataTable 
             columns={columns} 
             data={filteredAssets} 
             isLoading={isLoading} 
+            enableRowSelection={true}
+            onRowSelectionChange={setSelectedRows}
             onRowClick={(row) => {
               setSelectedAssetId(row.id);
               setSheetMode('view');
@@ -352,6 +443,19 @@ export default function AssetsPage() {
         variant="danger"
       />
 
+      <ConfirmDialog
+        isOpen={bulkDeleteConfirm}
+        onClose={() => setBulkDeleteConfirm(false)}
+        onConfirm={() => {
+          bulkDeleteMutation.mutate(selectedRows.map(r => r.id));
+          setBulkDeleteConfirm(false);
+        }}
+        title={`ลบทรัพย์สิน ${selectedRows.length} รายการ`}
+        description={`คุณแน่ใจหรือไม่ว่าต้องการลบทรัพย์สินทั้ง ${selectedRows.length} รายการนี้? ข้อมูลที่เกี่ยวข้องทั้งหมดจะถูกลบถาวรและไม่สามารถย้อนกลับได้`}
+        confirmLabel="ลบทรัพย์สินที่เลือก"
+        variant="danger"
+      />
+
       <ReportExportModal 
         isOpen={isExportModalOpen} 
         onClose={() => setIsExportModalOpen(false)} 
@@ -361,7 +465,7 @@ export default function AssetsPage() {
       <div className="hidden print:block print:w-full print:bg-white print:text-black">
         <h2 className="text-2xl font-bold mb-6 text-center">Asset QR Labels</h2>
         <div className="grid grid-cols-4 gap-6 place-items-center">
-          {filteredAssets.map((asset: any) => (
+          {(selectedRows.length > 0 ? selectedRows : filteredAssets).map((asset: any) => (
             <div key={asset.id} className="border-2 border-black p-4 rounded-lg flex flex-col items-center justify-center text-center w-full max-w-[200px] break-inside-avoid">
               <QRCodeSVG value={`${window.location.origin}/scan?code=${asset.asset_code}`} size={120} />
               <p className="font-bold mt-3 text-sm">{asset.asset_code || 'N/A'}</p>
@@ -372,11 +476,16 @@ export default function AssetsPage() {
       </div>
 
       <Suspense fallback={null}>
-        <HighlightHandler onHighlight={(id) => {
-          setSelectedAssetId(id);
-          setSheetMode('view');
-          setIsSheetOpen(true);
-        }} />
+        <HighlightHandler 
+          onHighlight={(id) => {
+            setSelectedAssetId(id);
+            setSheetMode('view');
+            setIsSheetOpen(true);
+          }} 
+          onFilterStatus={(status) => {
+            setFilterTab(status);
+          }}
+        />
       </Suspense>
     </div>
   );
