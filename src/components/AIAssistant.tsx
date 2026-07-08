@@ -302,7 +302,26 @@ export default function AIAssistant() {
           </div>
 
           {/* Input Area */}
-          <div className="p-3 bg-white border-t flex gap-2">
+          <div className="bg-white border-t flex flex-col">
+            {/* Suggestion Chips */}
+            <div className="flex overflow-x-auto scrollbar-none px-3 py-2 gap-2 border-b">
+              {[
+                "ค้นหาอุปกรณ์ที่หมดประกัน",
+                "สรุปค่าใช้จ่ายซ่อมเดือนนี้",
+                "วาดกราฟสถานะอุปกรณ์",
+                "สรุปประวัติการซ่อม"
+              ].map((chip, idx) => (
+                <button
+                  key={idx}
+                  onClick={() => handleSend(chip)}
+                  disabled={isAiLoading}
+                  className="whitespace-nowrap px-3 py-1.5 bg-blue-50 hover:bg-blue-100 text-blue-700 text-xs rounded-full border border-blue-200 transition-colors shrink-0 disabled:opacity-50"
+                >
+                  {chip}
+                </button>
+              ))}
+            </div>
+            <div className="p-3 flex gap-2">
             <Input
               value={chatInput}
               onChange={(e) => setChatInput(e.target.value)}
@@ -321,6 +340,7 @@ export default function AIAssistant() {
             >
               <Send className="w-4 h-4" />
             </Button>
+            </div>
           </div>
         </div>
       )}

@@ -51,6 +51,8 @@ export default function TicketModal({ isOpen, onClose, ticketId }: { isOpen: boo
 
   const [selectedPartId, setSelectedPartId] = useState<string>('');
   const [partQty, setPartQty] = useState<number>(1);
+  const [comments, setComments] = useState<{author: string, text: string, time: string}[]>([]);
+  const [newComment, setNewComment] = useState('');
 
   const { data: ticketData, isLoading: isLoadingTicket } = useQuery({
     queryKey: ['repair_ticket', ticketId],
@@ -66,15 +68,29 @@ export default function TicketModal({ isOpen, onClose, ticketId }: { isOpen: boo
   useEffect(() => {
     if (isOpen) {
       if (ticketId && ticketData) {
+        let desc = ticketData.description || '';
+        let loadedComments: any[] = [];
+        if (desc.includes('<!--COMMENTS-->')) {
+          const parts = desc.split('<!--COMMENTS-->');
+          desc = parts[0].trim();
+          try {
+            loadedComments = JSON.parse(parts[1]);
+          } catch(e) {}
+        }
+        
         form.reset({
           ...ticketData,
+          description: desc,
           cost: ticketData.cost ? Number(ticketData.cost) : null
         });
+        setComments(loadedComments);
       } else if (!ticketId) {
-        form.reset({ status: 'เปิด', priority: 'ปกติ' });
+        form.reset({ status: 'เปิด', priority: 'ปกติ', description: '' });
+        setComments([]);
       }
       setSelectedPartId('');
       setPartQty(1);
+      setNewComment('');
     }
   }, [isOpen, ticketId, ticketData, form]);
 
@@ -126,6 +142,7 @@ export default function TicketModal({ isOpen, onClose, ticketId }: { isOpen: boo
       });
       toast.success(ticketId ? 'Ticket updated successfully' : 'Ticket created successfully');
       queryClient.invalidateQueries({ queryKey: ['repair_tickets'] });
+      queryClient.invalidateQueries({ queryKey: ['asset_timeline'] });
       queryClient.invalidateQueries({ queryKey: ['stock_items'] });
       onClose();
     },
@@ -133,20 +150,37 @@ export default function TicketModal({ isOpen, onClose, ticketId }: { isOpen: boo
   });
 
   const onSubmit = (data: TicketFormValues) => {
-    saveMutation.mutate(data);
+    let finalComments = [...comments];
+    if (newComment.trim()) {
+      finalComments.push({
+        author: 'User', // In a real app, get from auth
+        text: newComment.trim(),
+        time: new Date().toISOString()
+      });
+      setComments(finalComments);
+      setNewComment('');
+    }
+    
+    let finalDescription = data.description || '';
+    if (finalComments.length > 0) {
+      finalDescription += `\n<!--COMMENTS-->${JSON.stringify(finalComments)}`;
+    }
+    
+    saveMutation.mutate({ ...data, description: finalDescription });
   };
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
-      <DialogContent className="sm:max-w-[500px] bg-background text-foreground transition-colors duration-300">
-        <DialogHeader>
+      <DialogContent className="sm:max-w-[600px] bg-background text-foreground transition-colors duration-300 max-h-[90vh] flex flex-col p-0">
+        <DialogHeader className="p-6 pb-4 border-b shrink-0">
           <DialogTitle className="text-xl font-bold">{ticketId ? 'Edit Repair Ticket' : 'Create Repair Ticket'}</DialogTitle>
         </DialogHeader>
 
         {isLoadingTicket ? (
           <div className="py-12 text-center text-muted-foreground">Loading...</div>
         ) : (
-          <form id="ticket-form" onSubmit={form.handleSubmit(onSubmit)} className="space-y-6 mt-4">
+          <div className="flex-1 overflow-y-auto p-6 pt-2">
+            <form id="ticket-form" onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
             
             <div className="space-y-2">
               <Label>Asset (อุปกรณ์ที่เสีย)</Label>
@@ -234,13 +268,53 @@ export default function TicketModal({ isOpen, onClose, ticketId }: { isOpen: boo
               {selectedPartId && <p className="text-xs text-muted-foreground">This will deduct stock and log a transaction automatically upon save.</p>}
             </div>
 
+            <div className="space-y-4 pt-4 border-t border-border">
+              <Label className="text-primary font-semibold">Activity & Comments (ความคืบหน้า)</Label>
+              {comments.length > 0 ? (
+                <div className="space-y-3 bg-muted/30 p-4 rounded-lg border border-border">
+                  {comments.map((comment, idx) => (
+                    <div key={idx} className="flex gap-3 text-sm">
+                      <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
+                        <span className="text-primary font-bold text-xs">{comment.author.charAt(0)}</span>
+                      </div>
+                      <div className="flex-1 bg-background border rounded-lg p-3 shadow-sm">
+                        <div className="flex justify-between items-start mb-1">
+                          <span className="font-semibold text-xs">{comment.author}</span>
+                          <span className="text-[10px] text-muted-foreground">{new Date(comment.time).toLocaleString('th-TH')}</span>
+                        </div>
+                        <p className="text-muted-foreground text-xs whitespace-pre-wrap">{comment.text}</p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="text-center py-4 bg-muted/30 rounded-lg border border-border border-dashed text-xs text-muted-foreground">ยังไม่มีการบันทึกความคืบหน้า</div>
+              )}
+              
+              <div className="flex gap-2">
+                <Input 
+                  placeholder="พิมพ์ข้อความเพื่อบันทึกความคืบหน้า..." 
+                  value={newComment} 
+                  onChange={e => setNewComment(e.target.value)}
+                  onKeyDown={e => {
+                    if (e.key === 'Enter') {
+                      e.preventDefault();
+                      onSubmit(form.getValues());
+                    }
+                  }}
+                />
+                <Button type="button" variant="secondary" onClick={() => { if(newComment.trim()) onSubmit(form.getValues()); }}>Add</Button>
+              </div>
+            </div>
+
             <div className="flex justify-end gap-3 pt-6 border-t border-border mt-6">
               <Button type="button" variant="outline" onClick={onClose}>Cancel</Button>
               <Button type="submit" disabled={saveMutation.isPending} className="bg-primary hover:bg-primary/90 text-primary-foreground">
                 {saveMutation.isPending ? 'Saving...' : 'Save Ticket'}
               </Button>
             </div>
-          </form>
+            </form>
+          </div>
         )}
       </DialogContent>
     </Dialog>

@@ -95,7 +95,7 @@ export default function TicketKanbanBoard({
           <div key={column.id} className={`flex flex-col w-80 shrink-0 rounded-xl border ${column.color} overflow-hidden flex-1`}>
             <div className="p-3 border-b border-black/5 dark:border-white/5 font-semibold text-sm flex justify-between items-center bg-black/5 dark:bg-white/5">
               <span>{column.title}</span>
-              <Badge variant="secondary" className="bg-background dark:bg-slate-800">{columns[column.id]?.length || 0}</Badge>
+              <span className="inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-semibold bg-background dark:bg-slate-800">{columns[column.id]?.length || 0}</span>
             </div>
             
             <Droppable droppableId={column.id}>

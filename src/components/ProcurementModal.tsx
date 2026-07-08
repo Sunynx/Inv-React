@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Label } from '@/components/ui/label';
-import { Plus, Trash2, Printer, Save, X, FileSpreadsheet, Paperclip, Loader2 } from 'lucide-react';
+import { Plus, Trash2, Printer, Save, X, FileSpreadsheet, Paperclip, Loader2, CheckCircle2 } from 'lucide-react';
 import { Textarea } from '@/components/ui/textarea';
 import toast from 'react-hot-toast';
 import ExcelJS from 'exceljs';
@@ -277,11 +277,55 @@ export default function ProcurementModal({ isOpen, onClose, document, onSaved }:
             </div>
           </div>
           <div className="flex items-center gap-2">
+            <Button variant="outline" size="sm" onClick={() => window.print()}><Printer className="w-4 h-4 mr-1" /> Print</Button>
             <Button variant="outline" size="sm" onClick={exportToExcel}><FileSpreadsheet className="w-4 h-4 mr-1" /> Excel</Button>
             <Button variant="outline" size="sm" onClick={onClose}><X className="w-4 h-4 mr-1" /> Cancel</Button>
             <Button onClick={handleSave} disabled={isSaving} className="bg-blue-600 hover:bg-blue-700">
               <Save className="w-4 h-4 mr-1" /> {isSaving ? 'Saving...' : 'Save Document'}
             </Button>
+          </div>
+        </div>
+
+        <div className="bg-white border-b shadow-sm px-6 py-4 flex flex-col items-center justify-center print:hidden">
+          <div className="w-full max-w-3xl flex items-center justify-between relative">
+            <div className="absolute left-0 top-1/2 -translate-y-1/2 w-full h-1 bg-slate-100 dark:bg-slate-800 -z-10 rounded-full"></div>
+            {['รอดำเนินการ', 'อนุมัติแล้ว', 'สั่งซื้อแล้ว', 'ได้รับของแล้ว'].map((step, idx) => {
+              const statusOrder = ['รอดำเนินการ', 'อนุมัติแล้ว', 'สั่งซื้อแล้ว', 'ได้รับของแล้ว', 'รับของบางส่วน'];
+              let currentIndex = statusOrder.indexOf(status);
+              if (status === 'ยกเลิก') currentIndex = -1;
+              if (status === 'รับของบางส่วน' && step === 'ได้รับของแล้ว') currentIndex = 3; // Treat partial as almost there
+              
+              const stepIndex = ['รอดำเนินการ', 'อนุมัติแล้ว', 'สั่งซื้อแล้ว', 'ได้รับของแล้ว'].indexOf(step);
+              
+              let state = 'pending';
+              if (status === 'ยกเลิก') {
+                state = 'cancelled';
+              } else if (stepIndex < currentIndex) {
+                state = 'completed';
+              } else if (stepIndex === currentIndex) {
+                state = 'current';
+              }
+
+              return (
+                <div key={step} className="flex flex-col items-center gap-2 bg-white px-2">
+                  <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold border-2 transition-colors
+                    ${state === 'completed' ? 'bg-emerald-500 border-emerald-500 text-white' : 
+                      state === 'current' ? 'bg-blue-600 border-blue-600 text-white ring-4 ring-blue-100' : 
+                      state === 'cancelled' ? 'bg-red-100 border-red-500 text-red-600' :
+                      'bg-slate-100 border-slate-300 text-slate-400'
+                    }
+                  `}>
+                    {state === 'completed' ? <CheckCircle2 className="w-5 h-5" /> : idx + 1}
+                  </div>
+                  <span className={`text-xs font-medium ${
+                    state === 'current' ? 'text-blue-700' : 
+                    state === 'completed' ? 'text-emerald-600' : 
+                    state === 'cancelled' ? 'text-red-500' : 
+                    'text-slate-400'
+                  }`}>{step}</span>
+                </div>
+              );
+            })}
           </div>
         </div>
 

@@ -8,7 +8,7 @@ import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 
-import { Camera, Upload, X, CheckCircle2, AlertCircle, Clock, Ban, ChevronLeft, ChevronRight, Edit, FileText, FileSpreadsheet, Paperclip, Cpu, Monitor, Wifi, Users, ShoppingCart, Image as ImageIcon, Wand2, Printer, PenLine } from 'lucide-react';
+import { Camera, Upload, X, CheckCircle2, AlertCircle, Clock, Ban, ChevronLeft, ChevronRight, Edit, FileText, FileSpreadsheet, Paperclip, Cpu, Monitor, Wifi, Users, ShoppingCart, Image as ImageIcon, Wand2, Printer, PenLine, Trash2 } from 'lucide-react';
 import SignatureCanvas from 'react-signature-canvas';
 import { QRCodeSVG } from 'qrcode.react';
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
@@ -76,7 +76,7 @@ const assetSchema = z.object({
 });
 type AssetFormValues = z.infer<typeof assetSchema>;
 
-export default function AssetSheet({ isOpen, onClose, assetId, mode = 'edit', onEdit }: { isOpen: boolean; onClose: () => void; assetId?: string; mode?: 'view' | 'edit'; onEdit?: () => void; }) {
+export default function AssetSheet({ isOpen, onClose, assetId, mode = 'edit', onEdit, onEditComplete }: { isOpen: boolean; onClose: () => void; assetId?: string; mode?: 'view' | 'edit'; onEdit?: () => void; onEditComplete?: () => void; }) {
   const [loading, setLoading] = useState(false);
   const sigCanvas = useRef<SignatureCanvas>(null);
   const [uploading, setUploading] = useState(false);
@@ -85,7 +85,7 @@ export default function AssetSheet({ isOpen, onClose, assetId, mode = 'edit', on
 
   const [images, setImages] = useState<string[]>([]);
   const [thumbnailUrl, setThumbnailUrl] = useState<string | null>(null);
-  const [referenceUrl, setReferenceUrl] = useState<string | null>(null);
+  const [attachments, setAttachments] = useState<{name: string, url: string}[]>([]);
   const [signatureUrl, setSignatureUrl] = useState<string | null>(null);
   const [newSignature, setNewSignature] = useState(false);
   const [showSignDialog, setShowSignDialog] = useState(false);
@@ -137,7 +137,22 @@ export default function AssetSheet({ isOpen, onClose, assetId, mode = 'edit', on
         setImages(initialImages);
         setThumbnailUrl(assetData.thumbnail_url || (initialImages.length > 0 ? initialImages[0] : null));
         setSignatureUrl(assetData.signatures?.[0]?.signature_url || null);
-        setReferenceUrl(assetData.reference_url || null);
+        
+        let initialAttachments: {name: string, url: string}[] = [];
+        if (assetData.reference_url) {
+          try {
+            const parsed = JSON.parse(assetData.reference_url);
+            if (Array.isArray(parsed)) {
+              initialAttachments = parsed;
+            } else {
+              initialAttachments = [{ name: 'Attached Document', url: assetData.reference_url }];
+            }
+          } catch (e) {
+            initialAttachments = [{ name: 'Attached Document', url: assetData.reference_url }];
+          }
+        }
+        setAttachments(initialAttachments);
+        
         setNewSignature(false);
 
         form.reset({
@@ -149,7 +164,7 @@ export default function AssetSheet({ isOpen, onClose, assetId, mode = 'edit', on
         setImages([]);
         setThumbnailUrl(null);
         setSignatureUrl(null);
-        setReferenceUrl(null);
+        setAttachments([]);
         setNewSignature(false);
       }
     }
@@ -203,25 +218,52 @@ export default function AssetSheet({ isOpen, onClose, assetId, mode = 'edit', on
   const handleDocumentUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     try {
       setUploading(true);
-      const file = e.target.files?.[0];
-      if (!file) return;
-      const fileExt = file.name.split('.').pop();
-      const fileName = `docs/${uuidv4()}.${fileExt}`;
-      const { error: uploadError } = await supabase.storage.from('asset_images').upload(fileName, file);
-      if (uploadError) throw uploadError;
-      const { data } = supabase.storage.from('asset_images').getPublicUrl(fileName);
+      const files = Array.from(e.target.files || []);
+      if (files.length === 0) return;
       
-      setReferenceUrl(data.publicUrl);
-      toast.success('Document uploaded');
+      const newAttachments = [...attachments];
+      for (const file of files) {
+        const fileExt = file.name.split('.').pop();
+        const fileName = `docs/${uuidv4()}.${fileExt}`;
+        const { error: uploadError } = await supabase.storage.from('asset_images').upload(fileName, file);
+        if (uploadError) throw uploadError;
+        const { data } = supabase.storage.from('asset_images').getPublicUrl(fileName);
+        newAttachments.push({ name: file.name, url: data.publicUrl });
+      }
+      
+      setAttachments(newAttachments);
+      toast.success('Document(s) uploaded');
     } catch (err: any) { toast.error('Upload error: ' + err.message); }
     finally { setUploading(false); }
+  };
+
+  const calculateDepreciation = (price: any, purchaseDate: any) => {
+    if (!price || !purchaseDate) return null;
+    const pDate = new Date(purchaseDate);
+    const now = new Date();
+    const monthsPassed = (now.getFullYear() - pDate.getFullYear()) * 12 + (now.getMonth() - pDate.getMonth());
+    const lifespanMonths = 60; // 5 years
+    if (monthsPassed >= lifespanMonths) return 0;
+    if (monthsPassed < 0) return Number(price);
+    const currentValue = Number(price) * (1 - (monthsPassed / lifespanMonths));
+    return currentValue > 0 ? currentValue : 0;
+  };
+
+  const removeAttachment = (idx: number) => {
+    const newAttachments = [...attachments];
+    newAttachments.splice(idx, 1);
+    setAttachments(newAttachments);
   };
 
   const saveMutation = useMutation({
     mutationFn: async (data: any) => {
       let finalAssetId = assetId;
       
-      const payload = { ...data, reference_url: referenceUrl, thumbnail_url: thumbnailUrl };
+      const payload = { 
+        ...data, 
+        reference_url: attachments.length > 0 ? JSON.stringify(attachments) : null, 
+        thumbnail_url: thumbnailUrl 
+      };
       
       // Remove signature fields before saving to assets table
       const sigUrl = payload.signature_url;
@@ -278,18 +320,63 @@ export default function AssetSheet({ isOpen, onClose, assetId, mode = 'edit', on
     },
     onSuccess: (_data, variables) => {
       const action = assetId ? 'update' : 'create';
+      let extra = '';
+      if (assetId && assetData) {
+        const changes: string[] = [];
+        const fieldLabels: Record<string, string> = {
+          name: 'ชื่อ',
+          status: 'สถานะ',
+          assigned_user: 'ผู้ใช้งาน',
+          location: 'สถานที่',
+          department_id: 'แผนก',
+          brand: 'ยี่ห้อ',
+          model: 'รุ่น',
+          category_id: 'หมวดหมู่',
+          serial_number: 'SN',
+          notes: 'หมายเหตุ',
+          cpu: 'CPU',
+          ram: 'RAM',
+          storage: 'Storage'
+        };
+        
+        Object.keys(variables).forEach(key => {
+          if (['new_signature', 'signature_url', 'attachments', 'images'].includes(key)) return;
+          const oldVal = assetData[key];
+          const newVal = (variables as any)[key];
+          if (oldVal !== newVal && (oldVal || newVal)) {
+             const label = fieldLabels[key] || key;
+             changes.push(`${label}: ${oldVal || '-'} ➔ ${newVal || '-'}`);
+          }
+        });
+        
+        if ((variables as any).new_signature) {
+          changes.push('อัปเดตลายเซ็นรับมอบใหม่');
+        }
+        
+        if (changes.length > 0) {
+          extra = `อัปเดต: ${changes.join(', ')}`;
+        }
+      }
+
       logAudit({
         asset_id: assetId || undefined,
         action,
-        details: formatAuditDetails(action, variables?.name),
+        details: formatAuditDetails(action, variables?.name, extra),
       });
       toast.success(assetId ? 'Asset updated' : 'Asset created');
       queryClient.invalidateQueries({ queryKey: ['assets'] });
       if (assetId) {
         queryClient.invalidateQueries({ queryKey: ['asset', assetId] });
+        queryClient.invalidateQueries({ queryKey: ['asset_timeline', assetId] });
+        if (onEditComplete) {
+          onEditComplete();
+        } else {
+          onClose();
+        }
+      } else {
+        onClose();
       }
       queryClient.invalidateQueries({ queryKey: ['dashboard_data'] });
-      onClose();
     },
     onError: (err: any) => toast.error('Error: ' + err.message)
   });
@@ -493,10 +580,24 @@ export default function AssetSheet({ isOpen, onClose, assetId, mode = 'edit', on
                       <DetailItem label="Brand / Model" value={`${formData.brand || ''} ${formData.model || ''}`.trim() || null} />
                       <DetailItem label="CPU / RAM" value={`${formData.cpu || '-'} / ${formData.ram || '-'}`} />
                       <DetailItem label="Storage" value={formData.storage} />
-                      <DetailItem label="GPU" value={formData.gpu} />
-                      <DetailItem label="Display" value={formData.display} />
+                      <DetailItem label="NAS User" value={formData.nas_user} />
+                      <DetailItem label="Password" value={formData.password} />
                     </div>
                   </div>
+
+                  {attachments.length > 0 && (
+                    <div className="space-y-4">
+                      <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider border-b pb-1">Attachments</h3>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                        {attachments.map((file, idx) => (
+                          <div key={idx} className="flex items-center bg-white dark:bg-slate-800 border rounded p-2 text-xs shadow-sm">
+                            {file.url.endsWith('.xlsx') || file.url.endsWith('.xls') ? <FileSpreadsheet className="h-4 w-4 text-green-600 shrink-0 mr-2" /> : <FileText className="h-4 w-4 text-blue-600 shrink-0 mr-2" />}
+                            <a href={file.url} target="_blank" rel="noreferrer" className="text-primary hover:underline truncate flex-1" title={file.name}>{file.name}</a>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
 
                   <div className="space-y-4">
                     <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider border-b pb-1">Software & Licenses</h3>
@@ -526,6 +627,9 @@ export default function AssetSheet({ isOpen, onClose, assetId, mode = 'edit', on
                       <DetailItem label="Warranty Expiry" value={formData.warranty_expiry} />
                       <DetailItem label="Supplier" value={formData.supplier} />
                       <DetailItem label="Price (THB)" value={formData.price ? `฿${Number(formData.price).toLocaleString()}` : null} />
+                      {formData.price && formData.purchase_date && (
+                        <DetailItem label="Current Value (Depreciation)" value={`฿${calculateDepreciation(formData.price, formData.purchase_date)?.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}`} />
+                      )}
                       <DetailItem label="PO/PR Number" value={formData.po_number} />
                     </div>
                   </div>
@@ -536,15 +640,6 @@ export default function AssetSheet({ isOpen, onClose, assetId, mode = 'edit', on
                     <div className="space-y-2">
                       <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider border-b pb-1">Notes</h3>
                       <p className="text-sm bg-muted/30 p-3 rounded-md border border-border/50">{formData.notes}</p>
-                    </div>
-                  )}
-                  {referenceUrl && (
-                    <div className="space-y-2">
-                      <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider border-b pb-1">Reference Document</h3>
-                      <a href={referenceUrl} target="_blank" rel="noreferrer" className="inline-flex items-center gap-2 text-sm text-blue-600 hover:text-blue-800 hover:bg-blue-50 p-2 rounded-md border border-blue-100 transition-colors">
-                        {referenceUrl.endsWith('.xlsx') || referenceUrl.endsWith('.xls') ? <FileSpreadsheet size={18} className="text-green-600" /> : <FileText size={18} className="text-red-500" />}
-                        <span className="font-medium">ดูเอกสารอ้างอิง</span>
-                      </a>
                     </div>
                   )}
                 </div>
@@ -761,30 +856,35 @@ export default function AssetSheet({ isOpen, onClose, assetId, mode = 'edit', on
                 </div>
 
                 <div className="space-y-1.5 md:col-span-2">
-                  <Label className="text-sm font-bold">หมายเลข PO/PR</Label>
-                  <div className="flex gap-3 items-start">
-                    <div className="flex-1">
-                      <Input {...form.register('po_number')} placeholder="เลขที่เอกสารสั่งซื้อ" />
-                    </div>
-                    <div className="shrink-0">
-                      {referenceUrl ? (
-                        <div className="flex items-center gap-2 h-8 px-3 bg-muted/50 border border-input rounded-lg">
-                          {referenceUrl.endsWith('.xlsx') || referenceUrl.endsWith('.xls') ? <FileSpreadsheet className="h-4 w-4 text-green-600 shrink-0" /> : <FileText className="h-4 w-4 text-destructive shrink-0" />}
-                          <a href={referenceUrl} target="_blank" rel="noreferrer" className="text-primary text-xs font-medium hover:underline truncate max-w-[120px]">
-                            {referenceUrl.split('/').pop() || 'ไฟล์'}
-                          </a>
-                          <button type="button" onClick={() => setReferenceUrl(null)} className="p-0.5 text-muted-foreground hover:text-destructive transition-colors shrink-0" title="ลบไฟล์">
-                            <X size={14} />
-                          </button>
-                        </div>
-                      ) : (
-                        <label className="cursor-pointer inline-flex items-center gap-2 h-8 px-4 bg-muted/30 hover:bg-muted border border-input rounded-lg transition-colors text-sm text-muted-foreground font-medium whitespace-nowrap">
-                          <Paperclip className="h-4 w-4" />
-                          {uploading ? 'อัปโหลด...' : 'แนบไฟล์'}
-                          <input type="file" accept=".pdf,.xlsx,.xls" className="hidden" onChange={handleDocumentUpload} disabled={uploading} />
+                  <Label className="text-sm font-bold">เอกสารแนบ (Attachments)</Label>
+                  <div className="flex flex-col gap-3">
+                    <div className="flex gap-3 items-start">
+                      <div className="flex-1">
+                        <Input {...form.register('po_number')} placeholder="เลขที่เอกสารสั่งซื้อ (PO/PR)" />
+                      </div>
+                      <div className="shrink-0">
+                        <label className="cursor-pointer inline-flex items-center gap-2 h-10 px-4 bg-muted/30 hover:bg-muted border border-input rounded-lg transition-colors text-sm text-muted-foreground font-medium whitespace-nowrap">
+                          {uploading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Paperclip className="h-4 w-4" />}
+                          {uploading ? 'อัปโหลด...' : 'เพิ่มไฟล์แนบ'}
+                          <input type="file" accept=".pdf,.xlsx,.xls,image/*" multiple className="hidden" onChange={handleDocumentUpload} disabled={uploading} />
                         </label>
-                      )}
+                      </div>
                     </div>
+                    {attachments.length > 0 && (
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                        {attachments.map((file, idx) => (
+                          <div key={idx} className="flex items-center justify-between bg-white dark:bg-slate-900 border rounded p-2 text-xs shadow-sm">
+                            <div className="flex items-center overflow-hidden">
+                              {file.url.endsWith('.xlsx') || file.url.endsWith('.xls') ? <FileSpreadsheet className="h-4 w-4 text-green-600 shrink-0 mr-2" /> : <FileText className="h-4 w-4 text-blue-600 shrink-0 mr-2" />}
+                              <a href={file.url} target="_blank" rel="noreferrer" className="text-primary hover:underline truncate mr-2" title={file.name}>{file.name}</a>
+                            </div>
+                            <button type="button" onClick={() => removeAttachment(idx)} className="text-destructive hover:bg-destructive/10 p-1 rounded transition-colors" title="ลบไฟล์">
+                              <Trash2 className="w-4 h-4" />
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+                    )}
                   </div>
                 </div>
               </div>

@@ -1,6 +1,6 @@
 'use client';
 import { useState, useEffect, Suspense } from 'react';
-import { useSearchParams } from 'next/navigation';
+import { useSearchParams, useRouter, usePathname } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Search, Plus, MoreHorizontal, Edit, Trash2, CheckCircle2, AlertCircle, Clock, Ban, Download, Printer, CheckSquare } from 'lucide-react';
@@ -32,17 +32,25 @@ const statusConfig: Record<string, { icon: any; className: string }> = {
 
 function HighlightHandler({ onHighlight, onFilterStatus }: { onHighlight: (id: string) => void, onFilterStatus: (status: string) => void }) {
   const searchParams = useSearchParams();
+  const router = useRouter();
+  const pathname = usePathname();
   const highlightId = searchParams.get('highlight');
   const statusFilter = searchParams.get('status');
 
   useEffect(() => {
+    let shouldReplace = false;
     if (highlightId) {
       onHighlight(highlightId);
+      shouldReplace = true;
     }
     if (statusFilter) {
       onFilterStatus(statusFilter);
+      shouldReplace = true;
     }
-  }, [highlightId, statusFilter, onHighlight, onFilterStatus]);
+    if (shouldReplace) {
+      router.replace(pathname, { scroll: false });
+    }
+  }, [highlightId, statusFilter, onHighlight, onFilterStatus, router, pathname]);
 
   return null;
 }
@@ -431,6 +439,7 @@ export default function AssetsPage() {
         assetId={selectedAssetId} 
         mode={sheetMode}
         onEdit={() => setSheetMode('edit')}
+        onEditComplete={() => setSheetMode('view')}
       />
       
       <ConfirmDialog

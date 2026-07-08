@@ -3,7 +3,7 @@ import { useState, useEffect, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { Search, Plus, ArrowDownToLine, ArrowUpFromLine, CheckCircle2, AlertTriangle, MoreHorizontal, Download } from 'lucide-react';
+import { Search, Plus, ArrowDownToLine, ArrowUpFromLine, CheckCircle2, AlertTriangle, MoreHorizontal, Download, ShoppingCart } from 'lucide-react';
 import ReportExportModal from '@/components/ReportExportModal';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -62,7 +62,7 @@ export default function StockPage() {
   const filteredItems = items.filter(i => {
     const matchSearch = i.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
                         i.sku?.toLowerCase().includes(searchTerm.toLowerCase());
-    const isLowStock = i.quantity <= (i.minimum_quantity || 0);
+    const isLowStock = i.quantity <= (i.min_stock || 0);
     let matchTab = true;
     if (filterTab === 'low') matchTab = isLowStock;
     if (filterTab === 'active') matchTab = i.status === 'Active';
@@ -103,7 +103,7 @@ export default function StockPage() {
       header: 'Status',
       cell: ({ row }) => {
         const item = row.original;
-        const isLowStock = item.quantity <= (item.minimum_quantity || 0);
+        const isLowStock = item.quantity <= (item.min_stock || 0);
         return isLowStock ? (
           <div className="inline-flex items-center text-red-600 dark:text-red-400 text-[13px] font-medium bg-red-50 dark:bg-red-500/10 border border-red-200/50 dark:border-red-500/20 px-2.5 py-1 rounded-full transition-colors">
             <AlertTriangle className="w-3.5 h-3.5 mr-1.5" /> Low Stock
@@ -118,12 +118,27 @@ export default function StockPage() {
     {
       accessorKey: 'quantity',
       header: 'In Stock',
-      cell: ({ row }) => <div className="text-sm font-semibold text-foreground">{row.original.quantity} <span className="font-normal text-muted-foreground text-xs">{row.original.unit}</span></div>
-    },
-    {
-      accessorKey: 'min_stock',
-      header: 'Min. Level',
-      cell: ({ row }) => <span className="text-sm text-muted-foreground">{row.original.min_stock || 0}</span>
+      cell: ({ row }) => {
+        const item = row.original;
+        const minStock = item.min_stock || 0;
+        const maxCapacity = minStock * 3 || 100; // Visual arbitrary max capacity
+        const fillPercentage = Math.min(100, Math.max(0, (item.quantity / maxCapacity) * 100));
+        const isLowStock = item.quantity <= minStock;
+        return (
+          <div className="w-[120px]">
+            <div className="flex justify-between items-end mb-1.5">
+              <span className="text-sm font-bold text-foreground">{item.quantity} <span className="font-normal text-muted-foreground text-xs">{item.unit}</span></span>
+              <span className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider">Min: {minStock}</span>
+            </div>
+            <div className="w-full bg-slate-100 dark:bg-slate-800 rounded-full h-1.5 overflow-hidden">
+              <div 
+                className={`h-1.5 rounded-full ${isLowStock ? 'bg-red-500' : 'bg-emerald-500'}`} 
+                style={{ width: `${fillPercentage}%` }} 
+              />
+            </div>
+          </div>
+        );
+      }
     },
     {
       id: 'actions',
@@ -146,6 +161,14 @@ export default function StockPage() {
                 <DropdownMenuItem onClick={() => { setSelectedItemId(item.id); setIsItemModalOpen(true); }}>
                   Edit Details
                 </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => {
+                    // Logic to draft PR - for now we just show a toast, as full integration requires navigating to PR with state.
+                    import('react-hot-toast').then(t => t.default.success(`Drafted Reorder PR for ${item.name}`));
+                  }} 
+                  className="text-amber-600 font-medium"
+                >
+                  <ShoppingCart className="mr-2 h-4 w-4" /> Reorder (Draft PR)
+                </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
           </div>
@@ -162,6 +185,25 @@ export default function StockPage() {
           <p className="text-sm text-muted-foreground mt-1">Manage IT consumables and spare parts</p>
         </div>
       </div>
+
+      {countLow > 0 && (
+        <Card className="bg-red-50/50 dark:bg-red-900/10 border-red-200 dark:border-red-900/50 shadow-sm overflow-hidden animate-in fade-in slide-in-from-top-4 duration-500">
+          <div className="p-4 sm:p-5 flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between border-b border-red-100 dark:border-red-900/30">
+            <div className="flex items-start gap-3">
+              <div className="p-2 bg-red-100 dark:bg-red-900/40 rounded-lg shrink-0">
+                <AlertTriangle className="w-6 h-6 text-red-600 dark:text-red-400" />
+              </div>
+              <div>
+                <h3 className="text-red-900 dark:text-red-400 font-semibold text-lg flex items-center gap-2">
+                  Low Stock Alert
+                  <span className="bg-red-600 text-white text-xs px-2 py-0.5 rounded-full font-bold">{countLow} items</span>
+                </h3>
+                <p className="text-sm text-red-700/80 dark:text-red-400/80 mt-0.5">These items have dropped below their minimum required threshold.</p>
+              </div>
+            </div>
+          </div>
+        </Card>
+      )}
 
       <Card className="shadow-sm border-border/60 rounded-xl overflow-hidden bg-card border-0 transition-colors duration-300">
         <div className="p-4 border-b border-gray-100 flex flex-col md:flex-row items-center justify-between gap-4">

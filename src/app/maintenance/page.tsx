@@ -2,7 +2,7 @@
 import { useState } from 'react';
 import { supabase } from '@/lib/supabase';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { Search, Plus, Filter, Edit, Trash2 } from 'lucide-react';
+import { Search, Plus, Filter, Edit, Trash2, LayoutList, Calendar as CalendarIcon } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -11,12 +11,15 @@ import MaintenanceModal from '@/components/MaintenanceModal';
 import { format } from 'date-fns';
 import { DataTable } from '@/components/DataTable';
 import { ColumnDef } from '@tanstack/react-table';
+import MaintenanceCalendar from '@/components/MaintenanceCalendar';
+import * as Tabs from '@radix-ui/react-tabs';
 
 export default function MaintenancePage() {
   const queryClient = useQueryClient();
   const [searchTerm, setSearchTerm] = useState('');
   const [filterStatus, setFilterStatus] = useState('all');
   const [filterType, setFilterType] = useState('all');
+  const [viewMode, setViewMode] = useState<'list' | 'calendar'>('calendar');
   
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedRecord, setSelectedRecord] = useState<any | null>(null);
@@ -140,9 +143,21 @@ export default function MaintenancePage() {
           <h1 className="text-3xl font-bold tracking-tight text-foreground">Maintenance (PM)</h1>
           <p className="text-muted-foreground mt-1">Schedule and track preventive maintenance</p>
         </div>
-        <Button onClick={() => { setSelectedRecord(null); setIsModalOpen(true); }} className="bg-primary hover:bg-primary/90 text-primary-foreground">
-          <Plus className="mr-2 h-4 w-4" /> Schedule PM
-        </Button>
+        <div className="flex items-center gap-3">
+          <Tabs.Root value={viewMode} onValueChange={(v) => setViewMode(v as 'list'|'calendar')} className="bg-slate-100 dark:bg-slate-800 p-1 rounded-lg flex items-center">
+            <Tabs.List className="flex gap-1">
+              <Tabs.Trigger value="calendar" className="px-3 py-1.5 text-sm font-medium rounded-md transition-all data-[state=active]:bg-white dark:data-[state=active]:bg-slate-900 data-[state=active]:shadow-sm data-[state=active]:text-primary text-slate-500 hover:text-slate-900 dark:hover:text-slate-300">
+                <CalendarIcon className="w-4 h-4" />
+              </Tabs.Trigger>
+              <Tabs.Trigger value="list" className="px-3 py-1.5 text-sm font-medium rounded-md transition-all data-[state=active]:bg-white dark:data-[state=active]:bg-slate-900 data-[state=active]:shadow-sm data-[state=active]:text-primary text-slate-500 hover:text-slate-900 dark:hover:text-slate-300">
+                <LayoutList className="w-4 h-4" />
+              </Tabs.Trigger>
+            </Tabs.List>
+          </Tabs.Root>
+          <Button onClick={() => { setSelectedRecord(null); setIsModalOpen(true); }} className="bg-primary hover:bg-primary/90 text-primary-foreground">
+            <Plus className="mr-2 h-4 w-4" /> Schedule PM
+          </Button>
+        </div>
       </div>
 
       <Card>
@@ -189,9 +204,25 @@ export default function MaintenancePage() {
         </CardContent>
       </Card>
 
-      <Card className="overflow-hidden border-0">
-        <DataTable columns={columns} data={filteredRecords} isLoading={isLoading} />
-      </Card>
+      {viewMode === 'calendar' ? (
+        <MaintenanceCalendar 
+          records={filteredRecords} 
+          onRecordClick={(record) => {
+            setSelectedRecord(record);
+            setIsModalOpen(true);
+          }} 
+        />
+      ) : (
+        <Card className="overflow-hidden border-0">
+          <CardContent className="p-0">
+            <DataTable 
+              columns={columns} 
+              data={filteredRecords} 
+              isLoading={isLoading}
+            />
+          </CardContent>
+        </Card>
+      )}
 
       <MaintenanceModal 
         isOpen={isModalOpen} 

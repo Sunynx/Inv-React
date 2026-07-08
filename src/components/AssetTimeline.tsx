@@ -118,6 +118,12 @@ export default function AssetTimeline({ assetId }: { assetId: string }) {
                   </div>
                 </div>
               )}
+              {tr.notes && (
+                <div className="mt-2 pt-2 border-t border-border/40">
+                  <span className="text-xs text-muted-foreground font-semibold uppercase tracking-wider block mb-1">Reason / Notes</span>
+                  <p className="text-sm text-foreground whitespace-pre-wrap">{tr.notes}</p>
+                </div>
+              )}
               {tr.signature_url && (
                 <div className="mt-2 pt-2 border-t border-border/40">
                   <span className="text-xs text-muted-foreground font-semibold uppercase tracking-wider block mb-1">Signature</span>
@@ -132,7 +138,7 @@ export default function AssetTimeline({ assetId }: { assetId: string }) {
             date: new Date(tr.transfer_date || tr.created_at),
             type: 'transfer',
             title: 'Asset Transferred',
-            description: (hasUserChange || hasDeptChange || hasLocChange || tr.signature_url) ? descNode : `From: ${tr.from_location || 'Unknown'} → To: ${tr.to_location}`,
+            description: (hasUserChange || hasDeptChange || hasLocChange || tr.signature_url || tr.notes) ? descNode : `From: ${tr.from_location || 'Unknown'} → To: ${tr.to_location}`,
             icon: ArrowRightLeft,
             color: 'bg-purple-500'
           });

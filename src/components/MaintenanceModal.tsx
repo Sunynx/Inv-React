@@ -12,6 +12,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 export default function MaintenanceModal({ isOpen, onClose, recordId }: { isOpen: boolean; onClose: () => void; recordId?: string }) {
   const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState<any>({});
+  const [autoScheduleNext, setAutoScheduleNext] = useState(true);
   const queryClient = useQueryClient();
 
   const { data: assets = [] } = useQuery({
@@ -56,8 +57,41 @@ export default function MaintenanceModal({ isOpen, onClose, recordId }: { isOpen
         if (error) throw error;
       }
     },
-    onSuccess: () => {
+    onSuccess: (_, variables) => {
       toast.success(recordId ? 'Maintenance record updated successfully' : 'Maintenance record created successfully');
+      
+      // Auto-schedule logic
+      if (autoScheduleNext && variables.status === 'completed' && variables.frequency) {
+        let d = new Date(variables.next_due_at || new Date());
+        if (isNaN(d.getTime())) d = new Date();
+        switch(variables.frequency) {
+          case 'daily': d.setDate(d.getDate() + 1); break;
+          case 'weekly': d.setDate(d.getDate() + 7); break;
+          case 'monthly': d.setMonth(d.getMonth() + 1); break;
+          case 'quarterly': d.setMonth(d.getMonth() + 3); break;
+          case 'yearly': d.setFullYear(d.getFullYear() + 1); break;
+        }
+        const nextDateStr = d.toISOString().split('T')[0];
+        
+        const nextPayload = {
+          ...variables,
+          status: 'pending',
+          next_due_at: nextDateStr,
+          cost: null,
+          description: '',
+          performed_by: null
+        };
+        delete nextPayload.id;
+        delete nextPayload.created_at;
+        
+        supabase.from('maintenance_schedules').insert([nextPayload]).then(({error}) => {
+          if (!error) {
+            toast.success(`Next schedule auto-created for ${nextDateStr}`);
+            queryClient.invalidateQueries({ queryKey: ['maintenance_schedules'] });
+          }
+        });
+      }
+
       queryClient.invalidateQueries({ queryKey: ['maintenance_schedules'] });
       onClose();
     },
@@ -135,6 +169,20 @@ export default function MaintenanceModal({ isOpen, onClose, recordId }: { isOpen
                     <SelectItem value="cancelled">ยกเลิก (Cancelled)</SelectItem>
                   </SelectContent>
                 </Select>
+                {formData.status === 'completed' && formData.frequency && (
+                  <div className="flex items-center gap-2 pt-2">
+                    <input 
+                      type="checkbox" 
+                      id="autoSchedule" 
+                      checked={autoScheduleNext}
+                      onChange={e => setAutoScheduleNext(e.target.checked)}
+                      className="rounded border-gray-300 text-primary focus:ring-primary h-4 w-4"
+                    />
+                    <label htmlFor="autoSchedule" className="text-xs font-medium text-blue-700 cursor-pointer">
+                      Auto-create next schedule ({formData.frequency})
+                    </label>
+                  </div>
+                )}
               </div>
 
               <div className="space-y-2">

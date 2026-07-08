@@ -67,9 +67,23 @@ export default function TransferModal({ isOpen, onClose, recordId }: { isOpen: b
   const saveMutation = useMutation({
     mutationFn: async (payload: any) => {
       if (sigCanvas.current && !sigCanvas.current.isEmpty()) {
-        payload.signature_url = sigCanvas.current.toDataURL();
+        const sigUrl = sigCanvas.current.getTrimmedCanvas().toDataURL('image/png');
+        payload.signature_url = sigUrl;
+
+        // Automatically update the main asset's signature to the new owner's signature
+        if (payload.asset_id) {
+          const { error: sigError } = await supabase.from('signatures').upsert([{ 
+            asset_id: payload.asset_id, 
+            signature_url: sigUrl 
+          }], { onConflict: 'asset_id' });
+          
+          if (sigError) {
+            await supabase.from('signatures').delete().eq('asset_id', payload.asset_id);
+            await supabase.from('signatures').insert([{ asset_id: payload.asset_id, signature_url: sigUrl }]);
+          }
+        }
       }
-      
+
       let targetId = recordId;
 
       if (recordId) {
@@ -99,6 +113,8 @@ export default function TransferModal({ isOpen, onClose, recordId }: { isOpen: b
       toast.success(recordId ? 'Transfer record updated' : 'Transfer recorded successfully');
       queryClient.invalidateQueries({ queryKey: ['asset_transfers'] });
       queryClient.invalidateQueries({ queryKey: ['assets'] });
+      queryClient.invalidateQueries({ queryKey: ['asset'] });
+      queryClient.invalidateQueries({ queryKey: ['asset_timeline'] });
       onClose();
     },
     onError: (err: any) => toast.error('Error saving transfer: ' + err.message)

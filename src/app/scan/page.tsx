@@ -186,6 +186,7 @@ export default function ScanPage() {
         assetId={scannedAssetId || undefined} 
         mode={sheetMode}
         onEdit={() => setSheetMode('edit')}
+        onEditComplete={() => setSheetMode('view')}
       />
     </div>
   );
