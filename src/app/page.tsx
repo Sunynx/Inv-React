@@ -605,7 +605,7 @@ export default function Dashboard() {
                               </div>
                             </td>
                             <td className="px-4 py-3 text-muted-foreground">{r.assets?.name || '-'}</td>
-                            <td className="px-4 py-3 truncate max-w-[200px]">{r.description || r.title}</td>
+                            <td className="px-4 py-3 truncate max-w-[200px]">{((r.description || '').replace(/<!--COMMENTS-->[\s\S]*/, '').trim()) || r.title}</td>
                             <td className="px-4 py-3 text-right text-muted-foreground">
                               {format(new Date(r.created_at), 'dd MMM yyyy')}
                             </td>
@@ -848,6 +848,12 @@ export default function Dashboard() {
                         paddingAngle={3}
                         stroke="var(--background)"
                         strokeWidth={3}
+                        onClick={(data) => { 
+                          if (data && data.name) {
+                            router.push('/assets?category=' + encodeURIComponent(data.name));
+                          }
+                        }}
+                        className="cursor-pointer"
                       />
                       <ChartLegend content={<ChartLegendContent />} className="flex-wrap" />
                     </PieChart>
@@ -873,14 +879,25 @@ export default function Dashboard() {
                   >
                     <BarChart
                       layout="vertical"
-                      data={departments.filter(d => d.assetCount > 0).slice(0, 5).map(d => ({ name: d.name.substring(0, 15), assets: d.assetCount }))}
+                      data={departments.filter(d => d.assetCount > 0).slice(0, 5).map(d => ({ name: d.name.substring(0, 15), fullName: d.name, assets: d.assetCount }))}
                       margin={{ top: 10, right: 30, left: 10, bottom: 0 }}
                     >
                       <CartesianGrid strokeDasharray="3 3" horizontal={false} vertical={true} stroke="var(--border)" strokeOpacity={0.5} />
                       <XAxis type="number" tick={{ fontSize: 12 }} />
                       <YAxis dataKey="name" type="category" width={80} tick={{ fontSize: 12 }} />
                       <ChartTooltip content={<ChartTooltipContent />} cursor={false} />
-                      <Bar dataKey="assets" fill="var(--color-assets)" radius={[0, 4, 4, 0]} barSize={24}>
+                      <Bar 
+                        dataKey="assets" 
+                        fill="var(--color-assets)" 
+                        radius={[0, 4, 4, 0]} 
+                        barSize={24}
+                        onClick={(data) => {
+                          if (data && data.fullName) {
+                            router.push('/assets?department=' + encodeURIComponent(data.fullName));
+                          }
+                        }}
+                        className="cursor-pointer"
+                      >
                         <LabelList dataKey="assets" position="right" fontSize={12} fill="#6b7280" />
                       </Bar>
                     </BarChart>
@@ -905,14 +922,25 @@ export default function Dashboard() {
                     className="h-[300px] w-full"
                   >
                     <BarChart
-                      data={departments.filter(d => d.totalValue > 0).sort((a,b) => b.totalValue - a.totalValue).slice(0, 5).map(d => ({ name: d.name.substring(0, 10), value: d.totalValue }))}
+                      data={departments.filter(d => d.totalValue > 0).sort((a,b) => b.totalValue - a.totalValue).slice(0, 5).map(d => ({ name: d.name.substring(0, 10), fullName: d.name, value: d.totalValue }))}
                       margin={{ top: 10, right: 10, left: 0, bottom: 20 }}
                     >
                       <CartesianGrid strokeDasharray="3 3" horizontal={true} vertical={false} stroke="var(--border)" strokeOpacity={0.5} />
                       <XAxis dataKey="name" tick={{ fontSize: 12 }} angle={-45} textAnchor="end" />
                       <YAxis tick={{ fontSize: 12 }} tickFormatter={(val) => `฿${(val/1000).toFixed(0)}k`} />
                       <ChartTooltip content={<ChartTooltipContent />} cursor={false} />
-                      <Bar dataKey="value" fill="var(--color-value)" radius={[4, 4, 0, 0]} barSize={30}>
+                      <Bar 
+                        dataKey="value" 
+                        fill="var(--color-value)" 
+                        radius={[4, 4, 0, 0]} 
+                        barSize={30}
+                        onClick={(data) => {
+                          if (data && data.fullName) {
+                            router.push('/assets?department=' + encodeURIComponent(data.fullName));
+                          }
+                        }}
+                        className="cursor-pointer"
+                      >
                         <LabelList dataKey="value" position="top" fontSize={10} fill="#6b7280" formatter={(val: number) => `฿${val.toLocaleString()}`} />
                       </Bar>
                     </BarChart>

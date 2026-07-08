@@ -96,25 +96,26 @@ export default function TicketModal({ isOpen, onClose, ticketId }: { isOpen: boo
 
   const saveMutation = useMutation({
     mutationFn: async (payload: any) => {
+      const { keepOpen, ...dbPayload } = payload;
       const validStatuses = ['เปิด', 'กำลังดำเนินการ', 'รอะไหล่', 'เสร็จสิ้น', 'ยกเลิก'];
-      if (!validStatuses.includes(payload.status)) payload.status = 'เปิด';
+      if (!validStatuses.includes(dbPayload.status)) dbPayload.status = 'เปิด';
       
       const validPriorities = ['ต่ำ', 'ปกติ', 'สูง', 'เร่งด่วน'];
-      if (!validPriorities.includes(payload.priority)) payload.priority = 'ปกติ';
+      if (!validPriorities.includes(dbPayload.priority)) dbPayload.priority = 'ปกติ';
 
-      if (payload.status === 'เสร็จสิ้น' || payload.status === 'ยกเลิก') {
-        if (!payload.resolved_at) payload.resolved_at = new Date().toISOString();
+      if (dbPayload.status === 'เสร็จสิ้น' || dbPayload.status === 'ยกเลิก') {
+        if (!dbPayload.resolved_at) dbPayload.resolved_at = new Date().toISOString();
       } else {
-        payload.resolved_at = null;
+        dbPayload.resolved_at = null;
       }
 
       let currentTicketId = ticketId;
 
       if (ticketId) {
-        const { error } = await supabase.from('repair_tickets').update(payload).eq('id', ticketId);
+        const { error } = await supabase.from('repair_tickets').update(dbPayload).eq('id', ticketId);
         if (error) throw error;
       } else {
-        const { data, error } = await supabase.from('repair_tickets').insert([payload]).select().single();
+        const { data, error } = await supabase.from('repair_tickets').insert([dbPayload]).select().single();
         if (error) throw error;
         if (data) currentTicketId = data.id;
       }
@@ -150,12 +151,14 @@ export default function TicketModal({ isOpen, onClose, ticketId }: { isOpen: boo
       queryClient.invalidateQueries({ queryKey: ['repair_tickets'] });
       queryClient.invalidateQueries({ queryKey: ['asset_timeline'] });
       queryClient.invalidateQueries({ queryKey: ['stock_items'] });
-      onClose();
+      if (!variables.keepOpen) {
+        onClose();
+      }
     },
     onError: (err: any) => toast.error('Error saving ticket: ' + err.message)
   });
 
-  const onSubmit = (data: TicketFormValues) => {
+  const onSubmit = (data: TicketFormValues, keepOpen = false) => {
     let finalComments = [...comments];
     if (newComment.trim()) {
       finalComments.push({
@@ -172,7 +175,7 @@ export default function TicketModal({ isOpen, onClose, ticketId }: { isOpen: boo
       finalDescription += `\n<!--COMMENTS-->${JSON.stringify(finalComments)}`;
     }
     
-    saveMutation.mutate({ ...data, description: finalDescription });
+    saveMutation.mutate({ ...data, description: finalDescription, keepOpen });
   };
 
   return (
@@ -186,7 +189,7 @@ export default function TicketModal({ isOpen, onClose, ticketId }: { isOpen: boo
           <div className="py-12 text-center text-muted-foreground">Loading...</div>
         ) : (
           <div className="flex-1 overflow-y-auto p-6 pt-2">
-            <form id="ticket-form" onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+            <form id="ticket-form" onSubmit={form.handleSubmit((data) => onSubmit(data, false))} className="space-y-6">
             
             <div className="space-y-2">
               <Label>Asset (อุปกรณ์ที่เสีย)</Label>
@@ -305,11 +308,11 @@ export default function TicketModal({ isOpen, onClose, ticketId }: { isOpen: boo
                   onKeyDown={e => {
                     if (e.key === 'Enter') {
                       e.preventDefault();
-                      onSubmit(form.getValues());
+                      onSubmit(form.getValues(), true);
                     }
                   }}
                 />
-                <Button type="button" variant="secondary" onClick={() => { if(newComment.trim()) onSubmit(form.getValues()); }}>Add</Button>
+                <Button type="button" variant="secondary" onClick={() => { if(newComment.trim()) onSubmit(form.getValues(), true); }}>Add</Button>
               </div>
             </div>
 

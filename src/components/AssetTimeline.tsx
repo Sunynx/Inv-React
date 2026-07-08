@@ -49,7 +49,7 @@ export default function AssetTimeline({ assetId }: { assetId: string }) {
               <div className="flex flex-col gap-1.5 mt-1.5 border border-amber-500/20 rounded-md p-2.5 bg-amber-500/5 shadow-sm">
                 <div className="grid grid-cols-[50px_1fr] items-start gap-2">
                   <span className="text-xs text-amber-600/70 dark:text-amber-400/70 font-semibold uppercase tracking-wider mt-0.5">Issue</span>
-                  <span className="text-sm font-medium text-amber-700 dark:text-amber-400 leading-snug">{t.description || t.title}</span>
+                  <span className="text-sm font-medium text-amber-700 dark:text-amber-400 leading-snug">{((t.description || '').replace(/<!--COMMENTS-->[\s\S]*/, '').trim()) || t.title}</span>
                 </div>
                 <div className="grid grid-cols-[50px_1fr] items-center gap-2">
                   <span className="text-xs text-amber-600/70 dark:text-amber-400/70 font-semibold uppercase tracking-wider">Status</span>

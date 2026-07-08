@@ -30,12 +30,24 @@ const statusConfig: Record<string, { icon: any; className: string }> = {
   'จำหน่าย': { icon: Ban, className: 'text-gray-500 bg-gray-50 border-gray-200/50' },
 };
 
-function HighlightHandler({ onHighlight, onFilterStatus }: { onHighlight: (id: string) => void, onFilterStatus: (status: string) => void }) {
+function HighlightHandler({ 
+  onHighlight, 
+  onFilterStatus,
+  onFilterCategory,
+  onFilterDepartment
+}: { 
+  onHighlight: (id: string) => void, 
+  onFilterStatus: (status: string) => void,
+  onFilterCategory: (category: string) => void,
+  onFilterDepartment: (department: string) => void
+}) {
   const searchParams = useSearchParams();
   const router = useRouter();
   const pathname = usePathname();
   const highlightId = searchParams.get('highlight');
   const statusFilter = searchParams.get('status');
+  const categoryFilter = searchParams.get('category');
+  const departmentFilter = searchParams.get('department');
 
   useEffect(() => {
     let shouldReplace = false;
@@ -47,10 +59,18 @@ function HighlightHandler({ onHighlight, onFilterStatus }: { onHighlight: (id: s
       onFilterStatus(statusFilter);
       shouldReplace = true;
     }
+    if (categoryFilter) {
+      onFilterCategory(categoryFilter);
+      shouldReplace = true;
+    }
+    if (departmentFilter) {
+      onFilterDepartment(departmentFilter);
+      shouldReplace = true;
+    }
     if (shouldReplace) {
       router.replace(pathname, { scroll: false });
     }
-  }, [highlightId, statusFilter, onHighlight, onFilterStatus, router, pathname]);
+  }, [highlightId, statusFilter, categoryFilter, departmentFilter, onHighlight, onFilterStatus, onFilterCategory, onFilterDepartment, router, pathname]);
 
   return null;
 }
@@ -493,6 +513,12 @@ export default function AssetsPage() {
           }} 
           onFilterStatus={(status) => {
             setFilterTab(status);
+          }}
+          onFilterCategory={(category) => {
+            setFilterCategory(category);
+          }}
+          onFilterDepartment={(department) => {
+            setFilterDepartment(department);
           }}
         />
       </Suspense>

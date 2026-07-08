@@ -71,9 +71,14 @@ export default function TicketKanbanBoard({
 
     if (sourceCol !== destCol) {
       try {
+        const payload: any = { status: destCol };
+        if (destCol === 'เสร็จสิ้น' || destCol === 'ยกเลิก') {
+          payload.resolved_at = new Date().toISOString();
+        }
+
         const { error } = await supabase
           .from('repair_tickets')
-          .update({ status: destCol, updated_at: new Date().toISOString() })
+          .update(payload)
           .eq('id', movedItem.id);
           
         if (error) throw error;
@@ -127,7 +132,7 @@ export default function TicketKanbanBoard({
                           </div>
                           
                           <h4 className="text-sm font-medium leading-snug line-clamp-2 mb-1 text-foreground">{ticket.title}</h4>
-                          <p className="text-xs text-muted-foreground line-clamp-2 mb-3">{ticket.description}</p>
+                          <p className="text-xs text-muted-foreground line-clamp-2 mb-3">{(ticket.description || '').replace(/<!--COMMENTS-->[\s\S]*/, '')}</p>
                           
                           <div className="flex items-center justify-between pt-2 border-t border-border/50">
                             <span className="text-[11px] font-medium truncate pr-2 text-foreground/80">
