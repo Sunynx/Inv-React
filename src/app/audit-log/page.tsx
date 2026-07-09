@@ -7,6 +7,7 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Card, CardContent } from '@/components/ui/card';
+import { Skeleton } from '@/components/ui/skeleton';
 import { format } from 'date-fns';
 import { useTableSort } from '@/hooks/useTableSort';
 import { SortableTableHead } from '@/components/SortableTableHead';
@@ -110,9 +111,29 @@ export default function AuditLogPage() {
           </TableHeader>
           <TableBody>
             {loading ? (
-              <TableRow><TableCell colSpan={5} className="h-24 text-center text-muted-foreground">Loading logs...</TableCell></TableRow>
+              [...Array(5)].map((_, i) => (
+                <TableRow key={`skel-${i}`} className="border-border/30">
+                  <TableCell className="p-3"><Skeleton className="h-4 w-36" style={{ animationDelay: `${i * 100}ms` }} /></TableCell>
+                  <TableCell className="p-3"><Skeleton className="h-5 w-24 rounded-full" style={{ animationDelay: `${i * 100 + 30}ms` }} /></TableCell>
+                  <TableCell className="p-3"><Skeleton className="h-4 w-20" style={{ animationDelay: `${i * 100 + 60}ms` }} /></TableCell>
+                  <TableCell className="p-3"><Skeleton className="h-4 w-48" style={{ animationDelay: `${i * 100 + 90}ms` }} /></TableCell>
+                  <TableCell className="p-3"><Skeleton className="h-4 w-28" style={{ animationDelay: `${i * 100 + 120}ms` }} /></TableCell>
+                </TableRow>
+              ))
             ) : sortedData.length === 0 ? (
-              <TableRow><TableCell colSpan={5} className="h-24 text-center text-muted-foreground">No logs found.</TableCell></TableRow>
+              <TableRow>
+                <TableCell colSpan={5} className="h-48 text-center">
+                  <div className="flex flex-col items-center justify-center gap-3 py-8">
+                    <div className="w-14 h-14 bg-gradient-to-br from-muted to-muted/50 rounded-full flex items-center justify-center border border-border/50">
+                      <History className="w-7 h-7 text-muted-foreground" strokeWidth={1.5} />
+                    </div>
+                    <div>
+                      <p className="text-sm font-semibold text-foreground">ไม่พบประวัติการใช้งาน</p>
+                      <p className="text-xs text-muted-foreground mt-0.5">ยังไม่มีกิจกรรมที่ตรงกับเงื่อนไขการค้นหา</p>
+                    </div>
+                  </div>
+                </TableCell>
+              </TableRow>
             ) : (
               sortedData.map((log) => (
                 <TableRow key={log.id} className="hover:bg-muted/30 transition-colors">

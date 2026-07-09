@@ -99,7 +99,20 @@ export default function Notifications() {
         
         <div className="max-h-[60vh] overflow-y-auto">
           {isLoading ? (
-            <div className="py-8 text-center text-sm text-muted-foreground">Loading...</div>
+            <div className="space-y-4 py-8 px-6">
+            <div className="flex items-center space-x-4">
+              <div className="w-12 h-12 bg-muted/50 rounded-full animate-pulse"></div>
+              <div className="space-y-2 flex-1">
+                <div className="h-4 bg-muted/50 rounded w-3/4 animate-pulse"></div>
+                <div className="h-4 bg-muted/50 rounded w-1/2 animate-pulse"></div>
+              </div>
+            </div>
+            <div className="space-y-2 pt-4">
+              <div className="h-4 bg-muted/50 rounded w-full animate-pulse"></div>
+              <div className="h-4 bg-muted/50 rounded w-full animate-pulse"></div>
+              <div className="h-4 bg-muted/50 rounded w-4/5 animate-pulse"></div>
+            </div>
+          </div>
           ) : notifications.length === 0 ? (
             <div className="py-12 flex flex-col items-center justify-center text-center px-4">
               <div className="h-12 w-12 rounded-full bg-muted flex items-center justify-center mb-3">

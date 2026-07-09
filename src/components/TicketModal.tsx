@@ -186,7 +186,20 @@ export default function TicketModal({ isOpen, onClose, ticketId }: { isOpen: boo
         </DialogHeader>
 
         {isLoadingTicket ? (
-          <div className="py-12 text-center text-muted-foreground">Loading...</div>
+          <div className="space-y-4 py-8 px-6">
+            <div className="flex items-center space-x-4">
+              <div className="w-12 h-12 bg-muted/50 rounded-full animate-pulse"></div>
+              <div className="space-y-2 flex-1">
+                <div className="h-4 bg-muted/50 rounded w-3/4 animate-pulse"></div>
+                <div className="h-4 bg-muted/50 rounded w-1/2 animate-pulse"></div>
+              </div>
+            </div>
+            <div className="space-y-2 pt-4">
+              <div className="h-4 bg-muted/50 rounded w-full animate-pulse"></div>
+              <div className="h-4 bg-muted/50 rounded w-full animate-pulse"></div>
+              <div className="h-4 bg-muted/50 rounded w-4/5 animate-pulse"></div>
+            </div>
+          </div>
         ) : (
           <div className="flex-1 overflow-y-auto p-6 pt-2">
             <form id="ticket-form" onSubmit={form.handleSubmit((data) => onSubmit(data, false))} className="space-y-6">
@@ -297,7 +310,10 @@ export default function TicketModal({ isOpen, onClose, ticketId }: { isOpen: boo
                   ))}
                 </div>
               ) : (
-                <div className="text-center py-4 bg-muted/30 rounded-lg border border-border border-dashed text-xs text-muted-foreground">ยังไม่มีการบันทึกความคืบหน้า</div>
+                <div className="text-center py-8 bg-muted/20 rounded-lg border border-border border-dashed text-xs text-muted-foreground flex flex-col items-center gap-2">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="text-muted-foreground/40"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+                  ยังไม่มีการบันทึกความคืบหน้า
+                </div>
               )}
               
               <div className="flex gap-2">

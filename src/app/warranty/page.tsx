@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Card, CardContent } from '@/components/ui/card';
+import { Skeleton } from '@/components/ui/skeleton';
 import { format, differenceInDays } from 'date-fns';
 import { useTableSort } from '@/hooks/useTableSort';
 import { SortableTableHead } from '@/components/SortableTableHead';
@@ -137,9 +138,30 @@ export default function WarrantyPage() {
           </TableHeader>
           <TableBody>
             {loading ? (
-              <TableRow><TableCell colSpan={6} className="h-24 text-center">Loading warranties...</TableCell></TableRow>
+              [...Array(5)].map((_, i) => (
+                <TableRow key={`skel-${i}`} className="border-border/30">
+                  <TableCell className="p-3"><Skeleton className="h-4 w-32" style={{ animationDelay: `${i * 100}ms` }} /><Skeleton className="h-3 w-20 mt-1.5" style={{ animationDelay: `${i * 100 + 50}ms` }} /></TableCell>
+                  <TableCell className="p-3"><Skeleton className="h-4 w-24" style={{ animationDelay: `${i * 100 + 20}ms` }} /></TableCell>
+                  <TableCell className="p-3"><Skeleton className="h-4 w-28" style={{ animationDelay: `${i * 100 + 40}ms` }} /></TableCell>
+                  <TableCell className="p-3"><Skeleton className="h-4 w-24" style={{ animationDelay: `${i * 100 + 60}ms` }} /></TableCell>
+                  <TableCell className="p-3"><Skeleton className="h-4 w-24" style={{ animationDelay: `${i * 100 + 80}ms` }} /></TableCell>
+                  <TableCell className="p-3"><Skeleton className="h-6 w-16 rounded-full" style={{ animationDelay: `${i * 100 + 100}ms` }} /></TableCell>
+                </TableRow>
+              ))
             ) : sortedData.length === 0 ? (
-              <TableRow><TableCell colSpan={6} className="h-24 text-center">No warranty data found.</TableCell></TableRow>
+              <TableRow>
+                <TableCell colSpan={6} className="h-48 text-center">
+                  <div className="flex flex-col items-center justify-center gap-3 py-8">
+                    <div className="w-14 h-14 bg-gradient-to-br from-muted to-muted/50 rounded-full flex items-center justify-center border border-border/50">
+                      <Shield className="w-7 h-7 text-muted-foreground" strokeWidth={1.5} />
+                    </div>
+                    <div>
+                      <p className="text-sm font-semibold text-foreground">ไม่พบข้อมูลประกัน</p>
+                      <p className="text-xs text-muted-foreground mt-0.5">ยังไม่มีทรัพย์สินที่มีข้อมูลวันหมดประกัน</p>
+                    </div>
+                  </div>
+                </TableCell>
+              </TableRow>
             ) : (
               sortedData.map((asset) => {
                 const isExpired = new Date(asset.warranty_expiry) < new Date();

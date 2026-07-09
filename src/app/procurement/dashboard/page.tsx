@@ -2,6 +2,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/lib/supabase';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Skeleton } from '@/components/ui/skeleton';
 import { format, parseISO } from 'date-fns';
 import { th } from 'date-fns/locale';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer, PieChart, Pie, Cell, Legend, AreaChart, Area } from 'recharts';
@@ -187,7 +188,7 @@ export default function PRDashboardPage() {
                   </BarChart>
                 </ResponsiveContainer>
               ) : (
-                <div className="flex h-full items-center justify-center text-sm text-muted-foreground">ไม่มีข้อมูล</div>
+                <div className="flex flex-col h-full items-center justify-center text-muted-foreground"><div className="w-10 h-10 bg-muted/30 rounded-full flex items-center justify-center mb-2"><Package className="w-5 h-5 opacity-50" /></div><span className="text-xs font-medium">ไม่มีข้อมูล</span></div>
               )}
             </div>
           </CardContent>
@@ -222,7 +223,7 @@ export default function PRDashboardPage() {
                   </PieChart>
                 </ResponsiveContainer>
               ) : (
-                <div className="flex h-full items-center justify-center text-sm text-muted-foreground">ไม่มีข้อมูล</div>
+                <div className="flex flex-col h-full items-center justify-center text-muted-foreground"><div className="w-10 h-10 bg-muted/30 rounded-full flex items-center justify-center mb-2"><Package className="w-5 h-5 opacity-50" /></div><span className="text-xs font-medium">ไม่มีข้อมูล</span></div>
               )}
             </div>
           </CardContent>
@@ -259,7 +260,7 @@ export default function PRDashboardPage() {
                   </PieChart>
                 </ResponsiveContainer>
               ) : (
-                <div className="flex h-full items-center justify-center text-sm text-muted-foreground">ไม่มีข้อมูล</div>
+                <div className="flex flex-col h-full items-center justify-center text-muted-foreground"><div className="w-10 h-10 bg-muted/30 rounded-full flex items-center justify-center mb-2"><Package className="w-5 h-5 opacity-50" /></div><span className="text-xs font-medium">ไม่มีข้อมูล</span></div>
               )}
             </div>
           </CardContent>
@@ -283,7 +284,7 @@ export default function PRDashboardPage() {
                   </BarChart>
                 </ResponsiveContainer>
               ) : (
-                <div className="flex h-full items-center justify-center text-sm text-muted-foreground">ไม่มีข้อมูลสินค้า</div>
+                <div className="flex flex-col h-full items-center justify-center text-muted-foreground"><div className="w-10 h-10 bg-muted/30 rounded-full flex items-center justify-center mb-2"><Package className="w-5 h-5 opacity-50" /></div><span className="text-xs font-medium">ไม่มีข้อมูลสินค้า</span></div>
               )}
             </div>
           </CardContent>
@@ -313,7 +314,7 @@ export default function PRDashboardPage() {
                   </AreaChart>
                 </ResponsiveContainer>
               ) : (
-                <div className="flex h-full items-center justify-center text-sm text-muted-foreground">ไม่มีข้อมูล</div>
+                <div className="flex flex-col h-full items-center justify-center text-muted-foreground"><div className="w-10 h-10 bg-muted/30 rounded-full flex items-center justify-center mb-2"><Package className="w-5 h-5 opacity-50" /></div><span className="text-xs font-medium">ไม่มีข้อมูล</span></div>
               )}
             </div>
           </CardContent>
@@ -327,7 +328,7 @@ export default function PRDashboardPage() {
           <CardContent>
             <div className="space-y-4 mt-2">
               {topItemsData.length === 0 && topPRs.length === 0 ? (
-                <div className="text-center py-8 text-sm text-muted-foreground">ไม่มีข้อมูล</div>
+                <div className="flex flex-col items-center justify-center py-8 text-muted-foreground"><div className="w-10 h-10 bg-muted/30 rounded-full flex items-center justify-center mb-2"><FileText className="w-5 h-5 opacity-50" /></div><span className="text-xs font-medium">ไม่มีข้อมูล</span></div>
               ) : topPRs.map((pr, idx) => (
                 <div key={idx} className="flex justify-between items-center bg-slate-50 dark:bg-slate-800/50 p-3 rounded-md border border-slate-100 dark:border-slate-700/50 transition-colors">
                   <div className="min-w-0 flex-1 pr-2">

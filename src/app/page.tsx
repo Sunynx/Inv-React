@@ -12,7 +12,8 @@ import {
 } from 'recharts';
 import { ChartContainer, ChartTooltip, ChartTooltipContent, ChartLegend, ChartLegendContent } from "@/components/ui/chart";
 import { 
-  Download, Calendar, TrendingUp, TrendingDown, Clock, Activity, HardDrive, Wrench, Shield, Box, Search, Send, Bot, AlertCircle, Command, Filter
+  Download, Calendar, TrendingUp, TrendingDown, Clock, Activity, HardDrive, Wrench, Shield, Box, Search, Send, Bot, AlertCircle, Command, Filter,
+  Plus, ArrowRightLeft, Ticket, Zap, ShieldAlert
 } from 'lucide-react';
 import { format, subDays, isAfter } from 'date-fns';
 import Link from 'next/link';
@@ -417,6 +418,56 @@ export default function Dashboard() {
           {/* KPI Cards — extracted component with skeleton */}
           <DashboardKPICards stats={stats as any} isLoading={isLoading} />
 
+          {/* Quick Actions */}
+          <div className="flex flex-wrap items-center gap-3 p-4 bg-gradient-to-r from-slate-50 to-white dark:from-slate-900/50 dark:to-slate-800/30 rounded-2xl border border-slate-200/60 dark:border-slate-700/40 shadow-sm">
+            <div className="flex items-center gap-2 mr-2">
+              <Zap size={16} className="text-amber-500" />
+              <span className="text-sm font-semibold text-slate-600 dark:text-slate-300">Quick Actions</span>
+            </div>
+            <Button 
+              variant="outline" 
+              size="sm" 
+              className="h-9 rounded-xl gap-2 bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 hover:bg-blue-50 hover:text-blue-700 hover:border-blue-200 dark:hover:bg-blue-900/20 dark:hover:text-blue-400 transition-all shadow-sm"
+              onClick={() => router.push('/assets?action=add')}
+            >
+              <Plus size={15} /> Add Asset
+            </Button>
+            <Button 
+              variant="outline" 
+              size="sm" 
+              className="h-9 rounded-xl gap-2 bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 hover:bg-amber-50 hover:text-amber-700 hover:border-amber-200 dark:hover:bg-amber-900/20 dark:hover:text-amber-400 transition-all shadow-sm"
+              onClick={() => router.push('/tickets?action=add')}
+            >
+              <Ticket size={15} /> Create Ticket
+            </Button>
+            <Button 
+              variant="outline" 
+              size="sm" 
+              className="h-9 rounded-xl gap-2 bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 hover:bg-purple-50 hover:text-purple-700 hover:border-purple-200 dark:hover:bg-purple-900/20 dark:hover:text-purple-400 transition-all shadow-sm"
+              onClick={() => router.push('/transfers')}
+            >
+              <ArrowRightLeft size={15} /> Transfer
+            </Button>
+            <Button 
+              variant="outline" 
+              size="sm" 
+              className="h-9 rounded-xl gap-2 bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 hover:bg-emerald-50 hover:text-emerald-700 hover:border-emerald-200 dark:hover:bg-emerald-900/20 dark:hover:text-emerald-400 transition-all shadow-sm"
+              onClick={() => router.push('/scan')}
+            >
+              <Search size={15} /> Scan QR
+            </Button>
+            {(dashboardData?.expiringAssets?.length ?? 0) > 0 && (
+              <Button 
+                variant="outline" 
+                size="sm" 
+                className="h-9 rounded-xl gap-2 bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-400 border-red-200 dark:border-red-800 hover:bg-red-100 dark:hover:bg-red-900/40 transition-all shadow-sm ml-auto animate-pulse"
+                onClick={() => router.push('/warranty')}
+              >
+                <ShieldAlert size={15} /> {dashboardData?.expiringAssets?.length} Warranty Expiring
+              </Button>
+            )}
+          </div>
+
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             
             {/* Area Chart */}
@@ -591,7 +642,17 @@ export default function Dashboard() {
                           </tr>
                         ))
                       ) : repairs.length === 0 ? (
-                        <tr><td colSpan={4} className="px-4 py-8 text-center text-muted-foreground">No recent tickets.</td></tr>
+                        <tr>
+                          <td colSpan={4} className="px-4 py-12 text-center">
+                            <div className="flex flex-col items-center gap-2">
+                              <div className="w-12 h-12 bg-gradient-to-br from-muted to-muted/50 rounded-full flex items-center justify-center border border-border/50">
+                                <Wrench className="w-6 h-6 text-muted-foreground" strokeWidth={1.5} />
+                              </div>
+                              <p className="text-sm font-medium text-foreground">ไม่มีตั๋วแจ้งซ่อมล่าสุด</p>
+                              <p className="text-xs text-muted-foreground">ยังไม่มีการแจ้งซ่อมเข้ามาในระบบ</p>
+                            </div>
+                          </td>
+                        </tr>
                       ) : (
                         repairs.map(r => (
                           <tr key={r.id} className="hover:bg-muted/30 transition-colors">

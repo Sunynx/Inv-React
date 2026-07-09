@@ -6,6 +6,7 @@ import { Plus, Search, CheckCircle2, AlertTriangle, FileText, ShoppingCart, Cloc
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Skeleton } from '@/components/ui/skeleton';
 import { format } from 'date-fns';
 import * as XLSX from 'xlsx';
 import ExcelJS from 'exceljs';
@@ -262,7 +263,17 @@ export default function ProcurementPage() {
               </thead>
               <tbody className="divide-y divide-border/60">
                 {isLoading ? (
-                  <tr><td colSpan={7} className="px-6 py-8 text-center text-muted-foreground">Loading...</td></tr>
+                  [...Array(5)].map((_, i) => (
+                    <tr key={`skel-${i}`} className="border-border/30">
+                      <td className="px-6 py-3"><Skeleton className="h-4 w-24" style={{ animationDelay: `${i * 100}ms` }} /></td>
+                      <td className="px-6 py-3"><Skeleton className="h-4 w-48" style={{ animationDelay: `${i * 100 + 30}ms` }} /></td>
+                      <td className="px-6 py-3"><Skeleton className="h-5 w-12 rounded" style={{ animationDelay: `${i * 100 + 60}ms` }} /></td>
+                      <td className="px-6 py-3"><Skeleton className="h-4 w-28" style={{ animationDelay: `${i * 100 + 90}ms` }} /></td>
+                      <td className="px-6 py-3"><Skeleton className="h-4 w-20" style={{ animationDelay: `${i * 100 + 120}ms` }} /></td>
+                      <td className="px-6 py-3"><Skeleton className="h-5 w-24 rounded-full" style={{ animationDelay: `${i * 100 + 150}ms` }} /></td>
+                      <td className="px-6 py-3 text-right"><Skeleton className="h-8 w-32 ml-auto" style={{ animationDelay: `${i * 100 + 180}ms` }} /></td>
+                    </tr>
+                  ))
                 ) : filteredDocs.length === 0 ? (
                   <tr>
                     <td colSpan={7} className="p-0">

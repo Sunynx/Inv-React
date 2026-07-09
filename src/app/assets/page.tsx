@@ -3,7 +3,7 @@ import { useState, useEffect, Suspense } from 'react';
 import { useSearchParams, useRouter, usePathname } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { Search, Plus, MoreHorizontal, Edit, Trash2, CheckCircle2, AlertCircle, Clock, Ban, Download, Printer, CheckSquare } from 'lucide-react';
+import { Search, Plus, FileSpreadsheet, MoreHorizontal, Edit, Trash2, CheckCircle2, AlertCircle, Clock, Ban, Download, Printer, CheckSquare, Bookmark, BookmarkPlus, MoveRight } from 'lucide-react';
 import { QRCodeSVG } from 'qrcode.react';
 import toast from 'react-hot-toast';
 import AssetSheet from '@/components/AssetSheet';
@@ -11,6 +11,10 @@ import ReportExportModal from '@/components/ReportExportModal';
 import { EmptyState } from '@/components/EmptyState';
 import ConfirmDialog from '@/components/ConfirmDialog';
 import { logAudit, formatAuditDetails } from '@/lib/auditLog';
+import BulkTransferModal from '@/components/BulkTransferModal';
+import BulkPrintQRModal from '@/components/BulkPrintQRModal';
+import ImportAssetModal from '@/components/ImportAssetModal';
+import { MultiSelectPopover } from '@/components/MultiSelectPopover';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card } from '@/components/ui/card';
@@ -38,8 +42,8 @@ function HighlightHandler({
 }: { 
   onHighlight: (id: string) => void, 
   onFilterStatus: (status: string) => void,
-  onFilterCategory: (category: string) => void,
-  onFilterDepartment: (department: string) => void
+  onFilterCategory: (category: string[]) => void,
+  onFilterDepartment: (department: string[]) => void
 }) {
   const searchParams = useSearchParams();
   const router = useRouter();
@@ -60,11 +64,11 @@ function HighlightHandler({
       shouldReplace = true;
     }
     if (categoryFilter) {
-      onFilterCategory(categoryFilter);
+      onFilterCategory([categoryFilter]);
       shouldReplace = true;
     }
     if (departmentFilter) {
-      onFilterDepartment(departmentFilter);
+      onFilterDepartment([departmentFilter]);
       shouldReplace = true;
     }
     if (shouldReplace) {
@@ -79,8 +83,21 @@ export default function AssetsPage() {
   const queryClient = useQueryClient();
   const [searchTerm, setSearchTerm] = useState('');
   const [filterTab, setFilterTab] = useState('all');
-  const [filterDepartment, setFilterDepartment] = useState('all');
-  const [filterCategory, setFilterCategory] = useState('all');
+  const [filterDepartment, setFilterDepartment] = useState<string[]>([]);
+  const [filterCategory, setFilterCategory] = useState<string[]>([]);
+  const [savedViews, setSavedViews] = useState<{name: string, dept: string[], cat: string[]}[]>([]);
+  useEffect(() => {
+    const views = localStorage.getItem('asset_saved_views');
+    if (views) setSavedViews(JSON.parse(views));
+  }, []);
+  const handleSaveView = () => {
+    const viewName = prompt('Enter a name for this view:');
+    if (!viewName) return;
+    const newViews = [...savedViews, { name: viewName, dept: filterDepartment, cat: filterCategory }];
+    setSavedViews(newViews);
+    localStorage.setItem('asset_saved_views', JSON.stringify(newViews));
+    toast.success('View saved successfully!');
+  };
   const [sortBy, setSortBy] = useState('newest');
   const [isSheetOpen, setIsSheetOpen] = useState(false);
   const [sheetMode, setSheetMode] = useState<'view'|'edit'>('view');
@@ -89,6 +106,9 @@ export default function AssetsPage() {
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
   const [selectedRows, setSelectedRows] = useState<any[]>([]);
   const [bulkDeleteConfirm, setBulkDeleteConfirm] = useState(false);
+  const [isBulkTransferOpen, setIsBulkTransferOpen] = useState(false);
+  const [isBulkPrintOpen, setIsBulkPrintOpen] = useState(false);
+  const [isImportModalOpen, setIsImportModalOpen] = useState(false);
 
   const { data: assets = [], isLoading } = useQuery({
     queryKey: ['assets'],
@@ -172,10 +192,12 @@ export default function AssetsPage() {
     if (filterTab !== 'all') matchTab = a.status === filterTab;
     
     let matchDept = true;
-    if (filterDepartment !== 'all') matchDept = a.departments?.name === filterDepartment;
+    const safeDept = Array.isArray(filterDepartment) ? filterDepartment : (filterDepartment ? [String(filterDepartment)] : []);
+    if (safeDept.length > 0 && !safeDept.includes('all')) matchDept = safeDept.includes(a.departments?.name);
 
     let matchCat = true;
-    if (filterCategory !== 'all') matchCat = a.categories?.name === filterCategory;
+    const safeCat = Array.isArray(filterCategory) ? filterCategory : (filterCategory ? [String(filterCategory)] : []);
+    if (safeCat.length > 0 && !safeCat.includes('all')) matchCat = safeCat.includes(a.categories?.name);
 
     return matchSearch && matchTab && matchDept && matchCat;
   }).sort((a, b) => {
@@ -337,29 +359,41 @@ export default function AssetsPage() {
             </div>
 
             <div className="grid grid-cols-2 sm:flex sm:flex-wrap items-center gap-3 w-full lg:w-auto justify-start lg:justify-end">
-              <Select value={filterDepartment} onValueChange={setFilterDepartment}>
-                <SelectTrigger className="h-10 bg-white dark:bg-slate-900 border-slate-200/60 dark:border-slate-800/60 shadow-sm text-sm w-full sm:w-[140px] flex justify-between shrink-0 rounded-xl transition-all">
-                  <span className="truncate">
-                    {filterDepartment === 'all' ? 'ทุกแผนก' : filterDepartment}
-                  </span>
-                </SelectTrigger>
-                <SelectContent className="rounded-xl">
-                  <SelectItem value="all">ทุกแผนก</SelectItem>
-                  {uniqueDepartments.map(dept => <SelectItem key={dept} value={dept}>{dept}</SelectItem>)}
-                </SelectContent>
-              </Select>
-
-              <Select value={filterCategory} onValueChange={setFilterCategory}>
-                <SelectTrigger className="h-10 bg-white dark:bg-slate-900 border-slate-200/60 dark:border-slate-800/60 shadow-sm text-sm w-full sm:w-[140px] flex justify-between shrink-0 rounded-xl transition-all">
-                  <span className="truncate">
-                    {filterCategory === 'all' ? 'ทุกประเภท' : filterCategory}
-                  </span>
-                </SelectTrigger>
-                <SelectContent className="rounded-xl">
-                  <SelectItem value="all">ทุกประเภท</SelectItem>
-                  {uniqueCategories.map(cat => <SelectItem key={cat} value={cat}>{cat}</SelectItem>)}
-                </SelectContent>
-              </Select>
+              <MultiSelectPopover
+                title="ทุกแผนก"
+                options={uniqueDepartments.map(d => ({ label: d, value: d }))}
+                selected={filterDepartment || []}
+                onChange={setFilterDepartment}
+              />
+              <MultiSelectPopover
+                title="ทุกประเภท"
+                options={uniqueCategories.map(c => ({ label: c, value: c }))}
+                selected={filterCategory || []}
+                onChange={setFilterCategory}
+              />
+              <DropdownMenu>
+                <DropdownMenuTrigger
+                  render={
+                    <Button variant="outline" className="h-10 rounded-xl border-slate-200/60 bg-white shadow-sm px-3" />
+                  }
+                >
+                  <Bookmark className="w-4 h-4 text-slate-500" />
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-48">
+                  <DropdownMenuItem onClick={handleSaveView}>
+                    <BookmarkPlus className="w-4 h-4 mr-2" /> Save Current View
+                  </DropdownMenuItem>
+                  {savedViews.length > 0 && <DropdownMenuSeparator />}
+                  {savedViews.map((view, i) => (
+                    <DropdownMenuItem key={i} onClick={() => {
+                      setFilterDepartment(view.dept);
+                      setFilterCategory(view.cat);
+                    }}>
+                      {view.name}
+                    </DropdownMenuItem>
+                  ))}
+                </DropdownMenuContent>
+              </DropdownMenu>
 
               <div className="col-span-2 sm:col-span-1 w-full sm:w-[140px] shrink-0">
                 <Select value={sortBy} onValueChange={setSortBy}>
@@ -380,6 +414,9 @@ export default function AssetsPage() {
               </div>
               
               <div className="col-span-2 sm:col-span-1 flex items-center gap-2 shrink-0 justify-end w-full sm:w-auto mt-2 sm:mt-0">
+                <Button variant="outline" size="sm" className="h-10 rounded-xl border-slate-200 hover:bg-slate-50 transition-all hidden sm:flex" onClick={() => setIsImportModalOpen(true)}>
+                  <FileSpreadsheet className="w-4 h-4 mr-1.5 text-slate-500" /> นำเข้า
+                </Button>
                 <Button variant="outline" size="sm" className="h-10 rounded-xl border-slate-200 hover:bg-slate-50 transition-all" onClick={() => setIsExportModalOpen(true)}>
                   <Download className="w-4 h-4 mr-1.5 text-slate-500" /> ส่งออก
                 </Button>
@@ -416,7 +453,10 @@ export default function AssetsPage() {
                 </SelectContent>
               </Select>
 
-              <Button variant="outline" size="sm" className="h-9 border-blue-200 hover:bg-blue-100 text-blue-700 transition-colors" onClick={() => window.print()}>
+              <Button variant="outline" size="sm" className="h-9 border-blue-200 hover:bg-blue-100 text-blue-700 transition-colors" onClick={() => setIsBulkTransferOpen(true)}>
+                <MoveRight className="w-4 h-4 mr-2" /> Transfer
+              </Button>
+              <Button variant="outline" size="sm" className="h-9 border-blue-200 hover:bg-blue-100 text-blue-700 transition-colors" onClick={() => setIsBulkPrintOpen(true)}>
                 <Printer className="w-4 h-4 mr-2" /> Print QR
               </Button>
               <Button variant="destructive" size="sm" className="h-9" onClick={() => setBulkDeleteConfirm(true)}>
@@ -483,6 +523,26 @@ export default function AssetsPage() {
         description={`คุณแน่ใจหรือไม่ว่าต้องการลบทรัพย์สินทั้ง ${selectedRows.length} รายการนี้? ข้อมูลที่เกี่ยวข้องทั้งหมดจะถูกลบถาวรและไม่สามารถย้อนกลับได้`}
         confirmLabel="ลบทรัพย์สินที่เลือก"
         variant="danger"
+      />
+
+            <ImportAssetModal
+        isOpen={isImportModalOpen}
+        onClose={() => setIsImportModalOpen(false)}
+        departments={uniqueDepartments.map(d => ({ id: d, name: d }))}
+        categories={uniqueCategories.map(c => ({ id: c, name: c }))}
+      />
+
+      <BulkTransferModal 
+        isOpen={isBulkTransferOpen}
+        onClose={() => setIsBulkTransferOpen(false)}
+        selectedAssets={selectedRows}
+        onSuccess={() => setSelectedRows([])}
+      />
+
+      <BulkPrintQRModal
+        isOpen={isBulkPrintOpen}
+        onClose={() => setIsBulkPrintOpen(false)}
+        selectedAssets={selectedRows}
       />
 
       <ReportExportModal 

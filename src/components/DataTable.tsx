@@ -21,6 +21,7 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
+import { Skeleton } from '@/components/ui/skeleton';
 import { ArrowUpDown, ArrowUp, ArrowDown, Download } from 'lucide-react';
 import {
   Select,
@@ -149,14 +150,21 @@ export function DataTable<TData, TValue>({
           </TableHeader>
           <TableBody>
             {isLoading ? (
-              <TableRow>
-                <TableCell colSpan={columns.length} className="h-24 text-center text-muted-foreground">
-                  <div className="flex justify-center items-center gap-2">
-                    <span className="w-4 h-4 border-2 border-primary border-t-transparent rounded-full animate-spin" />
-                    Loading data...
-                  </div>
-                </TableCell>
-              </TableRow>
+              [...Array(5)].map((_, rowIdx) => (
+                <TableRow key={`skeleton-${rowIdx}`} className="border-border/30">
+                  {columns.map((_, colIdx) => (
+                    <TableCell key={`skeleton-${rowIdx}-${colIdx}`} className="p-3">
+                      <Skeleton 
+                        className="h-4 rounded-md" 
+                        style={{ 
+                          width: `${55 + Math.sin(rowIdx + colIdx) * 30}%`,
+                          animationDelay: `${rowIdx * 80 + colIdx * 40}ms`
+                        }} 
+                      />
+                    </TableCell>
+                  ))}
+                </TableRow>
+              ))
             ) : table.getRowModel().rows?.length ? (
               table.getRowModel().rows.map((row) => (
                 <TableRow
@@ -183,7 +191,15 @@ export function DataTable<TData, TValue>({
             ) : (
               <TableRow>
                 <TableCell colSpan={columns.length} className="h-64 text-center p-0 align-middle">
-                  {emptyState ? emptyState : <div className="py-12 text-muted-foreground">No results found.</div>}
+                  {emptyState ? emptyState : (
+                    <div className="flex flex-col items-center justify-center py-12 px-4 text-center">
+                      <div className="w-14 h-14 bg-gradient-to-br from-muted to-muted/50 rounded-full flex items-center justify-center mb-4 border border-border/50">
+                        <Download className="w-7 h-7 text-muted-foreground" strokeWidth={1.5} />
+                      </div>
+                      <p className="text-sm font-semibold text-foreground mb-0.5">ไม่พบข้อมูล</p>
+                      <p className="text-xs text-muted-foreground">ลองเปลี่ยนเงื่อนไขการค้นหาหรือ Filter</p>
+                    </div>
+                  )}
                 </TableCell>
               </TableRow>
             )}

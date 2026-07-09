@@ -88,7 +88,20 @@ export default function CheckoutModal({ isOpen, onClose, recordId }: { isOpen: b
         </DialogHeader>
 
         {isLoading ? (
-          <div className="py-12 text-center text-muted-foreground">Loading...</div>
+          <div className="space-y-4 py-8 px-6">
+            <div className="flex items-center space-x-4">
+              <div className="w-12 h-12 bg-muted/50 rounded-full animate-pulse"></div>
+              <div className="space-y-2 flex-1">
+                <div className="h-4 bg-muted/50 rounded w-3/4 animate-pulse"></div>
+                <div className="h-4 bg-muted/50 rounded w-1/2 animate-pulse"></div>
+              </div>
+            </div>
+            <div className="space-y-2 pt-4">
+              <div className="h-4 bg-muted/50 rounded w-full animate-pulse"></div>
+              <div className="h-4 bg-muted/50 rounded w-full animate-pulse"></div>
+              <div className="h-4 bg-muted/50 rounded w-4/5 animate-pulse"></div>
+            </div>
+          </div>
         ) : (
           <form onSubmit={handleSave} className="space-y-6 mt-4">
             

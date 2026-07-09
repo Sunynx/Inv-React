@@ -28,7 +28,7 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en" className={cn("font-sans", geist.variable)} suppressHydrationWarning>
-      <body className={`${inter.className} bg-background text-foreground transition-colors duration-300`}>
+      <body suppressHydrationWarning className={`${inter.className} bg-background text-foreground transition-colors duration-300`}>
         <Providers>
           <Toaster position="top-right" />
           <div className="flex min-h-screen w-full bg-slate-50 dark:bg-slate-950 transition-colors duration-300">

@@ -439,7 +439,7 @@ export default function ProcurementModal({ isOpen, onClose, document, onSaved }:
                     ))}
                   </div>
                 ) : (
-                  <div className="text-center py-4 text-muted-foreground text-xs">ยังไม่มีเอกสารแนบ</div>
+                  <div className="text-center py-6 bg-muted/20 rounded-lg border border-border border-dashed text-xs text-muted-foreground">ยังไม่มีเอกสารแนบ</div>
                 )}
               </div>
 

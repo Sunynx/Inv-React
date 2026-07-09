@@ -19,6 +19,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import AssetTimeline from './AssetTimeline';
 import { generateAssetCodeStr } from '@/lib/utils';
 import { logAudit, formatAuditDetails } from '@/lib/auditLog';
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer } from 'recharts';
 
 const statusConfig: Record<string, { icon: any; className: string }> = {
   'ใช้งาน': { icon: CheckCircle2, className: 'text-emerald-600 bg-emerald-50 border-emerald-200/50' },
@@ -247,6 +248,23 @@ export default function AssetSheet({ isOpen, onClose, assetId, mode = 'edit', on
     if (monthsPassed < 0) return Number(price);
     const currentValue = Number(price) * (1 - (monthsPassed / lifespanMonths));
     return currentValue > 0 ? currentValue : 0;
+  };
+
+  const generateDepreciationData = (price: any, purchaseDate: any) => {
+    if (!price || !purchaseDate) return [];
+    const pDate = new Date(purchaseDate);
+    const data = [];
+    const lifespanYears = 5;
+    for (let i = 0; i <= lifespanYears; i++) {
+      const yearDate = new Date(pDate.getFullYear() + i, pDate.getMonth(), pDate.getDate());
+      const value = Number(price) * (1 - (i / lifespanYears));
+      data.push({
+        year: yearDate.getFullYear().toString(),
+        value: value > 0 ? value : 0,
+        actualDate: yearDate
+      });
+    }
+    return data;
   };
 
   const removeAttachment = (idx: number) => {
@@ -621,16 +639,50 @@ export default function AssetSheet({ isOpen, onClose, assetId, mode = 'edit', on
                   </div>
 
                   <div className="space-y-4">
-                    <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider border-b pb-1">Purchase Details</h3>
-                    <div className="space-y-3">
-                      <DetailItem label="Purchase Date" value={formData.purchase_date} />
-                      <DetailItem label="Warranty Expiry" value={formData.warranty_expiry} />
-                      <DetailItem label="Supplier" value={formData.supplier} />
-                      <DetailItem label="Price (THB)" value={formData.price ? `฿${Number(formData.price).toLocaleString()}` : null} />
-                      {formData.price && formData.purchase_date && (
-                        <DetailItem label="Current Value (Depreciation)" value={`฿${calculateDepreciation(formData.price, formData.purchase_date)?.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}`} />
+                    <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider border-b pb-1">Financial & Depreciation</h3>
+                    
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                      <div className="space-y-3">
+                        <DetailItem label="Purchase Date" value={formData.purchase_date} />
+                        <DetailItem label="Warranty Expiry" value={formData.warranty_expiry} />
+                        <DetailItem label="Supplier" value={formData.supplier} />
+                        <DetailItem label="PO/PR Number" value={formData.po_number} />
+                      </div>
+                      
+                      {formData.price && formData.purchase_date ? (
+                        <div className="bg-slate-50 dark:bg-slate-900/50 rounded-xl p-4 border border-border/50 flex flex-col justify-center">
+                          <div className="flex justify-between items-center mb-3">
+                            <span className="text-sm font-medium text-muted-foreground">Purchase Price</span>
+                            <span className="text-sm font-bold">฿{Number(formData.price).toLocaleString()}</span>
+                          </div>
+                          <div className="flex justify-between items-center mb-4 pb-4 border-b border-border/50">
+                            <span className="text-sm font-medium text-muted-foreground">Current Book Value</span>
+                            <span className="text-lg font-bold text-primary">฿{calculateDepreciation(formData.price, formData.purchase_date)?.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</span>
+                          </div>
+                          <div className="h-[120px] w-full">
+                            <ResponsiveContainer width="100%" height="100%">
+                              <LineChart data={generateDepreciationData(formData.price, formData.purchase_date)} margin={{ top: 5, right: 10, left: -20, bottom: 0 }}>
+                                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="var(--border)" opacity={0.5} />
+                                <XAxis dataKey="year" axisLine={false} tickLine={false} tick={{ fontSize: 10, fill: 'var(--muted-foreground)' }} dy={5} />
+                                <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 10, fill: 'var(--muted-foreground)' }} tickFormatter={(val) => `฿${(val/1000)}k`} />
+                                <RechartsTooltip 
+                                  contentStyle={{ borderRadius: '8px', border: '1px solid var(--border)', backgroundColor: 'var(--card)', color: 'var(--card-foreground)', fontSize: '12px' }} 
+                                  formatter={(val: number) => [`฿${val.toLocaleString(undefined, {minimumFractionDigits: 0, maximumFractionDigits: 0})}`, 'Book Value']}
+                                  labelFormatter={(label) => `Year ${label}`}
+                                />
+                                <Line type="monotone" dataKey="value" stroke="#3b82f6" strokeWidth={3} dot={{ r: 3, fill: '#3b82f6', strokeWidth: 0 }} activeDot={{ r: 5 }} />
+                              </LineChart>
+                            </ResponsiveContainer>
+                          </div>
+                          <div className="text-[10px] text-center text-muted-foreground mt-2">5-Year Straight Line Depreciation</div>
+                        </div>
+                      ) : (
+                        <div className="bg-slate-50 dark:bg-slate-900/50 rounded-xl p-4 border border-border/50 flex flex-col items-center justify-center text-center">
+                          <ShoppingCart className="w-8 h-8 text-muted-foreground/30 mb-2" />
+                          <span className="text-xs font-medium text-muted-foreground">No financial data available</span>
+                          <span className="text-[10px] text-muted-foreground mt-1">Please enter Purchase Date and Price to see depreciation curve.</span>
+                        </div>
                       )}
-                      <DetailItem label="PO/PR Number" value={formData.po_number} />
                     </div>
                   </div>
                 </div>
