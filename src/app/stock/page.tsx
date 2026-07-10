@@ -148,7 +148,7 @@ export default function StockPage() {
         return (
           <div className="text-right pr-4" onClick={e => e.stopPropagation()}>
             <DropdownMenu>
-              <DropdownMenuTrigger render={<Button variant="ghost" className="h-8 w-8 p-0 text-muted-foreground" />}>
+              <DropdownMenuTrigger className="inline-flex h-8 w-8 p-0 items-center justify-center rounded-md hover:bg-slate-100 dark:hover:bg-slate-800 text-muted-foreground outline-none focus-visible:ring-2 focus-visible:ring-ring">
                 <MoreHorizontal className="h-4 w-4" />
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="w-44">

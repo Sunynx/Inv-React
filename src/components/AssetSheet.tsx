@@ -451,6 +451,8 @@ export default function AssetSheet({ isOpen, onClose, assetId, mode = 'edit', on
     const handleKeyDown = (e: KeyboardEvent) => {
       if (selectedImageIdx === null) return;
       if (e.key === 'Escape') {
+        e.stopPropagation();
+        e.preventDefault();
         setSelectedImageIdx(null);
       } else if (e.key === 'ArrowLeft') {
         setSelectedImageIdx(prev => (prev! > 0 ? prev! - 1 : images.length - 1));
@@ -471,9 +473,11 @@ export default function AssetSheet({ isOpen, onClose, assetId, mode = 'edit', on
       <>
         <Sheet 
           open={isOpen} 
-          onOpenChange={(open) => {
+          onOpenChange={(open, eventDetails) => {
             if (!open) {
               if (selectedImageIdx !== null) {
+                if (eventDetails && eventDetails.preventDefault) eventDetails.preventDefault();
+                if (eventDetails && eventDetails.originalEvent && eventDetails.originalEvent.preventDefault) eventDetails.originalEvent.preventDefault();
                 setSelectedImageIdx(null);
               } else {
                 onClose();
@@ -799,7 +803,17 @@ export default function AssetSheet({ isOpen, onClose, assetId, mode = 'edit', on
   };
 
   return (
-    <Sheet open={isOpen} onOpenChange={(open) => !open && onClose()}>
+    <Sheet open={isOpen} onOpenChange={(open, eventDetails) => {
+      if (!open) {
+        if (selectedImageIdx !== null) {
+          if (eventDetails && eventDetails.preventDefault) eventDetails.preventDefault();
+          if (eventDetails && eventDetails.originalEvent && eventDetails.originalEvent.preventDefault) eventDetails.originalEvent.preventDefault();
+          setSelectedImageIdx(null);
+        } else {
+          onClose();
+        }
+      }
+    }}>
       <SheetContent className="!w-full sm:!w-[60vw] sm:!max-w-[60vw] p-0 flex flex-col bg-background text-foreground border-l border-border shadow-2xl transition-colors duration-300">
         <SheetHeader className="p-6 pb-4 bg-background border-b border-border shrink-0">
           <SheetTitle className="text-xl font-bold">

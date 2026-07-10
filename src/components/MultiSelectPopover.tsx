@@ -40,14 +40,8 @@ export function MultiSelectPopover({ options, selected, onChange, title }: Multi
   return (
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger
-        render={
-          <Button
-            variant="outline"
-            role="combobox"
-            aria-expanded={open}
-            className="h-10 w-full sm:w-[160px] justify-between rounded-xl bg-white dark:bg-slate-900 border-slate-200/60 dark:border-slate-800/60 shadow-sm"
-          />
-        }
+        className="inline-flex h-10 px-4 w-full sm:w-[160px] items-center justify-between rounded-xl bg-white dark:bg-slate-900 border border-slate-200/60 dark:border-slate-800/60 shadow-sm text-sm font-medium hover:bg-slate-50 transition-all outline-none focus-visible:ring-3 focus-visible:ring-blue-500/20 disabled:pointer-events-none disabled:opacity-50"
+        aria-expanded={open}
       >
         <span className="truncate">
           {safeSelected.length === 0 ? title : `${title} (${safeSelected.length})`}

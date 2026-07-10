@@ -34,13 +34,13 @@ const statusConfig: Record<string, { icon: any; className: string }> = {
   'จำหน่าย': { icon: Ban, className: 'text-gray-500 bg-gray-50 border-gray-200/50' },
 };
 
-function HighlightHandler({ 
-  onHighlight, 
+function HighlightHandler({
+  onHighlight,
   onFilterStatus,
   onFilterCategory,
   onFilterDepartment
-}: { 
-  onHighlight: (id: string) => void, 
+}: {
+  onHighlight: (id: string) => void,
   onFilterStatus: (status: string) => void,
   onFilterCategory: (category: string[]) => void,
   onFilterDepartment: (department: string[]) => void
@@ -74,7 +74,8 @@ function HighlightHandler({
     if (shouldReplace) {
       router.replace(pathname, { scroll: false });
     }
-  }, [highlightId, statusFilter, categoryFilter, departmentFilter, onHighlight, onFilterStatus, onFilterCategory, onFilterDepartment, router, pathname]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [highlightId, statusFilter, categoryFilter, departmentFilter, pathname, router]);
 
   return null;
 }
@@ -85,7 +86,7 @@ export default function AssetsPage() {
   const [filterTab, setFilterTab] = useState('all');
   const [filterDepartment, setFilterDepartment] = useState<string[]>([]);
   const [filterCategory, setFilterCategory] = useState<string[]>([]);
-  const [savedViews, setSavedViews] = useState<{name: string, dept: string[], cat: string[]}[]>([]);
+  const [savedViews, setSavedViews] = useState<{ name: string, dept: string[], cat: string[] }[]>([]);
   useEffect(() => {
     const views = localStorage.getItem('asset_saved_views');
     if (views) setSavedViews(JSON.parse(views));
@@ -100,7 +101,7 @@ export default function AssetsPage() {
   };
   const [sortBy, setSortBy] = useState('newest');
   const [isSheetOpen, setIsSheetOpen] = useState(false);
-  const [sheetMode, setSheetMode] = useState<'view'|'edit'>('view');
+  const [sheetMode, setSheetMode] = useState<'view' | 'edit'>('view');
   const [selectedAssetId, setSelectedAssetId] = useState<string | undefined>(undefined);
   const [isExportModalOpen, setIsExportModalOpen] = useState(false);
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
@@ -182,15 +183,15 @@ export default function AssetsPage() {
   const filteredAssets = assets.filter(a => {
     const lowerSearch = searchTerm.toLowerCase();
     const matchSearch = a.name?.toLowerCase().includes(lowerSearch) ||
-                        a.asset_code?.toLowerCase().includes(lowerSearch) ||
-                        a.location?.toLowerCase().includes(lowerSearch) ||
-                        a.departments?.name?.toLowerCase().includes(lowerSearch) ||
-                        a.categories?.name?.toLowerCase().includes(lowerSearch) ||
-                        a.assigned_user?.toLowerCase().includes(lowerSearch);
-    
+      a.asset_code?.toLowerCase().includes(lowerSearch) ||
+      a.location?.toLowerCase().includes(lowerSearch) ||
+      a.departments?.name?.toLowerCase().includes(lowerSearch) ||
+      a.categories?.name?.toLowerCase().includes(lowerSearch) ||
+      a.assigned_user?.toLowerCase().includes(lowerSearch);
+
     let matchTab = true;
     if (filterTab !== 'all') matchTab = a.status === filterTab;
-    
+
     let matchDept = true;
     const safeDept = Array.isArray(filterDepartment) ? filterDepartment : (filterDepartment ? [String(filterDepartment)] : []);
     if (safeDept.length > 0 && !safeDept.includes('all')) matchDept = safeDept.includes(a.departments?.name);
@@ -305,7 +306,7 @@ export default function AssetsPage() {
         const asset = row.original;
         return (
           <DropdownMenu>
-            <DropdownMenuTrigger render={<Button variant="ghost" className="h-8 w-8 p-0 text-muted-foreground" />}>
+            <DropdownMenuTrigger className="inline-flex h-8 w-8 p-0 items-center justify-center rounded-md hover:bg-slate-100 dark:hover:bg-slate-800 text-muted-foreground outline-none focus-visible:ring-2 focus-visible:ring-ring">
               <MoreHorizontal className="h-4 w-4" />
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-40">
@@ -327,8 +328,8 @@ export default function AssetsPage() {
     <div className="space-y-6 print:space-y-0 print:m-0 print:p-0 animate-in fade-in duration-500">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 pt-2 print:hidden mb-4">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight text-slate-900 dark:text-white">รายการทรัพย์สิน IT</h1>
-          <p className="text-sm text-slate-500 mt-1">จัดการและติดตามรายการทรัพย์สินทั้งหมดในระบบของคุณอย่างมีประสิทธิภาพ</p>
+          <h1 className="text-3xl font-bold tracking-tight text-slate-900 dark:text-white">IT Asset Inventory</h1>
+          <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">Manage and track all IT assets in your system efficiently.</p>
         </div>
       </div>
 
@@ -373,9 +374,7 @@ export default function AssetsPage() {
               />
               <DropdownMenu>
                 <DropdownMenuTrigger
-                  render={
-                    <Button variant="outline" className="h-10 rounded-xl border-slate-200/60 bg-white shadow-sm px-3" />
-                  }
+                  className="inline-flex h-10 w-10 p-0 items-center justify-center rounded-xl border border-slate-200/60 bg-white hover:bg-slate-50 shadow-sm shrink-0 transition-all outline-none focus-visible:ring-3 focus-visible:ring-blue-500/20"
                 >
                   <Bookmark className="w-4 h-4 text-slate-500" />
                 </DropdownMenuTrigger>
@@ -397,7 +396,7 @@ export default function AssetsPage() {
 
               <div className="col-span-2 sm:col-span-1 w-full sm:w-[140px] shrink-0">
                 <Select value={sortBy} onValueChange={setSortBy}>
-                  <SelectTrigger className="h-10 bg-white dark:bg-slate-900 border-slate-200/60 dark:border-slate-800/60 shadow-sm text-sm w-full flex justify-between rounded-xl transition-all">
+                  <SelectTrigger className="!h-10 px-4 bg-white dark:bg-slate-900 border-slate-200/60 dark:border-slate-800/60 shadow-sm text-sm w-full flex justify-between rounded-xl transition-all">
                     <span className="truncate">
                       {sortBy === 'newest' && 'เพิ่มใหม่ล่าสุด'}
                       {sortBy === 'recently_edited' && 'แก้ไขล่าสุด'}
@@ -412,18 +411,18 @@ export default function AssetsPage() {
                   </SelectContent>
                 </Select>
               </div>
-              
+
               <div className="col-span-2 sm:col-span-1 flex items-center gap-2 shrink-0 justify-end w-full sm:w-auto mt-2 sm:mt-0">
-                <Button variant="outline" size="sm" className="h-10 rounded-xl border-slate-200 hover:bg-slate-50 transition-all hidden sm:flex" onClick={() => setIsImportModalOpen(true)}>
+                <Button variant="outline" className="h-10 px-4 rounded-xl border-slate-200 hover:bg-slate-50 transition-all hidden sm:flex text-sm" onClick={() => setIsImportModalOpen(true)}>
                   <FileSpreadsheet className="w-4 h-4 mr-1.5 text-slate-500" /> นำเข้า
                 </Button>
-                <Button variant="outline" size="sm" className="h-10 rounded-xl border-slate-200 hover:bg-slate-50 transition-all" onClick={() => setIsExportModalOpen(true)}>
+                <Button variant="outline" className="h-10 px-4 rounded-xl border-slate-200 hover:bg-slate-50 transition-all text-sm" onClick={() => setIsExportModalOpen(true)}>
                   <Download className="w-4 h-4 mr-1.5 text-slate-500" /> ส่งออก
                 </Button>
-                <Button variant="outline" size="sm" className="h-10 rounded-xl border-slate-200 hover:bg-slate-50 transition-all hidden sm:flex" onClick={() => window.print()}>
+                <Button variant="outline" className="h-10 px-4 rounded-xl border-slate-200 hover:bg-slate-50 transition-all hidden sm:flex text-sm" onClick={() => window.print()}>
                   <Printer className="w-4 h-4 mr-1.5 text-slate-500" /> พิมพ์
                 </Button>
-                <Button size="sm" className="h-10 rounded-xl bg-blue-600 hover:bg-blue-700 text-white shadow-sm shadow-blue-600/20 transition-all px-4" onClick={() => { setSelectedAssetId(undefined); setSheetMode('edit'); setIsSheetOpen(true); }}>
+                <Button className="h-10 px-4 rounded-xl bg-blue-600 hover:bg-blue-700 text-white shadow-sm shadow-blue-600/20 transition-all text-sm" onClick={() => { setSelectedAssetId(undefined); setSheetMode('edit'); setIsSheetOpen(true); }}>
                   <Plus className="w-4 h-4 mr-1.5" /> เพิ่มทรัพย์สิน
                 </Button>
               </div>
@@ -467,10 +466,10 @@ export default function AssetsPage() {
         )}
 
         <div className="p-1 bg-slate-50/50 dark:bg-slate-900/50">
-          <DataTable 
-            columns={columns} 
-            data={filteredAssets} 
-            isLoading={isLoading} 
+          <DataTable
+            columns={columns}
+            data={filteredAssets}
+            isLoading={isLoading}
             enableRowSelection={true}
             onRowSelectionChange={setSelectedRows}
             onRowClick={(row) => {
@@ -479,8 +478,8 @@ export default function AssetsPage() {
               setIsSheetOpen(true);
             }}
             emptyState={
-              <EmptyState 
-                title="ไม่พบข้อมูลทรัพย์สิน" 
+              <EmptyState
+                title="ไม่พบข้อมูลทรัพย์สิน"
                 description="ยังไม่มีรายการทรัพย์สินที่ตรงกับเงื่อนไขการค้นหาของคุณ หรือยังไม่ได้เพิ่มข้อมูลเข้าสู่ระบบ"
                 actionLabel="เพิ่มทรัพย์สินใหม่"
                 onAction={() => { setSelectedAssetId(undefined); setSheetMode('edit'); setIsSheetOpen(true); }}
@@ -490,18 +489,18 @@ export default function AssetsPage() {
         </div>
       </Card>
 
-      <AssetSheet 
-        isOpen={isSheetOpen} 
+      <AssetSheet
+        isOpen={isSheetOpen}
         onClose={() => {
           setIsSheetOpen(false);
           setSelectedAssetId(undefined);
-        }} 
-        assetId={selectedAssetId} 
+        }}
+        assetId={selectedAssetId}
         mode={sheetMode}
         onEdit={() => setSheetMode('edit')}
         onEditComplete={() => setSheetMode('view')}
       />
-      
+
       <ConfirmDialog
         isOpen={!!deleteConfirmId}
         onClose={() => setDeleteConfirmId(null)}
@@ -525,14 +524,14 @@ export default function AssetsPage() {
         variant="danger"
       />
 
-            <ImportAssetModal
+      <ImportAssetModal
         isOpen={isImportModalOpen}
         onClose={() => setIsImportModalOpen(false)}
         departments={uniqueDepartments.map(d => ({ id: d, name: d }))}
         categories={uniqueCategories.map(c => ({ id: c, name: c }))}
       />
 
-      <BulkTransferModal 
+      <BulkTransferModal
         isOpen={isBulkTransferOpen}
         onClose={() => setIsBulkTransferOpen(false)}
         selectedAssets={selectedRows}
@@ -545,9 +544,9 @@ export default function AssetsPage() {
         selectedAssets={selectedRows}
       />
 
-      <ReportExportModal 
-        isOpen={isExportModalOpen} 
-        onClose={() => setIsExportModalOpen(false)} 
+      <ReportExportModal
+        isOpen={isExportModalOpen}
+        onClose={() => setIsExportModalOpen(false)}
         initialDataTypes={['assets']}
       />
 
@@ -565,20 +564,20 @@ export default function AssetsPage() {
       </div>
 
       <Suspense fallback={null}>
-        <HighlightHandler 
+        <HighlightHandler
           onHighlight={(id) => {
             setSelectedAssetId(id);
             setSheetMode('view');
             setIsSheetOpen(true);
-          }} 
+          }}
           onFilterStatus={(status) => {
-            setFilterTab(status);
+            setFilterTab(prev => prev === status ? prev : status);
           }}
           onFilterCategory={(category) => {
-            setFilterCategory(category);
+            setFilterCategory(prev => JSON.stringify(prev) === JSON.stringify(category) ? prev : category);
           }}
           onFilterDepartment={(department) => {
-            setFilterDepartment(department);
+            setFilterDepartment(prev => JSON.stringify(prev) === JSON.stringify(department) ? prev : department);
           }}
         />
       </Suspense>

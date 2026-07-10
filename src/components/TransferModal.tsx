@@ -178,7 +178,7 @@ export default function TransferModal({ isOpen, onClose, recordId }: { isOpen: b
             <div className="space-y-2 flex flex-col">
               <Label>Asset (อุปกรณ์)</Label>
               <Popover open={assetComboOpen} onOpenChange={setAssetComboOpen}>
-                <PopoverTrigger render={<Button variant="outline" role="combobox" className="w-full justify-between bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 font-normal" />}>
+                <PopoverTrigger className="inline-flex h-9 px-3 w-full items-center justify-between whitespace-nowrap rounded-md border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-sm font-normal shadow-sm ring-offset-background transition-colors hover:bg-slate-100 hover:text-slate-900 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50">
                   {formData.asset_id
                     ? `[${assets.find((a:any) => a.id === formData.asset_id)?.asset_code}] ${assets.find((a:any) => a.id === formData.asset_id)?.name}`
                     : "Select an Asset..."}

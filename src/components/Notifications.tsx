@@ -74,7 +74,7 @@ export default function Notifications() {
 
   return (
     <DropdownMenu>
-      <DropdownMenuTrigger render={<Button variant="ghost" size="icon" className="relative text-muted-foreground hover:bg-muted hover:text-foreground rounded-full h-10 w-10 transition-colors" />}>
+      <DropdownMenuTrigger className="inline-flex relative items-center justify-center text-muted-foreground hover:bg-muted hover:text-foreground rounded-full h-10 w-10 transition-colors outline-none focus-visible:ring-2 focus-visible:ring-ring">
         <Bell className="h-5 w-5" />
         {unreadCount > 0 && (
           <span className="absolute top-1.5 right-2 h-2 w-2 rounded-full bg-red-500 animate-pulse border-2 border-background" />
