@@ -435,22 +435,29 @@ export default function AssetSheet({ isOpen, onClose, assetId, mode = 'edit', on
 
   const watchDeptId = form.watch('department_id');
   const watchCatId = form.watch('category_id');
-  const allFormValues = form.watch();
 
   useEffect(() => {
     if (isOpen && !assetId) {
-      const timer = setTimeout(() => {
+      const saveDraft = () => {
         const draft = {
-          formValues: allFormValues,
+          formValues: form.getValues(),
           images,
           thumbnailUrl,
           attachments
         };
         localStorage.setItem('asset_form_draft', JSON.stringify(draft));
-      }, 500);
-      return () => clearTimeout(timer);
+      };
+      
+      const subscription = form.watch(() => {
+        saveDraft();
+      });
+      
+      // Also save if images or attachments change
+      saveDraft();
+      
+      return () => subscription.unsubscribe();
     }
-  }, [allFormValues, images, thumbnailUrl, attachments, isOpen, assetId]);
+  }, [isOpen, assetId, images, thumbnailUrl, attachments, form]);
 
   useEffect(() => {
     if (!assetId && watchDeptId && watchCatId) {
