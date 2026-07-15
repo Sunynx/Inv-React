@@ -324,7 +324,7 @@ export default function Dashboard() {
             onChange={(e) => setGlobalSearch(e.target.value)}
           />
           <kbd className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none hidden sm:inline-flex h-5 items-center gap-0.5 rounded border border-slate-200 dark:border-slate-700 bg-slate-100 dark:bg-slate-800 px-1.5 font-mono text-[10px] font-medium text-slate-500 dark:text-slate-400">
-            <Command size={10} />K
+            Ctrl K
           </kbd>
           
           {/* Search Results Dropdown */}
@@ -774,10 +774,10 @@ export default function Dashboard() {
 
         <Tabs.Content value="analytics" className="space-y-6 outline-none">
           {/* AI Chat Interface */}
-          <Card className="border-blue-100 shadow-sm bg-gradient-to-br from-blue-50/30 to-indigo-50/30">
+          <Card className="border-blue-100 dark:border-blue-900/50 shadow-sm bg-gradient-to-br from-blue-50/30 to-indigo-50/30 dark:from-blue-950/20 dark:to-indigo-950/20">
             <CardHeader className="pb-3 border-b border-border/40">
-              <CardTitle className="text-base font-semibold flex items-center gap-2 text-blue-900">
-                <Bot size={18} className="text-blue-600" /> AI Inventory Assistant
+              <CardTitle className="text-base font-semibold flex items-center gap-2 text-blue-900 dark:text-blue-100">
+                <Bot size={18} className="text-blue-600 dark:text-blue-400" /> AI Inventory Assistant
               </CardTitle>
             </CardHeader>
             <CardContent className="p-4 space-y-4">
@@ -790,13 +790,13 @@ export default function Dashboard() {
                   chatMessages.map((msg, i) => (
                     <div key={i} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
                       <div className={`text-sm px-4 py-2 max-w-[85%] rounded-2xl ${
-                        msg.role === 'user' ? 'bg-primary text-primary-foreground rounded-br-none' : 'bg-card border border-border/50 text-foreground rounded-bl-none shadow-sm'
+                        msg.role === 'user' ? 'bg-primary text-primary-foreground rounded-br-none' : 'bg-card border border-border/50 text-foreground rounded-bl-none shadow-sm dark:bg-muted/50'
                       }`}>
                         {msg.role === 'ai' ? (
                           <div className="whitespace-pre-wrap leading-relaxed">
                             {msg.text.split(/(\*\*.*?\*\*)/g).map((part, idx) => 
                               part.startsWith('**') && part.endsWith('**') 
-                                ? <strong key={idx} className="font-semibold text-blue-900">{part.slice(2, -2)}</strong> 
+                                ? <strong key={idx} className="font-semibold text-blue-900 dark:text-blue-200">{part.slice(2, -2)}</strong> 
                                 : <span key={idx}>{part}</span>
                             )}
                           </div>
@@ -809,10 +809,10 @@ export default function Dashboard() {
                 )}
                 {isAiLoading && (
                   <div className="flex justify-start">
-                    <div className="text-sm px-4 py-2 rounded-2xl bg-card border border-border/50 rounded-bl-none shadow-sm flex gap-1 items-center">
+                    <div className="text-sm px-4 py-2 rounded-2xl bg-card border border-border/50 dark:bg-muted/50 rounded-bl-none shadow-sm flex gap-1 items-center">
                       <span className="w-1.5 h-1.5 bg-muted-foreground/50 rounded-full animate-bounce"></span>
-                      <div className="w-1.5 h-1.5 bg-blue-400 rounded-full animate-bounce [animation-delay:0.2s]" />
-                      <div className="w-1.5 h-1.5 bg-blue-400 rounded-full animate-bounce [animation-delay:0.4s]" />
+                      <div className="w-1.5 h-1.5 bg-blue-400 dark:bg-blue-500 rounded-full animate-bounce [animation-delay:0.2s]" />
+                      <div className="w-1.5 h-1.5 bg-blue-400 dark:bg-blue-500 rounded-full animate-bounce [animation-delay:0.4s]" />
                     </div>
                   </div>
                 )}

@@ -8,7 +8,7 @@ import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 
-import { Camera, Upload, X, CheckCircle2, AlertCircle, Clock, Ban, ChevronLeft, ChevronRight, Edit, FileText, FileSpreadsheet, Paperclip, Cpu, Monitor, Wifi, Users, ShoppingCart, Image as ImageIcon, Wand2, Printer, PenLine, Trash2 } from 'lucide-react';
+import { Camera, Upload, X, CheckCircle2, AlertCircle, Clock, Ban, ChevronLeft, ChevronRight, Edit, FileText, FileSpreadsheet, Paperclip, Cpu, Monitor, Wifi, Users, ShoppingCart, Image as ImageIcon, Wand2, Printer, PenLine, Trash2, Loader2 } from 'lucide-react';
 import SignatureCanvas from 'react-signature-canvas';
 import { QRCodeSVG } from 'qrcode.react';
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
@@ -161,11 +161,27 @@ export default function AssetSheet({ isOpen, onClose, assetId, mode = 'edit', on
           price: assetData.price ? Number(assetData.price) : null
         });
       } else if (!assetId) {
-        form.reset({ status: 'ใช้งาน' });
-        setImages([]);
-        setThumbnailUrl(null);
+        const draftStr = localStorage.getItem('asset_form_draft');
+        let loadedDraft = false;
+        if (draftStr) {
+          try {
+            const draft = JSON.parse(draftStr);
+            if (draft && draft.formValues) {
+              form.reset(draft.formValues);
+              setImages(draft.images || []);
+              setThumbnailUrl(draft.thumbnailUrl || null);
+              setAttachments(draft.attachments || []);
+              loadedDraft = true;
+            }
+          } catch(e) {}
+        }
+        if (!loadedDraft) {
+          form.reset({ status: 'ใช้งาน' });
+          setImages([]);
+          setThumbnailUrl(null);
+          setAttachments([]);
+        }
         setSignatureUrl(null);
-        setAttachments([]);
         setNewSignature(false);
       }
     }
@@ -392,6 +408,7 @@ export default function AssetSheet({ isOpen, onClose, assetId, mode = 'edit', on
           onClose();
         }
       } else {
+        localStorage.removeItem('asset_form_draft');
         onClose();
       }
       queryClient.invalidateQueries({ queryKey: ['dashboard_data'] });
@@ -418,6 +435,22 @@ export default function AssetSheet({ isOpen, onClose, assetId, mode = 'edit', on
 
   const watchDeptId = form.watch('department_id');
   const watchCatId = form.watch('category_id');
+  const allFormValues = form.watch();
+
+  useEffect(() => {
+    if (isOpen && !assetId) {
+      const timer = setTimeout(() => {
+        const draft = {
+          formValues: allFormValues,
+          images,
+          thumbnailUrl,
+          attachments
+        };
+        localStorage.setItem('asset_form_draft', JSON.stringify(draft));
+      }, 500);
+      return () => clearTimeout(timer);
+    }
+  }, [allFormValues, images, thumbnailUrl, attachments, isOpen, assetId]);
 
   useEffect(() => {
     if (!assetId && watchDeptId && watchCatId) {

@@ -23,13 +23,7 @@ export default function PRDashboardPage() {
     }
   });
 
-  if (isLoading) {
-    return (
-      <div className="flex justify-center items-center h-64">
-        <Loader2 className="w-8 h-8 animate-spin text-gray-400" />
-      </div>
-    );
-  }
+
 
   // 1. KPIs
   const totalPRs = documents.length;
@@ -138,33 +132,45 @@ export default function PRDashboardPage() {
       </div>
 
       <div className="grid gap-4 md:grid-cols-3">
-        <Card className="shadow-sm border-border/60">
+        <Card className="shadow-sm border-blue-100 dark:border-blue-900/50 bg-gradient-to-br from-blue-50/30 to-indigo-50/30 dark:from-blue-950/20 dark:to-indigo-950/20">
           <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0">
-            <CardTitle className="text-sm font-medium">คำขอ PR ทั้งหมด</CardTitle>
-            <FileText className="w-4 h-4 text-gray-500" />
+            <CardTitle className="text-sm font-medium text-blue-900 dark:text-blue-100">คำขอ PR ทั้งหมด</CardTitle>
+            <div className="p-2 bg-blue-100 dark:bg-blue-900/50 text-blue-600 dark:text-blue-400 rounded-lg">
+              <FileText className="w-4 h-4" />
+            </div>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{totalPRs} <span className="text-base font-normal text-muted-foreground">รายการ</span></div>
+            {isLoading ? <Skeleton className="h-8 w-32" /> : (
+              <div className="text-2xl font-bold">{totalPRs} <span className="text-base font-normal text-muted-foreground">รายการ</span></div>
+            )}
           </CardContent>
         </Card>
         
-        <Card className="shadow-sm border-border/60">
+        <Card className="shadow-sm border-amber-100 dark:border-amber-900/50 bg-gradient-to-br from-amber-50/30 to-orange-50/30 dark:from-amber-950/20 dark:to-orange-950/20">
           <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0">
-            <CardTitle className="text-sm font-medium">ยอดเงินรออนุมัติ (Pending)</CardTitle>
-            <DollarSign className="w-4 h-4 text-amber-500" />
+            <CardTitle className="text-sm font-medium text-amber-900 dark:text-amber-100">ยอดเงินรออนุมัติ (Pending)</CardTitle>
+            <div className="p-2 bg-amber-100 dark:bg-amber-900/50 text-amber-600 dark:text-amber-400 rounded-lg">
+              <DollarSign className="w-4 h-4" />
+            </div>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-amber-600">฿{pendingAmount.toLocaleString(undefined, {minimumFractionDigits: 2})}</div>
+            {isLoading ? <Skeleton className="h-8 w-32" /> : (
+              <div className="text-2xl font-bold text-amber-600 dark:text-amber-400">฿{pendingAmount.toLocaleString(undefined, {minimumFractionDigits: 2})}</div>
+            )}
           </CardContent>
         </Card>
 
-        <Card className="shadow-sm border-border/60">
+        <Card className="shadow-sm border-emerald-100 dark:border-emerald-900/50 bg-gradient-to-br from-emerald-50/30 to-teal-50/30 dark:from-emerald-950/20 dark:to-teal-950/20">
           <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0">
-            <CardTitle className="text-sm font-medium">ยอดสั่งซื้อสะสม (Ordered)</CardTitle>
-            <ShoppingCart className="w-4 h-4 text-emerald-500" />
+            <CardTitle className="text-sm font-medium text-emerald-900 dark:text-emerald-100">ยอดสั่งซื้อสะสม (Ordered)</CardTitle>
+            <div className="p-2 bg-emerald-100 dark:bg-emerald-900/50 text-emerald-600 dark:text-emerald-400 rounded-lg">
+              <ShoppingCart className="w-4 h-4" />
+            </div>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-emerald-600">฿{orderedAmount.toLocaleString(undefined, {minimumFractionDigits: 2})}</div>
+            {isLoading ? <Skeleton className="h-8 w-32" /> : (
+              <div className="text-2xl font-bold text-emerald-600 dark:text-emerald-400">฿{orderedAmount.toLocaleString(undefined, {minimumFractionDigits: 2})}</div>
+            )}
           </CardContent>
         </Card>
       </div>
@@ -177,7 +183,9 @@ export default function PRDashboardPage() {
           </CardHeader>
           <CardContent>
             <div className="h-[300px] w-full mt-4">
-              {monthlyData.length > 0 ? (
+              {isLoading ? (
+                <Skeleton className="h-full w-full rounded-lg" />
+              ) : monthlyData.length > 0 ? (
                 <ResponsiveContainer width="100%" height="100%">
                   <BarChart data={monthlyData} margin={{ top: 10, right: 10, left: 0, bottom: 20 }}>
                     <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="var(--border)" />
@@ -201,7 +209,9 @@ export default function PRDashboardPage() {
           </CardHeader>
           <CardContent>
             <div className="h-[300px] w-full mt-4">
-              {deptData.length > 0 ? (
+              {isLoading ? (
+                <Skeleton className="h-full w-full rounded-lg" />
+              ) : deptData.length > 0 ? (
                 <ResponsiveContainer width="100%" height="100%">
                   <PieChart>
                     <Pie
@@ -238,7 +248,9 @@ export default function PRDashboardPage() {
           </CardHeader>
           <CardContent>
             <div className="h-[300px] w-full mt-4">
-              {statusData.length > 0 ? (
+              {isLoading ? (
+                <Skeleton className="h-full w-full rounded-lg" />
+              ) : statusData.length > 0 ? (
                 <ResponsiveContainer width="100%" height="100%">
                   <PieChart>
                     <Pie
@@ -273,7 +285,9 @@ export default function PRDashboardPage() {
           </CardHeader>
           <CardContent>
             <div className="h-[300px] w-full mt-4">
-              {topItemsData.length > 0 ? (
+              {isLoading ? (
+                <Skeleton className="h-full w-full rounded-lg" />
+              ) : topItemsData.length > 0 ? (
                 <ResponsiveContainer width="100%" height="100%">
                   <BarChart data={topItemsData} layout="vertical" margin={{ top: 0, right: 20, left: -20, bottom: 0 }}>
                     <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="var(--border)" />
@@ -297,7 +311,9 @@ export default function PRDashboardPage() {
           </CardHeader>
           <CardContent>
             <div className="h-[300px] w-full mt-4">
-              {volumeData.length > 0 ? (
+              {isLoading ? (
+                <Skeleton className="h-full w-full rounded-lg" />
+              ) : volumeData.length > 0 ? (
                 <ResponsiveContainer width="100%" height="100%">
                   <AreaChart data={volumeData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
                     <defs>
@@ -327,7 +343,11 @@ export default function PRDashboardPage() {
           </CardHeader>
           <CardContent>
             <div className="space-y-4 mt-2">
-              {topItemsData.length === 0 && topPRs.length === 0 ? (
+              {isLoading ? (
+                [...Array(5)].map((_, i) => (
+                  <Skeleton key={i} className="h-16 w-full rounded-lg" />
+                ))
+              ) : topItemsData.length === 0 && topPRs.length === 0 ? (
                 <div className="flex flex-col items-center justify-center py-8 text-muted-foreground"><div className="w-10 h-10 bg-muted/30 rounded-full flex items-center justify-center mb-2"><FileText className="w-5 h-5 opacity-50" /></div><span className="text-xs font-medium">ไม่มีข้อมูล</span></div>
               ) : topPRs.map((pr, idx) => (
                 <div key={idx} className="flex justify-between items-center bg-slate-50 dark:bg-slate-800/50 p-3 rounded-md border border-slate-100 dark:border-slate-700/50 transition-colors">

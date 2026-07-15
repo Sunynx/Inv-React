@@ -209,7 +209,7 @@ export default function AIAssistant() {
         onClick={() => setIsOpen(true)}
         className={`fixed bottom-6 right-6 p-4 rounded-full shadow-xl transition-all duration-300 z-50 flex items-center justify-center
           ${isOpen ? 'scale-0 opacity-0 pointer-events-none' : 'scale-100 opacity-100 hover:scale-110 hover:shadow-2xl'}
-          bg-blue-600 hover:bg-blue-700 text-white
+          bg-blue-600 hover:bg-blue-700 text-white dark:bg-blue-500 dark:hover:bg-blue-600
         `}
       >
         <Bot size={28} className="animate-pulse" />
@@ -217,7 +217,7 @@ export default function AIAssistant() {
 
       {/* Chat Window */}
       {isOpen && (
-        <div className="fixed bottom-6 right-6 w-[380px] h-[600px] max-h-[80vh] bg-white rounded-2xl shadow-2xl flex flex-col overflow-hidden z-50 border border-blue-100/50 flex flex-col animate-in slide-in-from-bottom-5 fade-in duration-200">
+        <div className="fixed bottom-6 right-6 w-[380px] h-[600px] max-h-[80vh] bg-background rounded-2xl shadow-2xl flex flex-col overflow-hidden z-50 border border-blue-100/50 dark:border-blue-900/50 animate-in slide-in-from-bottom-5 fade-in duration-200">
           {/* Header */}
           <div className="p-4 bg-gradient-to-r from-blue-600 to-indigo-600 flex items-center justify-between text-white shadow-md z-10">
             <div className="flex items-center gap-3">
@@ -238,16 +238,16 @@ export default function AIAssistant() {
           </div>
 
           {/* Messages Area */}
-          <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-slate-50/50 scrollbar-thin">
+          <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-slate-50/50 dark:bg-background scrollbar-thin">
             {chatMessages.length === 0 && (
               <div className="h-full flex flex-col items-center justify-center text-center space-y-6 pt-4">
                 <div className="space-y-3 flex flex-col items-center">
-                  <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center shadow-inner">
-                    <MessageSquare className="w-8 h-8 text-blue-600" />
+                  <div className="w-16 h-16 bg-blue-100 dark:bg-blue-900/50 rounded-full flex items-center justify-center shadow-inner">
+                    <MessageSquare className="w-8 h-8 text-blue-600 dark:text-blue-400" />
                   </div>
                   <div>
-                    <p className="text-base font-semibold text-slate-700">สวัสดีครับ 👋</p>
-                    <p className="text-xs text-slate-500 mt-1">มีอะไรให้ผมช่วยดูแลไหมครับ?</p>
+                    <p className="text-base font-semibold text-slate-700 dark:text-slate-200">สวัสดีครับ 👋</p>
+                    <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">มีอะไรให้ผมช่วยดูแลไหมครับ?</p>
                   </div>
                 </div>
                 
@@ -261,7 +261,7 @@ export default function AIAssistant() {
                     <button
                       key={idx}
                       onClick={() => handleSend(btn.prompt)}
-                      className="text-[13px] text-left bg-white border border-blue-100 hover:border-blue-400 hover:bg-blue-50/50 text-slate-600 hover:text-blue-700 px-4 py-3 rounded-xl transition-all duration-200 shadow-sm hover:shadow"
+                      className="text-[13px] text-left bg-card border border-blue-100 dark:border-blue-800 hover:border-blue-400 dark:hover:border-blue-500 hover:bg-blue-50/50 dark:hover:bg-blue-900/20 text-slate-600 dark:text-slate-300 hover:text-blue-700 dark:hover:text-blue-300 px-4 py-3 rounded-xl transition-all duration-200 shadow-sm hover:shadow"
                     >
                       {btn.label}
                     </button>
@@ -273,7 +273,7 @@ export default function AIAssistant() {
             {chatMessages.map((msg, i) => (
               <div key={i} className={`flex gap-3 ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
                 {msg.role === 'ai' && (
-                  <div className="w-8 h-8 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center shrink-0">
+                  <div className="w-8 h-8 rounded-full bg-blue-100 dark:bg-blue-900/50 text-blue-600 dark:text-blue-400 flex items-center justify-center shrink-0">
                     <Bot className="w-4 h-4" />
                   </div>
                 )}
@@ -281,7 +281,7 @@ export default function AIAssistant() {
                 <div className={`p-3 rounded-2xl max-w-[85%] text-sm shadow-sm break-words overflow-hidden ${
                   msg.role === 'user' 
                     ? 'bg-blue-600 text-white rounded-br-none' 
-                    : 'bg-white border text-gray-700 rounded-tl-none'
+                    : 'bg-card border border-border text-foreground rounded-tl-none'
                 }`}>
                   {msg.role === 'ai' ? renderMessage(msg.text) : msg.text}
                 </div>
@@ -290,10 +290,10 @@ export default function AIAssistant() {
 
             {isAiLoading && (
               <div className="flex gap-3 max-w-[85%] self-start">
-                <div className="w-8 h-8 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center shrink-0">
+                <div className="w-8 h-8 rounded-full bg-blue-100 dark:bg-blue-900/50 text-blue-600 dark:text-blue-400 flex items-center justify-center shrink-0">
                   <Bot className="w-4 h-4" />
                 </div>
-                <div className="p-3 rounded-2xl bg-white border shadow-sm rounded-tl-none text-sm text-gray-500 flex items-center gap-2">
+                <div className="p-3 rounded-2xl bg-card border border-border shadow-sm rounded-tl-none text-sm text-muted-foreground flex items-center gap-2">
                   <Loader2 className="w-4 h-4 animate-spin" /> กำลังประมวลผล...
                 </div>
               </div>
@@ -302,9 +302,9 @@ export default function AIAssistant() {
           </div>
 
           {/* Input Area */}
-          <div className="bg-white border-t flex flex-col">
+          <div className="bg-card border-t border-border flex flex-col">
             {/* Suggestion Chips */}
-            <div className="flex overflow-x-auto scrollbar-none px-3 py-2 gap-2 border-b">
+            <div className="flex overflow-x-auto scrollbar-none px-3 py-2 gap-2 border-b border-border">
               {[
                 "ค้นหาอุปกรณ์ที่หมดประกัน",
                 "สรุปค่าใช้จ่ายซ่อมเดือนนี้",
@@ -315,7 +315,7 @@ export default function AIAssistant() {
                   key={idx}
                   onClick={() => handleSend(chip)}
                   disabled={isAiLoading}
-                  className="whitespace-nowrap px-3 py-1.5 bg-blue-50 hover:bg-blue-100 text-blue-700 text-xs rounded-full border border-blue-200 transition-colors shrink-0 disabled:opacity-50"
+                  className="whitespace-nowrap px-3 py-1.5 bg-blue-50 dark:bg-blue-900/30 hover:bg-blue-100 dark:hover:bg-blue-800/50 text-blue-700 dark:text-blue-300 text-xs rounded-full border border-blue-200 dark:border-blue-800 transition-colors shrink-0 disabled:opacity-50"
                 >
                   {chip}
                 </button>
@@ -329,7 +329,7 @@ export default function AIAssistant() {
                 if (e.key === 'Enter') handleSend();
               }}
               placeholder="พิมพ์คำถามของคุณที่นี่..."
-              className="flex-1 bg-gray-50"
+              className="flex-1 bg-muted/50"
               disabled={isAiLoading}
             />
             <Button 
