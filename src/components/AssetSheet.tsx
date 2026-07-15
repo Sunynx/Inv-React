@@ -77,6 +77,18 @@ const assetSchema = z.object({
 });
 type AssetFormValues = z.infer<typeof assetSchema>;
 
+const InputField = ({ form, name, label, required = false, type = "text", ...props }: any) => {
+  return (
+    <div className="space-y-1.5">
+      <Label className="text-sm font-bold">{label} {required && '*'}</Label>
+      <Input type={type} {...form.register(name)} {...props} />
+      {form.formState.errors[name] && (
+        <p className="text-xs text-red-500">{form.formState.errors[name]?.message}</p>
+      )}
+    </div>
+  );
+};
+
 export default function AssetSheet({ isOpen, onClose, assetId, mode = 'edit', onEdit, onEditComplete }: { isOpen: boolean; onClose: () => void; assetId?: string; mode?: 'view' | 'edit'; onEdit?: () => void; onEditComplete?: () => void; }) {
   const [loading, setLoading] = useState(false);
   const sigCanvas = useRef<SignatureCanvas>(null);
@@ -830,17 +842,7 @@ export default function AssetSheet({ isOpen, onClose, assetId, mode = 'edit', on
     );
   }
 
-  const InputField = ({ name, label, required = false, type = "text", ...props }: any) => {
-    return (
-      <div className="space-y-1.5">
-        <Label className="text-sm font-bold">{label} {required && '*'}</Label>
-        <Input type={type} {...form.register(name)} {...props} />
-        {form.formState.errors[name as keyof AssetFormValues] && (
-          <p className="text-xs text-red-500">{form.formState.errors[name as keyof AssetFormValues]?.message}</p>
-        )}
-      </div>
-    );
-  };
+
 
   return (
     <Sheet open={isOpen} onOpenChange={(open, eventDetails) => {
@@ -894,10 +896,10 @@ export default function AssetSheet({ isOpen, onClose, assetId, mode = 'edit', on
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-5">
-                <InputField name="name" label="ชื่ออุปกรณ์" required placeholder="เช่น Laptop Dell Latitude 5540" />
-                <InputField name="asset_code" label="รหัสทรัพย์สิน" required placeholder="สร้างอัตโนมัติเมื่อเลือกแผนกและประเภท" />
+                <InputField form={form} name="name" label="ชื่ออุปกรณ์" required placeholder="เช่น Laptop Dell Latitude 5540" />
+                <InputField form={form} name="asset_code" label="รหัสทรัพย์สิน" required placeholder="สร้างอัตโนมัติเมื่อเลือกแผนกและประเภท" />
                 
-                <InputField name="serial_number" label="Serial Number" placeholder="Serial Number" />
+                <InputField form={form} name="serial_number" label="Serial Number" placeholder="Serial Number" />
                 
                 <div className="space-y-1.5"><Label className="text-sm font-bold">ประเภทอุปกรณ์</Label>
                   <Controller name="category_id" control={form.control} render={({ field }) => (
@@ -925,14 +927,14 @@ export default function AssetSheet({ isOpen, onClose, assetId, mode = 'edit', on
                   )} />
                 </div>
                 
-                <InputField name="location" label="สถานที่ / ห้อง" placeholder="เช่น ห้อง Server, ชั้น 2" />
-                <InputField name="assigned_user" label="ชื่อผู้ใช้" placeholder="เช่น คุณสมชาย ใจดี" />
-                <InputField name="previous_user" label="ผู้ใช้ก่อนหน้า" placeholder="ผู้ใช้คนก่อน" />
-                <InputField name="user_position" label="ตำแหน่ง" placeholder="เช่น ผู้จัดการไอที" />
-                <InputField name="brand" label="ยี่ห้อ (Brand)" placeholder="เช่น Dell, HP, Lenovo" />
+                <InputField form={form} name="location" label="สถานที่ / ห้อง" placeholder="เช่น ห้อง Server, ชั้น 2" />
+                <InputField form={form} name="assigned_user" label="ชื่อผู้ใช้" placeholder="เช่น คุณสมชาย ใจดี" />
+                <InputField form={form} name="previous_user" label="ผู้ใช้ก่อนหน้า" placeholder="ผู้ใช้คนก่อน" />
+                <InputField form={form} name="user_position" label="ตำแหน่ง" placeholder="เช่น ผู้จัดการไอที" />
+                <InputField form={form} name="brand" label="ยี่ห้อ (Brand)" placeholder="เช่น Dell, HP, Lenovo" />
                 
                 <div className="md:col-span-2">
-                  <InputField name="assigned_email" label="อีเมลผู้ใช้งาน (Email)" placeholder="เช่น user@company.com" />
+                  <InputField form={form} name="assigned_email" label="อีเมลผู้ใช้งาน (Email)" placeholder="เช่น user@company.com" />
                 </div>
 
                 <div className="space-y-1.5"><Label className="text-sm font-bold">สถานะ</Label>
@@ -951,12 +953,12 @@ export default function AssetSheet({ isOpen, onClose, assetId, mode = 'edit', on
                   )} />
                 </div>
                 
-                <InputField name="price" label="ราคา (บาท)" type="number" step="0.01" placeholder="0.00" />
-                <InputField name="purchase_date" label="วันที่ซื้อ" type="date" />
-                <InputField name="warranty_expiry" label="วันหมดประกัน" type="date" />
+                <InputField form={form} name="price" label="ราคา (บาท)" type="number" step="0.01" placeholder="0.00" />
+                <InputField form={form} name="purchase_date" label="วันที่ซื้อ" type="date" />
+                <InputField form={form} name="warranty_expiry" label="วันหมดประกัน" type="date" />
                 
                 <div className="md:col-span-2">
-                  <InputField name="supplier" label="ผู้จำหน่าย / Supplier" placeholder="ชื่อผู้จำหน่าย" />
+                  <InputField form={form} name="supplier" label="ผู้จำหน่าย / Supplier" placeholder="ชื่อผู้จำหน่าย" />
                 </div>
 
                 <div className="space-y-1.5 md:col-span-2">
@@ -1003,12 +1005,12 @@ export default function AssetSheet({ isOpen, onClose, assetId, mode = 'edit', on
                   <div>
                     <h4 className="text-[15px] font-bold mb-4">ข้อมูลสเปคฮาร์ดแวร์</h4>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-4">
-                      <InputField name="model" label="Model / นามสกุลรุ่น" placeholder="เช่น XPS 15 9520" />
-                      <InputField name="cpu" label="CPU / Processor" placeholder="เช่น Intel Core i7-12700H หรือ Apple M2" />
-                      <InputField name="ram" label="RAM (Memory)" placeholder="เช่น 32GB LPDDR5 4800MHz" />
-                      <InputField name="storage" label="Storage (HDD/SSD)" placeholder="เช่น 1TB PCIe NVMe Gen4 SSD" />
-                      <InputField name="gpu" label="GPU / การ์ดจอ" placeholder="เช่น NVIDIA RTX 3050Ti 4GB" />
-                      <InputField name="display" label="Display / หน้าจอ" placeholder="เช่น 15.6 FHD (1920x1080) 144Hz" />
+                      <InputField form={form} name="model" label="Model / นามสกุลรุ่น" placeholder="เช่น XPS 15 9520" />
+                      <InputField form={form} name="cpu" label="CPU / Processor" placeholder="เช่น Intel Core i7-12700H หรือ Apple M2" />
+                      <InputField form={form} name="ram" label="RAM (Memory)" placeholder="เช่น 32GB LPDDR5 4800MHz" />
+                      <InputField form={form} name="storage" label="Storage (HDD/SSD)" placeholder="เช่น 1TB PCIe NVMe Gen4 SSD" />
+                      <InputField form={form} name="gpu" label="GPU / การ์ดจอ" placeholder="เช่น NVIDIA RTX 3050Ti 4GB" />
+                      <InputField form={form} name="display" label="Display / หน้าจอ" placeholder="เช่น 15.6 FHD (1920x1080) 144Hz" />
                     </div>
                   </div>
 
@@ -1017,14 +1019,14 @@ export default function AssetSheet({ isOpen, onClose, assetId, mode = 'edit', on
                   <div>
                     <h4 className="text-[15px] font-bold mb-4">ข้อมูลซอฟต์แวร์และเน็ตเวิร์ก</h4>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-4">
-                      <InputField name="os" label="OS / Windows Version" placeholder="เช่น Windows 11 Pro 64-bit" />
-                      <InputField name="os_key" label="OS License Key (ถ้ามี)" placeholder="XXXXX-XXXXX-XXXXX-XXXXX" />
-                      <InputField name="windows_version" label="Windows Version (เวอร์ชัน)" placeholder="เช่น 10 Pro, 11 Home" />
-                      <InputField name="office_version" label="Office Version" placeholder="เช่น 365, 2019, 2022" />
-                      <InputField name="office_license" label="Office License" placeholder="เช่น rpm_admin1, No license" />
+                      <InputField form={form} name="os" label="OS / Windows Version" placeholder="เช่น Windows 11 Pro 64-bit" />
+                      <InputField form={form} name="os_key" label="OS License Key (ถ้ามี)" placeholder="XXXXX-XXXXX-XXXXX-XXXXX" />
+                      <InputField form={form} name="windows_version" label="Windows Version (เวอร์ชัน)" placeholder="เช่น 10 Pro, 11 Home" />
+                      <InputField form={form} name="office_version" label="Office Version" placeholder="เช่น 365, 2019, 2022" />
+                      <InputField form={form} name="office_license" label="Office License" placeholder="เช่น rpm_admin1, No license" />
                       <div />
-                      <InputField name="ip_address" label="IP Address" placeholder="เช่น 192.168.1.50" />
-                      <InputField name="mac_address" label="MAC Address (LAN / Wi-Fi)" placeholder="เช่น 00:1A:2B:3C:4D:5E" className="uppercase" />
+                      <InputField form={form} name="ip_address" label="IP Address" placeholder="เช่น 192.168.1.50" />
+                      <InputField form={form} name="mac_address" label="MAC Address (LAN / Wi-Fi)" placeholder="เช่น 00:1A:2B:3C:4D:5E" className="uppercase" />
                     </div>
                   </div>
 
@@ -1033,8 +1035,8 @@ export default function AssetSheet({ isOpen, onClose, assetId, mode = 'edit', on
                   <div>
                     <h4 className="text-[15px] font-bold mb-4">ข้อมูลเพิ่มเติม</h4>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-4">
-                      <InputField name="nas_user" label="User NAS" placeholder="ชื่อผู้ใช้งาน File Server" />
-                      <InputField name="password" label="รหัสผ่าน NAS" placeholder="รหัสผ่านล็อกอิน NAS" />
+                      <InputField form={form} name="nas_user" label="User NAS" placeholder="ชื่อผู้ใช้งาน File Server" />
+                      <InputField form={form} name="password" label="รหัสผ่าน NAS" placeholder="รหัสผ่านล็อกอิน NAS" />
                     </div>
                   </div>
                 </div>
