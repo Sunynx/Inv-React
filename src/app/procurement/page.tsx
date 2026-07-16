@@ -257,7 +257,9 @@ export default function ProcurementPage() {
             <div className="flex flex-col sm:flex-row gap-2 w-full md:w-auto">
               <Select value={filterType} onValueChange={setFilterType}>
                 <SelectTrigger className="w-full sm:w-[120px] bg-white">
-                  <SelectValue placeholder="ประเภท" />
+                  <SelectValue placeholder="ประเภท">
+                    {filterType === 'all' ? 'ทุกประเภท' : filterType === 'PR' ? 'PR' : filterType === 'PO' ? 'PO' : 'ประเภท'}
+                  </SelectValue>
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">ทุกประเภท</SelectItem>
@@ -268,7 +270,12 @@ export default function ProcurementPage() {
               
               <Select value={sortBy} onValueChange={setSortBy}>
                 <SelectTrigger className="w-full sm:w-[150px] bg-white">
-                  <SelectValue placeholder="เรียงลำดับ" />
+                  <SelectValue placeholder="เรียงลำดับ">
+                    {sortBy === 'date_desc' ? 'ใหม่ล่าสุด' : 
+                     sortBy === 'date_asc' ? 'เก่าที่สุด' : 
+                     sortBy === 'amount_desc' ? 'ราคาสูง-ต่ำ' : 
+                     sortBy === 'amount_asc' ? 'ราคาต่ำ-สูง' : 'เรียงลำดับ'}
+                  </SelectValue>
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="date_desc">ใหม่ล่าสุด</SelectItem>
