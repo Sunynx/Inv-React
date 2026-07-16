@@ -57,12 +57,8 @@ const menuGroups = [
       { name: 'Audit Log', href: '/audit-log', icon: History },
       { name: 'Settings', href: '/settings', icon: Settings },
     ]
-  }
+}
 ];
-
-export default function Sidebar() {
-  const pathname = usePathname();
-  const [open, setOpen] = useState(false);
 
 const SidebarContent = ({ pathname, setOpen }: { pathname: string, setOpen: (open: boolean) => void }) => (
     <div className="flex flex-col h-full bg-[#1e345d] text-white/90">
@@ -121,6 +117,11 @@ const SidebarContent = ({ pathname, setOpen }: { pathname: string, setOpen: (ope
       </div>
     </div>
   );
+
+export default function Sidebar() {
+  const pathname = usePathname();
+  const [open, setOpen] = useState(false);
+
 
   return (
     <>

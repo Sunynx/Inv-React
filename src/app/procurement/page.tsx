@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { format } from 'date-fns';
 import * as XLSX from 'xlsx';
 import ExcelJS from 'exceljs';
@@ -29,6 +30,8 @@ export default function ProcurementPage() {
   const [isImportModalOpen, setIsImportModalOpen] = useState(false);
   const [printDoc, setPrintDoc] = useState<any | null>(null);
   const [filterTab, setFilterTab] = useState('all');
+  const [filterType, setFilterType] = useState('all');
+  const [sortBy, setSortBy] = useState('date_desc');
 
   const { data: documents = [], isLoading } = useQuery({
     queryKey: ['procurement'],
@@ -54,7 +57,21 @@ export default function ProcurementPage() {
     let matchTab = true;
     if (filterTab !== 'all') matchTab = doc.status === filterTab;
     
-    return matchSearch && matchTab;
+    let matchType = true;
+    if (filterType !== 'all') matchType = doc.type === filterType;
+    
+    return matchSearch && matchTab && matchType;
+  }).sort((a, b) => {
+    if (sortBy === 'date_desc') {
+      return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
+    } else if (sortBy === 'date_asc') {
+      return new Date(a.created_at).getTime() - new Date(b.created_at).getTime();
+    } else if (sortBy === 'amount_desc') {
+      return Number(b.total_amount || 0) - Number(a.total_amount || 0);
+    } else if (sortBy === 'amount_asc') {
+      return Number(a.total_amount || 0) - Number(b.total_amount || 0);
+    }
+    return 0;
   });
 
   const countByStatus = (s: string) => documents.filter(d => d.status === s).length;
@@ -237,14 +254,39 @@ export default function ProcurementPage() {
               </Tabs.List>
             </Tabs.Root>
 
-            <div className="relative w-full max-w-sm">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-              <Input 
-                placeholder="Search PR/PO number, title..." 
-                className="pl-9 bg-muted/50 w-full"
-                value={searchTerm}
-                onChange={e => setSearchTerm(e.target.value)}
-              />
+            <div className="flex flex-col sm:flex-row gap-2 w-full md:w-auto">
+              <Select value={filterType} onValueChange={setFilterType}>
+                <SelectTrigger className="w-full sm:w-[120px] bg-white">
+                  <SelectValue placeholder="ประเภท" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">ทุกประเภท</SelectItem>
+                  <SelectItem value="PR">PR</SelectItem>
+                  <SelectItem value="PO">PO</SelectItem>
+                </SelectContent>
+              </Select>
+              
+              <Select value={sortBy} onValueChange={setSortBy}>
+                <SelectTrigger className="w-full sm:w-[150px] bg-white">
+                  <SelectValue placeholder="เรียงลำดับ" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="date_desc">ใหม่ล่าสุด</SelectItem>
+                  <SelectItem value="date_asc">เก่าที่สุด</SelectItem>
+                  <SelectItem value="amount_desc">ราคาสูง-ต่ำ</SelectItem>
+                  <SelectItem value="amount_asc">ราคาต่ำ-สูง</SelectItem>
+                </SelectContent>
+              </Select>
+
+              <div className="relative w-full sm:max-w-[200px]">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Input 
+                  placeholder="ค้นหา PR/PO..." 
+                  className="pl-9 bg-muted/50 w-full"
+                  value={searchTerm}
+                  onChange={e => setSearchTerm(e.target.value)}
+                />
+              </div>
             </div>
           </div>
 
@@ -253,6 +295,7 @@ export default function ProcurementPage() {
               <thead className="bg-muted/50 border-b border-border/60 text-muted-foreground">
                 <tr>
                   <th className="px-6 py-3 font-medium">Document No.</th>
+                  <th className="px-6 py-3 font-medium">Date</th>
                   <th className="px-6 py-3 font-medium">Title</th>
                   <th className="px-6 py-3 font-medium">Type</th>
                   <th className="px-6 py-3 font-medium">Supplier</th>
@@ -266,6 +309,7 @@ export default function ProcurementPage() {
                   [...Array(5)].map((_, i) => (
                     <tr key={`skel-${i}`} className="border-border/30">
                       <td className="px-6 py-3"><Skeleton className="h-4 w-24" style={{ animationDelay: `${i * 100}ms` }} /></td>
+                      <td className="px-6 py-3"><Skeleton className="h-4 w-20" style={{ animationDelay: `${i * 100 + 20}ms` }} /></td>
                       <td className="px-6 py-3"><Skeleton className="h-4 w-48" style={{ animationDelay: `${i * 100 + 30}ms` }} /></td>
                       <td className="px-6 py-3"><Skeleton className="h-5 w-12 rounded" style={{ animationDelay: `${i * 100 + 60}ms` }} /></td>
                       <td className="px-6 py-3"><Skeleton className="h-4 w-28" style={{ animationDelay: `${i * 100 + 90}ms` }} /></td>
@@ -276,7 +320,7 @@ export default function ProcurementPage() {
                   ))
                 ) : filteredDocs.length === 0 ? (
                   <tr>
-                    <td colSpan={7} className="p-0">
+                    <td colSpan={8} className="p-0">
                       <EmptyState 
                         title="ไม่พบเอกสารจัดซื้อ" 
                         description="ยังไม่มีเอกสาร PR/PO ที่ตรงกับเงื่อนไขการค้นหาของคุณ หรือยังไม่ได้สร้างเอกสารใหม่"
@@ -289,6 +333,7 @@ export default function ProcurementPage() {
                   filteredDocs.map(doc => (
                     <tr key={doc.id} className="hover:bg-muted/30 transition-colors">
                       <td className="px-6 py-3 font-medium">{doc.document_number}</td>
+                      <td className="px-6 py-3 text-muted-foreground whitespace-nowrap">{doc.created_at ? format(new Date(doc.created_at), 'dd/MM/yyyy') : '-'}</td>
                       <td className="px-6 py-3">{doc.title}</td>
                       <td className="px-6 py-3">
                         <span className={`px-2 py-0.5 rounded text-[11px] font-bold ${doc.type === 'PR' ? 'bg-blue-100 text-blue-700' : 'bg-purple-100 text-purple-700'}`}>{doc.type}</span>
