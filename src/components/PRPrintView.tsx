@@ -7,6 +7,12 @@ interface PRPrintViewProps {
   document: any;
 }
 
+const PrintValue = ({ value, className = "" }: any) => (
+  <div className={`border-b border-black text-center min-h-[20px] pb-0.5 ${className}`}>
+    {value || '\u00A0'}
+  </div>
+);
+
 export default function PRPrintView({ document }: PRPrintViewProps) {
   const [mounted, setMounted] = useState(false);
 
@@ -31,11 +37,7 @@ export default function PRPrintView({ document }: PRPrintViewProps) {
     return sum + (qty * price);
   }, 0);
 
-  const PrintValue = ({ value, className = "" }: any) => (
-    <div className={`border-b border-black text-center min-h-[20px] pb-0.5 ${className}`}>
-      {value || '\u00A0'}
-    </div>
-  );
+
 
   return createPortal(
     <div id="pr-print-wrapper" className="hidden print:flex absolute top-0 left-0 w-full bg-white justify-center items-start z-[9999]">

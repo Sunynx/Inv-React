@@ -64,7 +64,7 @@ export default function Sidebar() {
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
 
-  const SidebarContent = () => (
+const SidebarContent = ({ pathname, setOpen }: { pathname: string, setOpen: (open: boolean) => void }) => (
     <div className="flex flex-col h-full bg-[#1e345d] text-white/90">
       {/* Brand Header */}
       <div className="h-24 flex items-center justify-center border-b border-white/10 shrink-0">
@@ -126,7 +126,7 @@ export default function Sidebar() {
     <>
       {/* Desktop Sidebar */}
       <div className="hidden md:flex w-64 bg-[#1e345d] border-r border-[#1e345d] min-h-screen flex-col fixed inset-y-0 left-0 z-40">
-        <SidebarContent />
+        <SidebarContent pathname={pathname} setOpen={setOpen} />
       </div>
 
       {/* Mobile Header */}
@@ -136,7 +136,7 @@ export default function Sidebar() {
             <Menu size={24} />
           </SheetTrigger>
           <SheetContent side="left" className="p-0 w-64 border-none bg-transparent">
-            <SidebarContent />
+            <SidebarContent pathname={pathname} setOpen={setOpen} />
           </SheetContent>
         </Sheet>
         
