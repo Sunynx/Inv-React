@@ -14,6 +14,8 @@ import ExcelJS from 'exceljs';
 import { saveAs } from 'file-saver';
 import * as Tabs from '@radix-ui/react-tabs';
 import Link from 'next/link';
+import { DataTable } from '@/components/DataTable';
+import { ColumnDef } from '@tanstack/react-table';
 import ProcurementModal from '@/components/ProcurementModal';
 import ProcurementReceiveModal from '@/components/ProcurementReceiveModal';
 import { EmptyState } from '@/components/EmptyState';
@@ -214,6 +216,99 @@ export default function ProcurementPage() {
     }
   };
 
+  const columns: ColumnDef<any>[] = [
+    {
+      accessorKey: 'document_number',
+      header: ({ column }) => (
+        <Button variant="ghost" className="-ml-4 hover:bg-transparent" onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}>
+          Document No.
+          <ArrowUpDown className="ml-2 h-4 w-4" />
+        </Button>
+      ),
+      cell: ({ row }) => <span className="font-medium">{row.original.document_number}</span>,
+    },
+    {
+      accessorKey: 'created_at',
+      header: ({ column }) => (
+        <Button variant="ghost" className="-ml-4 hover:bg-transparent" onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}>
+          Date
+          <ArrowUpDown className="ml-2 h-4 w-4" />
+        </Button>
+      ),
+      cell: ({ row }) => <span className="text-muted-foreground whitespace-nowrap">{row.original.created_at ? format(new Date(row.original.created_at), 'dd/MM/yyyy') : '-'}</span>,
+    },
+    {
+      accessorKey: 'title',
+      header: ({ column }) => (
+        <Button variant="ghost" className="-ml-4 hover:bg-transparent" onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}>
+          Title
+          <ArrowUpDown className="ml-2 h-4 w-4" />
+        </Button>
+      ),
+    },
+    {
+      accessorKey: 'type',
+      header: 'Type',
+      cell: ({ row }) => (
+        <span className={`px-2 py-0.5 rounded text-[11px] font-bold ${row.original.type === 'PR' ? 'bg-blue-100 text-blue-700' : 'bg-purple-100 text-purple-700'}`}>
+          {row.original.type}
+        </span>
+      ),
+    },
+    {
+      accessorKey: 'supplier',
+      header: ({ column }) => (
+        <Button variant="ghost" className="-ml-4 hover:bg-transparent" onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}>
+          Supplier
+          <ArrowUpDown className="ml-2 h-4 w-4" />
+        </Button>
+      ),
+      cell: ({ row }) => <span>{row.original.supplier || '-'}</span>,
+    },
+    {
+      accessorKey: 'total_amount',
+      header: ({ column }) => (
+        <Button variant="ghost" className="-ml-4 hover:bg-transparent" onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}>
+          Total Amount
+          <ArrowUpDown className="ml-2 h-4 w-4" />
+        </Button>
+      ),
+      cell: ({ row }) => <span className="font-medium">฿{Number(row.original.total_amount || 0).toLocaleString()}</span>,
+    },
+    {
+      accessorKey: 'status',
+      header: 'Status',
+      cell: ({ row }) => getStatusBadge(row.original.status),
+    },
+    {
+      id: 'actions',
+      header: () => <div className="text-right">Actions</div>,
+      cell: ({ row }) => {
+        const doc = row.original;
+        return (
+          <div className="flex justify-end gap-1">
+            <Button variant="ghost" size="sm" onClick={() => handlePrint(doc)}>Print</Button>
+            <Button variant="ghost" size="sm" onClick={() => handleExportExcel(doc)}>Excel</Button>
+            <Button variant="ghost" size="sm" onClick={() => handleEdit(doc)}>Edit</Button>
+            <Button variant="ghost" size="sm" className="text-red-500 hover:text-red-700 hover:bg-red-50" onClick={() => handleDelete(doc.id)}>Delete</Button>
+            
+            {doc.status === 'รอดำเนินการ' && (
+              <Button variant="outline" size="sm" className="ml-2 bg-blue-50 text-blue-700 hover:bg-blue-100 border-blue-200" onClick={() => handleApprove(doc)}>
+                Approve
+              </Button>
+            )}
+
+            {(doc.status === 'สั่งซื้อแล้ว' || doc.status === 'รับของบางส่วน') && (
+              <Button variant="outline" size="sm" className="ml-2 bg-emerald-50 text-emerald-700 hover:bg-emerald-100 border-emerald-200" onClick={() => handleReceive(doc)}>
+                Receive Items
+              </Button>
+            )}
+          </div>
+        );
+      },
+    },
+  ];
+
   return (
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
@@ -297,80 +392,21 @@ export default function ProcurementPage() {
             </div>
           </div>
 
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm text-left">
-              <thead className="bg-muted/50 border-b border-border/60 text-muted-foreground">
-                <tr>
-                  <th className="px-6 py-3 font-medium">Document No.</th>
-                  <th className="px-6 py-3 font-medium">Date</th>
-                  <th className="px-6 py-3 font-medium">Title</th>
-                  <th className="px-6 py-3 font-medium">Type</th>
-                  <th className="px-6 py-3 font-medium">Supplier</th>
-                  <th className="px-6 py-3 font-medium">Total Amount</th>
-                  <th className="px-6 py-3 font-medium">Status</th>
-                  <th className="px-6 py-3 font-medium text-right">Actions</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-border/60">
-                {isLoading ? (
-                  [...Array(5)].map((_, i) => (
-                    <tr key={`skel-${i}`} className="border-border/30">
-                      <td className="px-6 py-3"><Skeleton className="h-4 w-24" style={{ animationDelay: `${i * 100}ms` }} /></td>
-                      <td className="px-6 py-3"><Skeleton className="h-4 w-20" style={{ animationDelay: `${i * 100 + 20}ms` }} /></td>
-                      <td className="px-6 py-3"><Skeleton className="h-4 w-48" style={{ animationDelay: `${i * 100 + 30}ms` }} /></td>
-                      <td className="px-6 py-3"><Skeleton className="h-5 w-12 rounded" style={{ animationDelay: `${i * 100 + 60}ms` }} /></td>
-                      <td className="px-6 py-3"><Skeleton className="h-4 w-28" style={{ animationDelay: `${i * 100 + 90}ms` }} /></td>
-                      <td className="px-6 py-3"><Skeleton className="h-4 w-20" style={{ animationDelay: `${i * 100 + 120}ms` }} /></td>
-                      <td className="px-6 py-3"><Skeleton className="h-5 w-24 rounded-full" style={{ animationDelay: `${i * 100 + 150}ms` }} /></td>
-                      <td className="px-6 py-3 text-right"><Skeleton className="h-8 w-32 ml-auto" style={{ animationDelay: `${i * 100 + 180}ms` }} /></td>
-                    </tr>
-                  ))
-                ) : filteredDocs.length === 0 ? (
-                  <tr>
-                    <td colSpan={8} className="p-0">
-                      <EmptyState 
-                        title="ไม่พบเอกสารจัดซื้อ" 
-                        description="ยังไม่มีเอกสาร PR/PO ที่ตรงกับเงื่อนไขการค้นหาของคุณ หรือยังไม่ได้สร้างเอกสารใหม่"
-                        actionLabel="สร้างเอกสารใหม่"
-                        onAction={handleCreate}
-                      />
-                    </td>
-                  </tr>
-                ) : (
-                  filteredDocs.map(doc => (
-                    <tr key={doc.id} className="hover:bg-muted/30 transition-colors">
-                      <td className="px-6 py-3 font-medium">{doc.document_number}</td>
-                      <td className="px-6 py-3 text-muted-foreground whitespace-nowrap">{doc.created_at ? format(new Date(doc.created_at), 'dd/MM/yyyy') : '-'}</td>
-                      <td className="px-6 py-3">{doc.title}</td>
-                      <td className="px-6 py-3">
-                        <span className={`px-2 py-0.5 rounded text-[11px] font-bold ${doc.type === 'PR' ? 'bg-blue-100 text-blue-700' : 'bg-purple-100 text-purple-700'}`}>{doc.type}</span>
-                      </td>
-                      <td className="px-6 py-3">{doc.supplier || '-'}</td>
-                      <td className="px-6 py-3 font-medium">฿{Number(doc.total_amount).toLocaleString()}</td>
-                      <td className="px-6 py-3">{getStatusBadge(doc.status)}</td>
-                      <td className="px-6 py-3 text-right space-x-2">
-                        <Button variant="ghost" size="sm" onClick={() => handlePrint(doc)}>Print</Button>
-                        <Button variant="ghost" size="sm" onClick={() => handleExportExcel(doc)}>Excel</Button>
-                        <Button variant="ghost" size="sm" onClick={() => handleEdit(doc)}>Edit</Button>
-                        <Button variant="ghost" size="sm" className="text-red-500 hover:text-red-700 hover:bg-red-50" onClick={() => handleDelete(doc.id)}>Delete</Button>
-                        
-                        {doc.status === 'รอดำเนินการ' && (
-                          <Button variant="outline" size="sm" className="ml-2 bg-blue-50 text-blue-700 hover:bg-blue-100 border-blue-200" onClick={() => handleApprove(doc)}>
-                            Approve
-                          </Button>
-                        )}
-
-                        {(doc.status === 'สั่งซื้อแล้ว' || doc.status === 'รับของบางส่วน') && (
-                          <Button variant="outline" size="sm" className="ml-2 bg-emerald-50 text-emerald-700 hover:bg-emerald-100 border-emerald-200" onClick={() => handleReceive(doc)}>
-                            Receive Items
-                          </Button>
-                        )}
-                      </td>
-                    </tr>
-                  ))
-                )}
-              </tbody>
-            </table>
+          <div className="p-1">
+            <DataTable
+              columns={columns}
+              data={filteredDocs}
+              isLoading={isLoading}
+              enableRowSelection={false}
+              emptyState={
+                <EmptyState 
+                  title="ไม่พบเอกสารจัดซื้อ" 
+                  description="ยังไม่มีเอกสาร PR/PO ที่ตรงกับเงื่อนไขการค้นหาของคุณ หรือยังไม่ได้สร้างเอกสารใหม่"
+                  actionLabel="สร้างเอกสารใหม่"
+                  onAction={handleCreate}
+                />
+              }
+            />
           </div>
         </CardContent>
       </Card>
