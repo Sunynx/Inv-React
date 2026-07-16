@@ -315,7 +315,7 @@ export default function ProcurementPage() {
 
       <Card className="shadow-sm border border-slate-200/60 dark:border-slate-800/60 rounded-2xl overflow-hidden bg-white dark:bg-slate-900 transition-colors duration-300 print:hidden">
         <CardContent className="p-0">
-          <div className="p-5 border-b border-slate-100 dark:border-slate-800/50 flex flex-col md:flex-row items-start md:items-center justify-between gap-5">
+          <div className="p-5 border-b border-slate-100 dark:border-slate-800/50 flex flex-col gap-5">
             
             <Tabs.Root value={filterTab} onValueChange={setFilterTab} className="w-full overflow-x-auto hide-scrollbar">
               <Tabs.List className="flex gap-1.5 inline-flex w-max bg-slate-100/50 dark:bg-slate-800/50 p-1.5 rounded-xl border border-slate-200/50 dark:border-slate-700/50">
@@ -334,45 +334,47 @@ export default function ProcurementPage() {
               </Tabs.List>
             </Tabs.Root>
 
-            <div className="flex flex-col sm:flex-row gap-2 w-full md:w-auto">
-              <Select value={filterType} onValueChange={setFilterType}>
-                <SelectTrigger className="w-full sm:w-[120px] bg-white">
-                  <SelectValue placeholder="ประเภท">
-                    {filterType === 'all' ? 'ทุกประเภท' : filterType === 'PR' ? 'PR' : filterType === 'PO' ? 'PO' : 'ประเภท'}
-                  </SelectValue>
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">ทุกประเภท</SelectItem>
-                  <SelectItem value="PR">PR</SelectItem>
-                  <SelectItem value="PO">PO</SelectItem>
-                </SelectContent>
-              </Select>
-              
-              <Select value={sortBy} onValueChange={setSortBy}>
-                <SelectTrigger className="w-full sm:w-[150px] bg-white">
-                  <SelectValue placeholder="เรียงลำดับ">
-                    {sortBy === 'date_desc' ? 'ใหม่ล่าสุด' : 
-                     sortBy === 'date_asc' ? 'เก่าที่สุด' : 
-                     sortBy === 'amount_desc' ? 'ราคาสูง-ต่ำ' : 
-                     sortBy === 'amount_asc' ? 'ราคาต่ำ-สูง' : 'เรียงลำดับ'}
-                  </SelectValue>
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="date_desc">ใหม่ล่าสุด</SelectItem>
-                  <SelectItem value="date_asc">เก่าที่สุด</SelectItem>
-                  <SelectItem value="amount_desc">ราคาสูง-ต่ำ</SelectItem>
-                  <SelectItem value="amount_asc">ราคาต่ำ-สูง</SelectItem>
-                </SelectContent>
-              </Select>
-
-              <div className="relative w-full sm:max-w-[200px]">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <div className="flex flex-wrap lg:flex-nowrap items-center justify-between gap-4 w-full">
+              <div className="relative w-full lg:w-72 shrink-0">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
                 <Input 
                   placeholder="ค้นหา PR/PO..." 
-                  className="pl-9 bg-muted/50 w-full"
+                  className="pl-10 h-10 bg-white/60 dark:bg-slate-900/60 border-slate-200/60 shadow-sm focus:ring-2 focus:ring-blue-500/20 text-sm w-full rounded-xl transition-all"
                   value={searchTerm}
                   onChange={e => setSearchTerm(e.target.value)}
                 />
+              </div>
+
+              <div className="grid grid-cols-2 sm:flex sm:flex-wrap items-center gap-3 w-full lg:w-auto justify-start lg:justify-end">
+                <Select value={filterType} onValueChange={setFilterType}>
+                  <SelectTrigger className="h-10 w-full sm:w-[140px] bg-white border-slate-200/60 rounded-xl focus:ring-2 focus:ring-blue-500/20">
+                    <SelectValue placeholder="ทุกประเภท">
+                      {filterType === 'all' ? 'ทุกประเภท' : filterType === 'PR' ? 'PR' : filterType === 'PO' ? 'PO' : 'ทุกประเภท'}
+                    </SelectValue>
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">ทุกประเภท</SelectItem>
+                    <SelectItem value="PR">PR</SelectItem>
+                    <SelectItem value="PO">PO</SelectItem>
+                  </SelectContent>
+                </Select>
+                
+                <Select value={sortBy} onValueChange={setSortBy}>
+                  <SelectTrigger className="h-10 w-full sm:w-[160px] bg-white border-slate-200/60 rounded-xl focus:ring-2 focus:ring-blue-500/20">
+                    <SelectValue placeholder="เรียงลำดับ">
+                      {sortBy === 'date_desc' ? 'ใหม่ล่าสุด' : 
+                       sortBy === 'date_asc' ? 'เก่าที่สุด' : 
+                       sortBy === 'amount_desc' ? 'มูลค่ามาก-น้อย' : 
+                       sortBy === 'amount_asc' ? 'มูลค่าน้อย-มาก' : 'เรียงลำดับ'}
+                    </SelectValue>
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="date_desc">ใหม่ล่าสุด</SelectItem>
+                    <SelectItem value="date_asc">เก่าที่สุด</SelectItem>
+                    <SelectItem value="amount_desc">มูลค่ามาก-น้อย</SelectItem>
+                    <SelectItem value="amount_asc">มูลค่าน้อย-มาก</SelectItem>
+                  </SelectContent>
+                </Select>
               </div>
             </div>
           </div>
