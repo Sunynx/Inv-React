@@ -2,7 +2,7 @@
 import { useState } from 'react';
 import { supabase } from '@/lib/supabase';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { Plus, Search, CheckCircle2, AlertTriangle, FileText, ShoppingCart, Clock, Upload, ArrowUpDown, MoreHorizontal, Printer, FileSpreadsheet, Edit, Trash2, PackageCheck } from 'lucide-react';
+import { Plus, Search, CheckCircle2, AlertTriangle, FileText, ShoppingCart, Clock, Upload, MoreHorizontal, Printer, FileSpreadsheet, Edit, Trash2, PackageCheck } from 'lucide-react';
 import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator } from '@/components/ui/dropdown-menu';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -220,41 +220,21 @@ export default function ProcurementPage() {
   const columns: ColumnDef<any>[] = [
     {
       accessorKey: 'document_number',
-      header: ({ column }) => (
-        <Button variant="ghost" className="-ml-4 hover:bg-transparent" onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}>
-          Document No.
-          <ArrowUpDown className="ml-2 h-4 w-4" />
-        </Button>
-      ),
+      header: 'Document No.',
       cell: ({ row }) => <span className="font-medium">{row.original.document_number}</span>,
     },
     {
       accessorKey: 'created_at',
-      header: ({ column }) => (
-        <Button variant="ghost" className="-ml-4 hover:bg-transparent" onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}>
-          Date
-          <ArrowUpDown className="ml-2 h-4 w-4" />
-        </Button>
-      ),
+      header: 'Date',
       cell: ({ row }) => <span className="text-muted-foreground whitespace-nowrap">{row.original.created_at ? format(new Date(row.original.created_at), 'dd/MM/yyyy') : '-'}</span>,
     },
     {
       accessorKey: 'title',
-      header: ({ column }) => (
-        <Button variant="ghost" className="-ml-4 hover:bg-transparent" onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}>
-          Title
-          <ArrowUpDown className="ml-2 h-4 w-4" />
-        </Button>
-      ),
+      header: 'Title',
     },
     {
       accessorKey: 'total_amount',
-      header: ({ column }) => (
-        <Button variant="ghost" className="-ml-4 hover:bg-transparent" onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}>
-          Total Amount
-          <ArrowUpDown className="ml-2 h-4 w-4" />
-        </Button>
-      ),
+      header: 'Total Amount',
       cell: ({ row }) => <span className="font-medium">฿{Number(row.original.total_amount || 0).toLocaleString()}</span>,
     },
     {
