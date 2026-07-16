@@ -2,7 +2,8 @@
 import { useState } from 'react';
 import { supabase } from '@/lib/supabase';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { Plus, Search, CheckCircle2, AlertTriangle, FileText, ShoppingCart, Clock, Upload } from 'lucide-react';
+import { Plus, Search, CheckCircle2, AlertTriangle, FileText, ShoppingCart, Clock, Upload, ArrowUpDown, MoreHorizontal, Printer, FileSpreadsheet, Edit, Trash2, PackageCheck } from 'lucide-react';
+import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator } from '@/components/ui/dropdown-menu';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -247,25 +248,6 @@ export default function ProcurementPage() {
       ),
     },
     {
-      accessorKey: 'type',
-      header: 'Type',
-      cell: ({ row }) => (
-        <span className={`px-2 py-0.5 rounded text-[11px] font-bold ${row.original.type === 'PR' ? 'bg-blue-100 text-blue-700' : 'bg-purple-100 text-purple-700'}`}>
-          {row.original.type}
-        </span>
-      ),
-    },
-    {
-      accessorKey: 'supplier',
-      header: ({ column }) => (
-        <Button variant="ghost" className="-ml-4 hover:bg-transparent" onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}>
-          Supplier
-          <ArrowUpDown className="ml-2 h-4 w-4" />
-        </Button>
-      ),
-      cell: ({ row }) => <span>{row.original.supplier || '-'}</span>,
-    },
-    {
       accessorKey: 'total_amount',
       header: ({ column }) => (
         <Button variant="ghost" className="-ml-4 hover:bg-transparent" onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}>
@@ -286,23 +268,46 @@ export default function ProcurementPage() {
       cell: ({ row }) => {
         const doc = row.original;
         return (
-          <div className="flex justify-end gap-1">
-            <Button variant="ghost" size="sm" onClick={() => handlePrint(doc)}>Print</Button>
-            <Button variant="ghost" size="sm" onClick={() => handleExportExcel(doc)}>Excel</Button>
-            <Button variant="ghost" size="sm" onClick={() => handleEdit(doc)}>Edit</Button>
-            <Button variant="ghost" size="sm" className="text-red-500 hover:text-red-700 hover:bg-red-50" onClick={() => handleDelete(doc.id)}>Delete</Button>
-            
-            {doc.status === 'รอดำเนินการ' && (
-              <Button variant="outline" size="sm" className="ml-2 bg-blue-50 text-blue-700 hover:bg-blue-100 border-blue-200" onClick={() => handleApprove(doc)}>
-                Approve
-              </Button>
-            )}
+          <div className="flex justify-end">
+            <DropdownMenu>
+              <DropdownMenuTrigger className="inline-flex h-8 w-8 p-0 items-center justify-center rounded-md hover:bg-slate-100 dark:hover:bg-slate-800 text-muted-foreground outline-none focus-visible:ring-2 focus-visible:ring-ring">
+                <MoreHorizontal className="h-4 w-4" />
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-40">
+                <DropdownMenuItem onClick={() => handlePrint(doc)}>
+                  <Printer className="mr-2 h-4 w-4" /> พิมพ์
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => handleExportExcel(doc)}>
+                  <FileSpreadsheet className="mr-2 h-4 w-4" /> ส่งออก Excel
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => handleEdit(doc)}>
+                  <Edit className="mr-2 h-4 w-4" /> แก้ไข
+                </DropdownMenuItem>
+                
+                {doc.status === 'รอดำเนินการ' && (
+                  <>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem onClick={() => handleApprove(doc)} className="text-blue-600">
+                      <CheckCircle2 className="mr-2 h-4 w-4" /> อนุมัติ
+                    </DropdownMenuItem>
+                  </>
+                )}
 
-            {(doc.status === 'สั่งซื้อแล้ว' || doc.status === 'รับของบางส่วน') && (
-              <Button variant="outline" size="sm" className="ml-2 bg-emerald-50 text-emerald-700 hover:bg-emerald-100 border-emerald-200" onClick={() => handleReceive(doc)}>
-                Receive Items
-              </Button>
-            )}
+                {(doc.status === 'สั่งซื้อแล้ว' || doc.status === 'รับของบางส่วน') && (
+                  <>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem onClick={() => handleReceive(doc)} className="text-emerald-600">
+                      <PackageCheck className="mr-2 h-4 w-4" /> รับสินค้า
+                    </DropdownMenuItem>
+                  </>
+                )}
+
+                <DropdownMenuSeparator />
+                <DropdownMenuItem onClick={() => handleDelete(doc.id)} className="text-red-600">
+                  <Trash2 className="mr-2 h-4 w-4" /> ลบข้อมูล
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
           </div>
         );
       },
@@ -313,8 +318,8 @@ export default function ProcurementPage() {
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight text-foreground">Procurement (PR/PO)</h1>
-          <p className="text-sm text-muted-foreground mt-1">Manage purchase requests and orders.</p>
+          <h1 className="text-3xl font-bold tracking-tight text-slate-900 dark:text-white">Procurement (PR/PO)</h1>
+          <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">Manage purchase requests and orders.</p>
         </div>
         <div className="flex gap-2 w-full sm:w-auto">
           <Button onClick={() => setIsImportModalOpen(true)} variant="outline" className="flex-1 sm:flex-none border-blue-200 text-blue-700 hover:bg-blue-50">
@@ -328,12 +333,12 @@ export default function ProcurementPage() {
         </div>
       </div>
 
-      <Card className="shadow-sm border-border/60">
+      <Card className="shadow-sm border border-slate-200/60 dark:border-slate-800/60 rounded-2xl overflow-hidden bg-white dark:bg-slate-900 transition-colors duration-300 print:hidden">
         <CardContent className="p-0">
-          <div className="p-4 border-b border-border/60 flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+          <div className="p-5 border-b border-slate-100 dark:border-slate-800/50 flex flex-col md:flex-row items-start md:items-center justify-between gap-5">
             
-            <Tabs.Root value={filterTab} onValueChange={setFilterTab} className="w-full md:w-auto">
-              <Tabs.List className="flex gap-1 flex-wrap">
+            <Tabs.Root value={filterTab} onValueChange={setFilterTab} className="w-full overflow-x-auto hide-scrollbar">
+              <Tabs.List className="flex gap-1.5 inline-flex w-max bg-slate-100/50 dark:bg-slate-800/50 p-1.5 rounded-xl border border-slate-200/50 dark:border-slate-700/50">
                 {[
                   { value: 'all', label: 'ทั้งหมด', count: documents.length },
                   { value: 'รอดำเนินการ', label: 'รออนุมัติ', count: countByStatus('รอดำเนินการ') },
@@ -342,8 +347,8 @@ export default function ProcurementPage() {
                   { value: 'ได้รับของแล้ว', label: 'ได้รับของแล้ว', count: countByStatus('ได้รับของแล้ว') },
                   { value: 'ยกเลิก', label: 'ยกเลิก', count: countByStatus('ยกเลิก') },
                 ].map(tab => (
-                  <Tabs.Trigger key={tab.value} value={tab.value} className="px-3 py-1.5 text-sm font-medium text-muted-foreground hover:text-foreground data-[state=active]:text-foreground data-[state=active]:bg-muted rounded-md transition-colors flex items-center gap-2">
-                    {tab.label} <span className="bg-muted text-muted-foreground px-1.5 py-0.5 rounded-full text-[10px] font-semibold">{tab.count}</span>
+                  <Tabs.Trigger key={tab.value} value={tab.value} className="px-4 py-2 text-sm font-semibold text-slate-500 hover:text-slate-900 dark:hover:text-white data-[state=active]:bg-white dark:data-[state=active]:bg-slate-900 data-[state=active]:text-blue-700 dark:data-[state=active]:text-blue-400 data-[state=active]:shadow-[0_1px_3px_rgba(0,0,0,0.1)] rounded-lg transition-all flex items-center gap-2 outline-none">
+                    {tab.label} <span className="bg-slate-200/60 dark:bg-slate-700 text-slate-600 dark:text-slate-300 px-2 py-0.5 rounded-md text-[10px] font-bold">{tab.count}</span>
                   </Tabs.Trigger>
                 ))}
               </Tabs.List>
@@ -392,7 +397,7 @@ export default function ProcurementPage() {
             </div>
           </div>
 
-          <div className="p-1">
+          <div className="p-1 bg-slate-50/50 dark:bg-slate-900/50">
             <DataTable
               columns={columns}
               data={filteredDocs}
