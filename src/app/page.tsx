@@ -76,7 +76,7 @@ export default function Dashboard() {
       try {
         const term = `%${globalSearch}%`;
         
-        const [assetsRes, stockRes, ticketsRes] = await Promise.all([
+        const [assetsRes, stockRes, ticketsRes, logsRes, procRes, maintRes, transRes] = await Promise.all([
           supabase.from('assets')
             .select('id, name, asset_code, status, assigned_user')
             .or(`name.ilike.${term},asset_code.ilike.${term},assigned_user.ilike.${term},location.ilike.${term}`)
@@ -88,6 +88,22 @@ export default function Dashboard() {
           supabase.from('repair_tickets')
             .select('id, title, status, assets(name)')
             .or(`title.ilike.${term},description.ilike.${term}`)
+            .limit(3),
+          supabase.from('audit_log')
+            .select('id, action, details, performed_by')
+            .or(`action.ilike.${term},details.ilike.${term},performed_by.ilike.${term}`)
+            .limit(3),
+          supabase.from('procurement')
+            .select('id, document_number, title, supplier, status')
+            .or(`document_number.ilike.${term},title.ilike.${term},supplier.ilike.${term}`)
+            .limit(3),
+          supabase.from('maintenance_schedules')
+            .select('id, title, status, assets(name)')
+            .or(`title.ilike.${term},description.ilike.${term}`)
+            .limit(3),
+          supabase.from('asset_transfers')
+            .select('id, notes, from_location, to_location, assets(name)')
+            .or(`notes.ilike.${term},from_location.ilike.${term},to_location.ilike.${term},from_user.ilike.${term},to_user.ilike.${term}`)
             .limit(3),
         ]);
 
@@ -120,6 +136,46 @@ export default function Dashboard() {
             title: t.title,
             subtitle: `สถานะ: ${t.status || '-'} · ${(t as any).assets?.name || '-'}`,
             link: `/tickets?highlight=${t.id}`,
+          });
+        });
+
+        (logsRes.data || []).forEach(l => {
+          results.push({
+            type: 'Log',
+            id: l.id,
+            title: l.action,
+            subtitle: `${l.performed_by || 'System'} · ${l.details || ''}`,
+            link: `/audit-log`,
+          });
+        });
+
+        (procRes.data || []).forEach(p => {
+          results.push({
+            type: 'PR/PO',
+            id: p.id,
+            title: p.document_number || p.title,
+            subtitle: `${p.supplier || '-'} · สถานะ: ${p.status || '-'}`,
+            link: `/procurement`,
+          });
+        });
+
+        (maintRes.data || []).forEach(m => {
+          results.push({
+            type: 'Maintenance',
+            id: m.id,
+            title: m.title,
+            subtitle: `สถานะ: ${m.status || '-'} · ${(m as any).assets?.name || '-'}`,
+            link: `/maintenance`,
+          });
+        });
+
+        (transRes.data || []).forEach(tr => {
+          results.push({
+            type: 'Transfer',
+            id: tr.id,
+            title: `Transfer: ${(tr as any).assets?.name || 'Asset'}`,
+            subtitle: `${tr.from_location || '-'} ➔ ${tr.to_location || '-'} · ${tr.notes || ''}`,
+            link: `/transfers`,
           });
         });
 
@@ -357,7 +413,12 @@ export default function Dashboard() {
                           <span className={`text-[10px] px-2 py-0.5 rounded-full font-medium ${
                             res.type === 'Asset' ? 'bg-blue-100 text-blue-700 dark:bg-blue-500/20 dark:text-blue-300' :
                             res.type === 'Stock' ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-500/20 dark:text-emerald-300' :
-                            'bg-amber-100 text-amber-700 dark:bg-amber-500/20 dark:text-amber-300'
+                            res.type === 'Ticket' ? 'bg-amber-100 text-amber-700 dark:bg-amber-500/20 dark:text-amber-300' :
+                            res.type === 'Log' ? 'bg-slate-100 text-slate-700 dark:bg-slate-500/20 dark:text-slate-300' :
+                            res.type === 'PR/PO' ? 'bg-purple-100 text-purple-700 dark:bg-purple-500/20 dark:text-purple-300' :
+                            res.type === 'Maintenance' ? 'bg-indigo-100 text-indigo-700 dark:bg-indigo-500/20 dark:text-indigo-300' :
+                            res.type === 'Transfer' ? 'bg-orange-100 text-orange-700 dark:bg-orange-500/20 dark:text-orange-300' :
+                            'bg-gray-100 text-gray-700 dark:bg-gray-500/20 dark:text-gray-300'
                           }`}>{res.type}</span>
                         </div>
                         <span className="text-xs text-slate-500 dark:text-slate-400 truncate mt-1">{res.subtitle || 'No details'}</span>
