@@ -41,7 +41,7 @@ export default function CheckoutModal({ isOpen, onClose, recordId }: { isOpen: b
       if (recordId && recordData) {
         setFormData(recordData);
       } else if (!recordId) {
-        setFormData({ status: 'ยืม' });
+        setFormData({ status: 'checked_out' });
       }
     } else {
       setFormData({});
@@ -137,11 +137,11 @@ export default function CheckoutModal({ isOpen, onClose, recordId }: { isOpen: b
               </div>
               <div className="space-y-2">
                 <Label>Status</Label>
-                <Select value={formData.status || 'ยืม'} onValueChange={(v) => handleSelectChange('status', v)}>
+                <Select value={formData.status || 'checked_out'} onValueChange={(v) => handleSelectChange('status', v)}>
                   <SelectTrigger><SelectValue placeholder="Status" /></SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="ยืม">ยืม (Borrowed)</SelectItem>
-                    <SelectItem value="คืนแล้ว">คืนแล้ว (Returned)</SelectItem>
+                    <SelectItem value="checked_out">ยืม (Borrowed)</SelectItem>
+                    <SelectItem value="returned">คืนแล้ว (Returned)</SelectItem>
                   </SelectContent>
                 </Select>
               </div>

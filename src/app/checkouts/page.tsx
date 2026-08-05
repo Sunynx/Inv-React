@@ -36,7 +36,7 @@ export default function CheckoutsPage() {
     mutationFn: async (payload: { id: string, asset_id: string }) => {
       const { error } = await supabase
         .from('asset_checkouts')
-        .update({ status: 'คืนแล้ว', actual_return_date: new Date().toISOString() })
+        .update({ status: 'returned', actual_return_date: new Date().toISOString() })
         .eq('id', payload.id);
       if (error) throw error;
       
@@ -90,7 +90,7 @@ export default function CheckoutsPage() {
       header: 'Expected Return',
       cell: ({ row }) => {
         const date = row.original.expected_return_date;
-        const isLate = row.original.status === 'ยืม' && date && new Date(date) < new Date();
+        const isLate = row.original.status === 'checked_out' && date && new Date(date) < new Date();
         return (
           <span className={`text-sm ${isLate ? 'text-red-600 font-semibold' : 'text-muted-foreground'}`}>
             {date ? format(new Date(date), 'dd MMM yyyy') : '-'}
@@ -103,11 +103,21 @@ export default function CheckoutsPage() {
       header: 'Status',
       cell: ({ row }) => {
         const status = row.original.status;
+        let displayStatus = status;
+        let colorClass = 'bg-gray-100 text-gray-700';
+        if (status === 'checked_out') {
+          displayStatus = 'ยืม';
+          colorClass = 'bg-amber-100 text-amber-700';
+        } else if (status === 'returned') {
+          displayStatus = 'คืนแล้ว';
+          colorClass = 'bg-emerald-100 text-emerald-700';
+        } else if (status === 'overdue') {
+          displayStatus = 'เลยกำหนด';
+          colorClass = 'bg-red-100 text-red-700';
+        }
         return (
-          <span className={`inline-flex px-2 py-0.5 rounded-full text-[11px] font-semibold ${
-            status === 'ยืม' ? 'bg-amber-100 text-amber-700' : 'bg-emerald-100 text-emerald-700'
-          }`}>
-            {status}
+          <span className={`inline-flex px-2 py-0.5 rounded-full text-[11px] font-semibold ${colorClass}`}>
+            {displayStatus}
           </span>
         );
       }
@@ -119,7 +129,7 @@ export default function CheckoutsPage() {
         const record = row.original;
         return (
           <div className="flex items-center justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-            {record.status === 'ยืม' && (
+            {record.status === 'checked_out' && (
               <Button variant="outline" size="sm" className="h-8" onClick={() => returnMutation.mutate({ id: record.id, asset_id: record.asset_id })}>
                 <CheckCircle2 className="h-4 w-4 mr-1 text-emerald-600" /> Return
               </Button>
@@ -169,8 +179,8 @@ export default function CheckoutsPage() {
               value={filterStatus} onChange={e => setFilterStatus(e.target.value)}
             >
               <option value="all">All Status</option>
-              <option value="ยืม">ยืม (Borrowed)</option>
-              <option value="คืนแล้ว">คืนแล้ว (Returned)</option>
+              <option value="checked_out">ยืม (Borrowed)</option>
+              <option value="returned">คืนแล้ว (Returned)</option>
             </select>
           </div>
         </CardContent>
