@@ -799,7 +799,7 @@ export default function AssetSheet({ isOpen, onClose, assetId, mode = 'edit', on
               </div>
               <div className="p-5 space-y-3">
                 <div className="border border-input rounded-lg bg-white overflow-hidden shadow-sm h-40 w-full cursor-crosshair relative">
-                  <SignatureCanvas ref={viewSigCanvas} penColor="blue" canvasProps={{ className: "w-full h-full" }} />
+                  <SignatureCanvas ref={viewSigCanvas} penColor="blue" canvasProps={{ className: "w-full h-full", style: { touchAction: 'none' } }} />
                   <div className="absolute bottom-2 right-3 text-[10px] text-muted-foreground pointer-events-none">เซ็นชื่อที่นี่</div>
                 </div>
                 <button type="button" onClick={() => viewSigCanvas.current?.clear()} className="text-[11px] text-primary hover:text-primary/80 underline">
@@ -1069,7 +1069,7 @@ export default function AssetSheet({ isOpen, onClose, assetId, mode = 'edit', on
                         </div>
                       ) : (
                         <div className="h-full relative cursor-crosshair">
-                          <SignatureCanvas ref={sigCanvas} penColor="blue" canvasProps={{ className: "w-full h-full" }} />
+                          <SignatureCanvas ref={sigCanvas} penColor="blue" canvasProps={{ className: "w-full h-full", style: { touchAction: 'none' } }} />
                           <div className="absolute bottom-2 right-3 text-[10px] text-muted-foreground pointer-events-none">เซ็นชื่อที่นี่</div>
                         </div>
                       )}
