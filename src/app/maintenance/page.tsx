@@ -8,13 +8,6 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent } from '@/components/ui/card';
 import MaintenanceModal from '@/components/MaintenanceModal';
-import { format } from 'date-fns';
-import { DataTable } from '@/components/DataTable';
-import { ColumnDef } from '@tanstack/react-table';
-import MaintenanceCalendar from '@/components/MaintenanceCalendar';
-import * as Tabs from '@radix-ui/react-tabs';
-
-export default function MaintenancePage() {
 'use client';
 import { useState } from 'react';
 import { supabase } from '@/lib/supabase';
