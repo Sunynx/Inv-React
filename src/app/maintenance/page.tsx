@@ -15,6 +15,23 @@ import MaintenanceCalendar from '@/components/MaintenanceCalendar';
 import * as Tabs from '@radix-ui/react-tabs';
 
 export default function MaintenancePage() {
+'use client';
+import { useState } from 'react';
+import { supabase } from '@/lib/supabase';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { Search, Plus, Filter, Edit, Trash2, LayoutList, Calendar as CalendarIcon } from 'lucide-react';
+import toast from 'react-hot-toast';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Card, CardContent } from '@/components/ui/card';
+import MaintenanceModal from '@/components/MaintenanceModal';
+import { format } from 'date-fns';
+import { DataTable } from '@/components/DataTable';
+import { ColumnDef } from '@tanstack/react-table';
+import MaintenanceCalendar from '@/components/MaintenanceCalendar';
+import * as Tabs from '@radix-ui/react-tabs';
+
+export default function MaintenancePage() {
   const queryClient = useQueryClient();
   const [searchTerm, setSearchTerm] = useState('');
   const [filterStatus, setFilterStatus] = useState('all');
@@ -23,6 +40,7 @@ export default function MaintenancePage() {
   
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedRecord, setSelectedRecord] = useState<any | null>(null);
+  const [selectedDate, setSelectedDate] = useState<string | undefined>();
 
   const { data: records = [], isLoading } = useQuery({
     queryKey: ['maintenance_schedules'],
@@ -154,7 +172,7 @@ export default function MaintenancePage() {
               </Tabs.Trigger>
             </Tabs.List>
           </Tabs.Root>
-          <Button onClick={() => { setSelectedRecord(null); setIsModalOpen(true); }} className="bg-primary hover:bg-primary/90 text-primary-foreground">
+          <Button onClick={() => { setSelectedRecord(null); setSelectedDate(undefined); setIsModalOpen(true); }} className="bg-primary hover:bg-primary/90 text-primary-foreground">
             <Plus className="mr-2 h-4 w-4" /> Schedule PM
           </Button>
         </div>
@@ -211,6 +229,11 @@ export default function MaintenancePage() {
             setSelectedRecord(record);
             setIsModalOpen(true);
           }} 
+          onDayClick={(date) => {
+            setSelectedRecord(null);
+            setSelectedDate(format(date, 'yyyy-MM-dd'));
+            setIsModalOpen(true);
+          }}
         />
       ) : (
         <Card className="overflow-hidden border-0">
@@ -228,6 +251,7 @@ export default function MaintenancePage() {
         isOpen={isModalOpen} 
         onClose={() => { setIsModalOpen(false); refreshData(); }} 
         recordId={selectedRecord?.id}
+        defaultDate={selectedDate}
       />
     </div>
   );

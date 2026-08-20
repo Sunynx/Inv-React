@@ -9,7 +9,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
-export default function MaintenanceModal({ isOpen, onClose, recordId }: { isOpen: boolean; onClose: () => void; recordId?: string }) {
+export default function MaintenanceModal({ isOpen, onClose, recordId, defaultDate }: { isOpen: boolean; onClose: () => void; recordId?: string; defaultDate?: string }) {
   const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState<any>({});
   const [autoScheduleNext, setAutoScheduleNext] = useState(true);
@@ -40,7 +40,7 @@ export default function MaintenanceModal({ isOpen, onClose, recordId }: { isOpen
       if (recordId && recordData) {
         setFormData(recordData);
       } else if (!recordId) {
-        setFormData({ status: 'pending', frequency: 'monthly' });
+        setFormData({ status: 'pending', frequency: 'monthly', next_due_at: defaultDate || '' });
       }
     } else {
       setFormData({});

@@ -10,9 +10,10 @@ import { Button } from '@/components/ui/button';
 interface MaintenanceCalendarProps {
   records: any[];
   onRecordClick: (record: any) => void;
+  onDayClick?: (date: Date) => void;
 }
 
-export default function MaintenanceCalendar({ records, onRecordClick }: MaintenanceCalendarProps) {
+export default function MaintenanceCalendar({ records, onRecordClick, onDayClick }: MaintenanceCalendarProps) {
   const [currentMonth, setCurrentMonth] = useState(new Date());
 
   const nextMonth = () => setCurrentMonth(addMonths(currentMonth, 1));
@@ -76,10 +77,10 @@ export default function MaintenanceCalendar({ records, onRecordClick }: Maintena
         days.push(
           <div
             key={day.toISOString()}
-            className={`min-h-[120px] p-2 border-r border-b border-slate-100 dark:border-slate-800/50 transition-colors
+            onClick={() => onDayClick && onDayClick(cloneDay)}
+            className={`min-h-[120px] p-2 border-r border-b border-slate-100 dark:border-slate-800/50 transition-colors ${onDayClick ? 'cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-800/50' : ''}
               ${!isSameMonth(day, monthStart) ? 'bg-slate-50/50 dark:bg-slate-900/20 text-slate-400' : 'bg-white dark:bg-slate-900'}
               ${isSameDay(day, new Date()) ? 'ring-2 ring-blue-500 ring-inset bg-blue-50/10' : ''}
-              hover:bg-slate-50 dark:hover:bg-slate-800/50
             `}
           >
             <div className="flex justify-end">
@@ -96,7 +97,7 @@ export default function MaintenanceCalendar({ records, onRecordClick }: Maintena
                 return (
                   <div 
                     key={record.id}
-                    onClick={() => onRecordClick(record)}
+                    onClick={(e) => { e.stopPropagation(); onRecordClick(record); }}
                     className={`text-[10px] p-1.5 rounded-md cursor-pointer truncate flex items-center gap-1.5 transition-all hover:opacity-80
                       ${isCompleted ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-500/20 dark:text-emerald-300' : 'bg-amber-100 text-amber-700 dark:bg-amber-500/20 dark:text-amber-300'}
                     `}

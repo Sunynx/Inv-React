@@ -97,7 +97,7 @@ export default function TicketKanbanBoard({
     <DragDropContext onDragEnd={onDragEnd}>
       <div className="flex gap-4 overflow-x-auto pb-4 h-[calc(100vh-280px)] min-h-[500px] hide-scrollbar">
         {STATUS_COLUMNS.map(column => (
-          <div key={column.id} className={`flex flex-col w-80 shrink-0 rounded-xl border ${column.color} overflow-hidden flex-1`}>
+          <div key={column.id} className={`flex flex-col w-72 md:w-80 shrink-0 rounded-xl border ${column.color} overflow-hidden`}>
             <div className="p-3 border-b border-black/5 dark:border-white/5 font-semibold text-sm flex justify-between items-center bg-black/5 dark:bg-white/5">
               <span>{column.title}</span>
               <span className="inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-semibold bg-background dark:bg-slate-800">{columns[column.id]?.length || 0}</span>

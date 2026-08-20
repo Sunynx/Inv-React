@@ -131,7 +131,7 @@ export default function Sidebar() {
       </div>
 
       {/* Mobile Header */}
-      <div className="md:hidden fixed top-0 left-0 right-0 h-16 bg-[#1e345d]/80 backdrop-blur-md z-40 flex items-center px-4 justify-between shadow-sm border-b border-white/10">
+      <div className="md:hidden fixed top-0 left-0 right-0 h-16 bg-[#1e345d] z-40 flex items-center px-4 justify-between shadow-sm border-b border-white/10">
         <Sheet open={open} onOpenChange={setOpen}>
           <SheetTrigger className="inline-flex items-center justify-center shrink-0 w-10 h-10 rounded-lg text-white hover:bg-white/10 transition-colors">
             <Menu size={24} />
