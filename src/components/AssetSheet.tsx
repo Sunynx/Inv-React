@@ -35,7 +35,7 @@ const DetailItem = ({ label, value }: { label: string, value: any }) => {
   return (
     <div>
       <p className="text-xs text-muted-foreground mb-0.5">{label}</p>
-      <p className="text-sm font-medium text-foreground">{value}</p>
+      <p className="text-sm font-medium text-foreground break-all">{value}</p>
     </div>
   )
 }
