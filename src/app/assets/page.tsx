@@ -116,7 +116,7 @@ export default function AssetsPage() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from('assets')
-        .select(`id, name, asset_code, status, location, assigned_user, thumbnail_url, category_id, department_id, created_at, updated_at, departments(name), categories(name)`)
+        .select(`id, name, asset_code, status, location, assigned_user, serial_number, thumbnail_url, category_id, department_id, created_at, updated_at, departments(name), categories(name)`)
         .order('created_at', { ascending: false });
       if (error) throw error;
       return data || [];
@@ -187,6 +187,7 @@ export default function AssetsPage() {
       a.location?.toLowerCase().includes(lowerSearch) ||
       a.departments?.name?.toLowerCase().includes(lowerSearch) ||
       a.categories?.name?.toLowerCase().includes(lowerSearch) ||
+      a.serial_number?.toLowerCase().includes(lowerSearch) ||
       a.assigned_user?.toLowerCase().includes(lowerSearch);
 
     let matchTab = true;
@@ -356,7 +357,7 @@ export default function AssetsPage() {
           <div className="flex flex-wrap lg:flex-nowrap items-center justify-between gap-4 w-full">
             <div className="relative w-full lg:w-72 shrink-0">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
-              <Input placeholder="ค้นหาชื่อ, รหัส, สถานที่..." className="pl-10 h-10 bg-white/60 dark:bg-slate-900/60 border-slate-200/60 shadow-sm focus:ring-2 focus:ring-blue-500/20 text-sm w-full rounded-xl transition-all" value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} />
+              <Input placeholder="ค้นหาชื่อ, รหัส, S/N, สถานที่..." className="pl-10 h-10 bg-white/60 dark:bg-slate-900/60 border-slate-200/60 shadow-sm focus:ring-2 focus:ring-blue-500/20 text-sm w-full rounded-xl transition-all" value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} />
             </div>
 
             <div className="grid grid-cols-2 sm:flex sm:flex-wrap items-center gap-3 w-full lg:w-auto justify-start lg:justify-end">

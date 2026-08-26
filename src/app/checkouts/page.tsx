@@ -2,7 +2,7 @@
 import { useState } from 'react';
 import { supabase } from '@/lib/supabase';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { Search, Plus, Filter, Edit, CheckCircle2 } from 'lucide-react';
+import { Search, Plus, Filter, Edit, CheckCircle2, RotateCcw } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -50,6 +50,21 @@ export default function CheckoutsPage() {
     onError: (err: any) => toast.error('Error: ' + err.message)
   });
 
+  const cancelReturnMutation = useMutation({
+    mutationFn: async (payload: { id: string }) => {
+      const { error } = await supabase
+        .from('asset_checkouts')
+        .update({ status: 'checked_out', actual_return_date: null })
+        .eq('id', payload.id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      toast.success('ยกเลิกการคืนสำเร็จ');
+      queryClient.invalidateQueries({ queryKey: ['asset_checkouts'] });
+    },
+    onError: (err: any) => toast.error('Error: ' + err.message)
+  });
+
   const filteredRecords = records.filter(r => {
     const matchSearch = r.checked_out_to?.toLowerCase().includes(searchTerm.toLowerCase()) ||
                         r.department?.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -87,14 +102,29 @@ export default function CheckoutsPage() {
     },
     {
       accessorKey: 'expected_return_date',
-      header: 'Expected Return',
+      header: 'Return Date',
       cell: ({ row }) => {
-        const date = row.original.expected_return_date;
-        const isLate = row.original.status === 'checked_out' && date && new Date(date) < new Date();
+        const expectedDate = row.original.expected_return_date;
+        const actualDate = row.original.actual_return_date;
+        const status = row.original.status;
+        
+        if (status === 'returned' && actualDate) {
+          return (
+            <div className="flex flex-col">
+              <span className="text-sm font-medium text-emerald-600">คืนเมื่อ: {format(new Date(actualDate), 'dd MMM yyyy')}</span>
+              <span className="text-[11px] text-muted-foreground">กำหนด: {expectedDate ? format(new Date(expectedDate), 'dd MMM yyyy') : '-'}</span>
+            </div>
+          );
+        }
+
+        const isLate = status === 'checked_out' && expectedDate && new Date(expectedDate) < new Date();
         return (
-          <span className={`text-sm ${isLate ? 'text-red-600 font-semibold' : 'text-muted-foreground'}`}>
-            {date ? format(new Date(date), 'dd MMM yyyy') : '-'}
-          </span>
+          <div className="flex flex-col">
+            <span className={`text-sm ${isLate ? 'text-red-600 font-semibold' : 'text-muted-foreground'}`}>
+              กำหนด: {expectedDate ? format(new Date(expectedDate), 'dd MMM yyyy') : '-'}
+            </span>
+            {isLate && <span className="text-[10px] text-red-500 font-medium mt-0.5">เลยกำหนดการคืน</span>}
+          </div>
         );
       }
     },
@@ -132,6 +162,11 @@ export default function CheckoutsPage() {
             {record.status === 'checked_out' && (
               <Button variant="outline" size="sm" className="h-8" onClick={() => returnMutation.mutate({ id: record.id, asset_id: record.asset_id })}>
                 <CheckCircle2 className="h-4 w-4 mr-1 text-emerald-600" /> Return
+              </Button>
+            )}
+            {record.status === 'returned' && (
+              <Button variant="outline" size="sm" className="h-8 border-amber-200 text-amber-700 hover:bg-amber-50 hover:text-amber-800" onClick={() => cancelReturnMutation.mutate({ id: record.id })}>
+                <RotateCcw className="h-4 w-4 mr-1 text-amber-600" /> ยกเลิกการคืน
               </Button>
             )}
             <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => { setSelectedRecordId(record.id); setIsModalOpen(true); }}>
