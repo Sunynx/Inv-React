@@ -97,15 +97,8 @@ const InputField = ({ form, name, label, required = false, type = "text", ...pro
   );
 };
 
-// Convert a Supabase Storage URL to a resized thumbnail URL using Supabase Image Transform
-const getThumbUrl = (url: string, width = 400) => {
-  if (!url) return url;
-  const match = url.match(/\/storage\/v1\/object\/public\/(.+)$/);
-  if (!match) return url;
-  const path = match[1];
-  const base = url.split('/storage/v1/')[0];
-  return `${base}/storage/v1/render/image/public/${path}?width=${width}&quality=75&resize=cover`;
-};
+// Note: Supabase Image Transform ต้องการ Pro plan, ใช้ URL เดิมพร้อม lazy loading แทน
+const getThumbUrl = (url: string) => url;
 
 export default function AssetSheet({ isOpen, onClose, assetId, mode = 'edit', onEdit, onEditComplete }: { isOpen: boolean; onClose: () => void; assetId?: string; mode?: 'view' | 'edit'; onEdit?: () => void; onEditComplete?: () => void; }) {
   const [loading, setLoading] = useState(false);
