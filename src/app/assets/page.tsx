@@ -6,7 +6,6 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Search, Plus, FileSpreadsheet, MoreHorizontal, Edit, Trash2, CheckCircle2, AlertCircle, Clock, Ban, Download, Printer, CheckSquare, Bookmark, BookmarkPlus, MoveRight } from 'lucide-react';
 import { QRCodeSVG } from 'qrcode.react';
 import toast from 'react-hot-toast';
-import AssetSheet from '@/components/AssetSheet';
 import ReportExportModal from '@/components/ReportExportModal';
 import { EmptyState } from '@/components/EmptyState';
 import ConfirmDialog from '@/components/ConfirmDialog';
@@ -56,7 +55,7 @@ function HighlightHandler({
   useEffect(() => {
     let shouldReplace = false;
     if (highlightId) {
-      onHighlight(highlightId);
+      router.push(`/assets/${highlightId}`);
       shouldReplace = true;
     }
     if (statusFilter) {
@@ -101,9 +100,6 @@ export default function AssetsPage() {
     toast.success('View saved successfully!');
   };
   const [sortBy, setSortBy] = useState('newest');
-  const [isSheetOpen, setIsSheetOpen] = useState(false);
-  const [sheetMode, setSheetMode] = useState<'view' | 'edit'>('view');
-  const [selectedAssetId, setSelectedAssetId] = useState<string | undefined>(undefined);
   const [isExportModalOpen, setIsExportModalOpen] = useState(false);
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
   const [selectedRows, setSelectedRows] = useState<any[]>([]);
@@ -312,7 +308,7 @@ export default function AssetsPage() {
               <MoreHorizontal className="h-4 w-4" />
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-40">
-              <DropdownMenuItem onClick={(e) => { e.stopPropagation(); setSelectedAssetId(asset.id); setSheetMode('edit'); setIsSheetOpen(true); }}>
+              <DropdownMenuItem onClick={(e) => { e.stopPropagation(); router.push(`/assets/${asset.id}?mode=edit`); }}>
                 <Edit className="mr-2 h-4 w-4" /> แก้ไข
               </DropdownMenuItem>
               <DropdownMenuSeparator />
@@ -324,7 +320,7 @@ export default function AssetsPage() {
         );
       }
     }
-  ], [assets, setSelectedAssetId, setSheetMode, setIsSheetOpen, setDeleteConfirmId, deleteMutation, handleDelete]);
+  ], [assets, deleteMutation, handleDelete, router]);
 
   return (
     <div className="space-y-6 print:space-y-0 print:m-0 print:p-0 animate-in fade-in duration-500">
@@ -424,7 +420,7 @@ export default function AssetsPage() {
                 <Button variant="outline" className="h-10 px-4 rounded-xl border-slate-200 hover:bg-slate-50 transition-all hidden sm:flex text-sm" onClick={() => window.print()}>
                   <Printer className="w-4 h-4 mr-1.5 text-slate-500" /> พิมพ์
                 </Button>
-                <Button className="h-10 px-4 rounded-xl bg-blue-600 hover:bg-blue-700 text-white shadow-sm shadow-blue-600/20 transition-all text-sm" onClick={() => { setSelectedAssetId(undefined); setSheetMode('edit'); setIsSheetOpen(true); }}>
+                <Button className="h-10 px-4 rounded-xl bg-blue-600 hover:bg-blue-700 text-white shadow-sm shadow-blue-600/20 transition-all text-sm" onClick={() => { router.push('/assets/new'); }}>
                   <Plus className="w-4 h-4 mr-1.5" /> เพิ่มทรัพย์สิน
                 </Button>
               </div>
@@ -482,29 +478,12 @@ export default function AssetsPage() {
                 title="ไม่พบข้อมูลทรัพย์สิน"
                 description="ยังไม่มีรายการทรัพย์สินที่ตรงกับเงื่อนไขการค้นหาของคุณ หรือยังไม่ได้เพิ่มข้อมูลเข้าสู่ระบบ"
                 actionLabel="เพิ่มทรัพย์สินใหม่"
-                onAction={() => { setSelectedAssetId(undefined); setSheetMode('edit'); setIsSheetOpen(true); }}
+                onAction={() => { router.push('/assets/new'); }}
               />
             }
           />
         </div>
       </Card>
-
-      <AssetSheet
-        isOpen={isSheetOpen}
-        onClose={() => {
-          setIsSheetOpen(false);
-          setSelectedAssetId(undefined);
-        }}
-        assetId={selectedAssetId}
-        mode={sheetMode}
-        onEdit={() => setSheetMode('edit')}
-        onEditComplete={() => setSheetMode('view')}
-        onNavigateToAsset={(id) => {
-          setSelectedAssetId(id);
-          setSheetMode('view');
-          setIsSheetOpen(true);
-        }}
-      />
 
       <ConfirmDialog
         isOpen={!!deleteConfirmId}
@@ -570,11 +549,7 @@ export default function AssetsPage() {
 
       <Suspense fallback={null}>
         <HighlightHandler
-          onHighlight={(id) => {
-            setSelectedAssetId(id);
-            setSheetMode('view');
-            setIsSheetOpen(true);
-          }}
+          onHighlight={() => {}}
           onFilterStatus={(status) => {
             setFilterTab(prev => prev === status ? prev : status);
           }}

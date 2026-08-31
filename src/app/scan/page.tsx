@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { ScanLine, X, Search } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
-import AssetSheet from '@/components/AssetSheet';
+import { useRouter } from 'next/navigation';
 import toast from 'react-hot-toast';
 
 export default function ScanPage() {
@@ -15,11 +15,7 @@ export default function ScanPage() {
   const [scanning, setScanning] = useState(false);
   const [scanResult, setScanResult] = useState<string | null>(null);
   
-  // Asset Modal
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  const [scannedAssetId, setScannedAssetId] = useState<string | null>(null);
-  const [loadingAsset, setLoadingAsset] = useState(false);
-  const [sheetMode, setSheetMode] = useState<'view' | 'edit'>('view');
+  const router = useRouter();
 
   useEffect(() => {
     // Run only once on mount to check for ?code= in URL
@@ -99,13 +95,9 @@ export default function ScanPage() {
         toast.error('Asset not found in database: ' + code);
         return;
       }
-      setScannedAssetId(data.id);
-      setSheetMode('view');
-      setIsModalOpen(true);
+      router.push(`/assets/${data.id}`);
     } catch (e: any) {
       toast.error('Error finding asset: ' + e.message);
-    } finally {
-      setLoadingAsset(false);
     }
   };
 
@@ -179,15 +171,6 @@ export default function ScanPage() {
           </form>
         </CardContent>
       </Card>
-
-      <AssetSheet 
-        isOpen={isModalOpen} 
-        onClose={() => setIsModalOpen(false)} 
-        assetId={scannedAssetId || undefined} 
-        mode={sheetMode}
-        onEdit={() => setSheetMode('edit')}
-        onEditComplete={() => setSheetMode('view')}
-      />
     </div>
   );
 }

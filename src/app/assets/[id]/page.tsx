@@ -8,7 +8,7 @@ import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 
-import { useParams, useRouter } from 'next/navigation';
+import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import { Camera, Upload, X, CheckCircle2, AlertCircle, Clock, Ban, ChevronLeft, ChevronRight, Edit, FileText, FileSpreadsheet, Paperclip, Cpu, Monitor, Wifi, Users, ShoppingCart, Image as ImageIcon, Wand2, Printer, PenLine, Trash2, Loader2, ArrowRightLeft, ArrowLeft } from 'lucide-react';
 import SignatureCanvas from 'react-signature-canvas';
 import { QRCodeSVG } from 'qrcode.react';
@@ -104,8 +104,11 @@ const getThumbUrl = (url: string) => url;
 export default function AssetDetailsPage() {
   const params = useParams();
   const router = useRouter();
-  const assetId = params?.id as string;
-  const [mode, setMode] = useState<'view' | 'edit'>('view');
+  const searchParams = useSearchParams();
+  const rawAssetId = params?.id as string;
+  const isNew = rawAssetId === 'new';
+  const assetId = isNew ? undefined : rawAssetId;
+  const [mode, setMode] = useState<'view' | 'edit'>(isNew || searchParams.get('mode') === 'edit' ? 'edit' : 'view');
   
   const isOpen = true;
   const onClose = () => router.push('/assets');
@@ -791,7 +794,7 @@ export default function AssetDetailsPage() {
                                     formatter={(val: number) => [`฿${val.toLocaleString(undefined, {minimumFractionDigits: 0, maximumFractionDigits: 0})}`, 'Book Value']}
                                     labelFormatter={(label) => `Year ${label}`}
                                   />
-                                  <Line type="monotone" dataKey="value" stroke="#3b82f6" strokeWidth={3} dot={{ r: 3, fill: '#3b82f6', strokeWidth: 0 }} activeDot={{ r: 5 }} />
+                                  <Line type="monotone" dataKey="value" stroke="#3b82f6" strokeWidth={3} dot={{ r: 3, fill: '#3b82f6', strokeWidth: 0 }} activeDot={{ r: 5 }} isAnimationActive={false} />
                                 </LineChart>
                               </ResponsiveContainer>
                             ) : (
