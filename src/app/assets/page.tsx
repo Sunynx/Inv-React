@@ -1,5 +1,5 @@
 'use client';
-import { useState, useEffect, Suspense } from 'react';
+import { useState, useEffect, Suspense, useMemo } from 'react';
 import { useSearchParams, useRouter, usePathname } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
@@ -180,7 +180,7 @@ export default function AssetsPage() {
     }
   };
 
-  const filteredAssets = assets.filter(a => {
+  const filteredAssets = useMemo(() => assets.filter(a => {
     const lowerSearch = searchTerm.toLowerCase();
     const matchSearch = a.name?.toLowerCase().includes(lowerSearch) ||
       a.asset_code?.toLowerCase().includes(lowerSearch) ||
@@ -215,13 +215,13 @@ export default function AssetsPage() {
       return bTime - aTime;
     }
     return 0;
-  });
+  }), [assets, searchTerm, filterTab, filterDepartment, filterCategory, sortBy]);
 
   const countByStatus = (s: string) => assets.filter(a => a.status === s).length;
   const uniqueDepartments = Array.from(new Set(assets.map(a => a.departments?.name).filter(Boolean))) as string[];
   const uniqueCategories = Array.from(new Set(assets.map(a => a.categories?.name).filter(Boolean))) as string[];
 
-  const columns: ColumnDef<any>[] = [
+  const columns: ColumnDef<any>[] = useMemo(() => [
     {
       id: 'select',
       header: ({ table }) => (
@@ -323,7 +323,7 @@ export default function AssetsPage() {
         );
       }
     }
-  ];
+  ], [assets, setSelectedAssetId, setSheetMode, setIsSheetOpen, setDeleteConfirmId, deleteMutation, handleDelete]);
 
   return (
     <div className="space-y-6 print:space-y-0 print:m-0 print:p-0 animate-in fade-in duration-500">
