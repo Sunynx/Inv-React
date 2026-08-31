@@ -97,9 +97,20 @@ const InputField = ({ form, name, label, required = false, type = "text", ...pro
   );
 };
 
+// Convert a Supabase Storage URL to a resized thumbnail URL using Supabase Image Transform
+const getThumbUrl = (url: string, width = 400) => {
+  if (!url) return url;
+  const match = url.match(/\/storage\/v1\/object\/public\/(.+)$/);
+  if (!match) return url;
+  const path = match[1];
+  const base = url.split('/storage/v1/')[0];
+  return `${base}/storage/v1/render/image/public/${path}?width=${width}&quality=75&resize=cover`;
+};
+
 export default function AssetSheet({ isOpen, onClose, assetId, mode = 'edit', onEdit, onEditComplete }: { isOpen: boolean; onClose: () => void; assetId?: string; mode?: 'view' | 'edit'; onEdit?: () => void; onEditComplete?: () => void; }) {
   const [loading, setLoading] = useState(false);
   const [selectedUserName, setSelectedUserName] = useState<string | null>(null);
+  const [showTimeline, setShowTimeline] = useState(false);
   const sigCanvas = useRef<SignatureCanvas>(null);
   const [uploading, setUploading] = useState(false);
   const [selectedImageIdx, setSelectedImageIdx] = useState<number | null>(null);
@@ -601,10 +612,10 @@ export default function AssetSheet({ isOpen, onClose, assetId, mode = 'edit', on
                 {images.length > 0 && (
                   <div className="space-y-3">
                     <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Photos ({images.length})</h3>
-                    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4 pb-2">
+                     <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4 pb-2">
                       {images.map((img: string, i: number) => (
                         <div key={i} onClick={() => setSelectedImageIdx(i)} className="cursor-pointer block rounded-lg overflow-hidden border border-border shadow-sm hover:shadow-md transition-all aspect-[4/3] group relative">
-                          <img src={img} alt="" loading="lazy" decoding="async" className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105" />
+                          <img src={getThumbUrl(img)} alt="" loading="lazy" decoding="async" className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105" />
                           <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors flex items-center justify-center">
                             <span className="opacity-0 group-hover:opacity-100 text-white drop-shadow-md font-medium text-sm transition-opacity">View</span>
                           </div>
@@ -784,8 +795,17 @@ export default function AssetSheet({ isOpen, onClose, assetId, mode = 'edit', on
 
                 {assetId && (
                   <div className="space-y-4 pt-6 border-t border-border mt-8">
-                    <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">History & Timeline</h3>
-                    <AssetTimeline assetId={assetId} />
+                    <div className="flex items-center justify-between">
+                      <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">History &amp; Timeline</h3>
+                      <button
+                        type="button"
+                        onClick={() => setShowTimeline(v => !v)}
+                        className="text-xs text-blue-600 dark:text-blue-400 hover:underline"
+                      >
+                        {showTimeline ? 'ซ่อน' : 'แสดงประวัติ'}
+                      </button>
+                    </div>
+                    {showTimeline && <AssetTimeline assetId={assetId} />}
                   </div>
                 )}
               </>
