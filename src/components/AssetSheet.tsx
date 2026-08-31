@@ -141,12 +141,25 @@ export default function AssetSheet({ isOpen, onClose, assetId, mode = 'edit', on
     queryKey: ['asset', assetId],
     queryFn: async () => {
       if (!assetId) return null;
-      const { data, error } = await supabase.from('assets').select('*, asset_images(file_url), signatures(signature_url)').eq('id', assetId).single();
-      if (error) throw error;
-      return data;
+      // Run asset data, images, and signatures in parallel to avoid sequential waterfall
+      const [assetRes, imagesRes, sigRes] = await Promise.all([
+        supabase.from('assets').select(
+          'id, name, asset_code, status, serial_number, category_id, department_id, location, assigned_user, previous_user, user_position, brand, assigned_email, price, purchase_date, warranty_expiry, supplier, po_number, model, cpu, ram, storage, gpu, display, os, os_key, windows_version, office_version, office_license, ip_address, mac_address, nas_user, password, notes, thumbnail_url, reference_url, signer_name, signer_position'
+        ).eq('id', assetId).single(),
+        supabase.from('asset_images').select('file_url').eq('asset_id', assetId),
+        supabase.from('signatures').select('signature_url').eq('asset_id', assetId).maybeSingle(),
+      ]);
+      if (assetRes.error) throw assetRes.error;
+      return {
+        ...assetRes.data,
+        asset_images: imagesRes.data || [],
+        signatures: sigRes.data ? [sigRes.data] : [],
+      };
     },
-    enabled: isOpen && !!assetId
+    enabled: isOpen && !!assetId,
+    staleTime: 30000, // cache for 30s so re-opens don't re-fetch
   });
+
 
   useEffect(() => {
     if (isOpen) {

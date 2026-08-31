@@ -13,63 +13,52 @@ export default function UserHistoryModal({ isOpen, onClose, userName }: { isOpen
     queryFn: async () => {
       if (!userName) return { current: [], historical: [] };
 
-      // 1. Get current assets
-      const { data: currentAssets, error: err1 } = await supabase
-        .from('assets')
-        .select(`
-          id, name, asset_code, status, location, purchase_date,
-          categories(name), departments(name)
-        `)
-        .eq('assigned_user', userName)
-        .order('name');
-      
-      if (err1) throw err1;
+      // Fire all 3 queries in parallel instead of sequential awaits
+      const [currentRes, prevRes, transfersRes] = await Promise.all([
+        // 1. Current assets
+        supabase
+          .from('assets')
+          .select('id, name, asset_code, status, location, categories(name), departments(name)')
+          .eq('assigned_user', userName)
+          .order('name'),
 
-      // 2. Get assets where previous_user is this user
-      const { data: prevAssets, error: err2 } = await supabase
-        .from('assets')
-        .select(`
-          id, name, asset_code, status, location, purchase_date,
-          categories(name), departments(name)
-        `)
-        .eq('previous_user', userName);
+        // 2. Assets where this user is previous_user
+        supabase
+          .from('assets')
+          .select('id, name, asset_code, status, categories(name), departments(name)')
+          .eq('previous_user', userName),
 
-      if (err2) throw err2;
+        // 3. Transfers involving this user — fixed .or() syntax (no quotes around value)
+        supabase
+          .from('asset_transfers')
+          .select('asset_id, transfer_date, from_user, to_user, notes, assets(id, name, asset_code, status, categories(name))')
+          .or(`from_user.eq.${userName},to_user.eq.${userName}`)
+          .order('transfer_date', { ascending: false }),
+      ]);
 
-      // 3. Get transfers involving this user
-      const { data: transfers, error: err3 } = await supabase
-        .from('asset_transfers')
-        .select(`
-          asset_id, transfer_date, from_user, to_user, notes,
-          assets(id, name, asset_code, status, categories(name))
-        `)
-        .or(`from_user.eq."${userName}",to_user.eq."${userName}"`)
-        .order('transfer_date', { ascending: false });
+      if (currentRes.error) throw currentRes.error;
+      if (prevRes.error) throw prevRes.error;
 
-      if (err3) throw err3;
+      const currentAssets = currentRes.data || [];
+      const prevAssets = prevRes.data || [];
+      const transfers = transfersRes.data || [];
 
-      const currentIds = new Set(currentAssets?.map(a => a.id));
+      const currentIds = new Set(currentAssets.map(a => a.id));
       const historicalMap = new Map();
 
       // Add prevAssets
-      prevAssets?.forEach(a => {
+      prevAssets.forEach(a => {
         if (!currentIds.has(a.id)) {
-          historicalMap.set(a.id, {
-            asset: a,
-            events: []
-          });
+          historicalMap.set(a.id, { asset: a, events: [] });
         }
       });
 
       // Add transfers
-      transfers?.forEach(t => {
+      transfers.forEach(t => {
         const aId = t.asset_id;
         if (!currentIds.has(aId)) {
           if (!historicalMap.has(aId) && t.assets) {
-            historicalMap.set(aId, {
-              asset: t.assets,
-              events: []
-            });
+            historicalMap.set(aId, { asset: t.assets, events: [] });
           }
           if (historicalMap.has(aId)) {
             historicalMap.get(aId).events.push({
