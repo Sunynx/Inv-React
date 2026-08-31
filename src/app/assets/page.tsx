@@ -81,6 +81,7 @@ function HighlightHandler({
 }
 
 export default function AssetsPage() {
+  const router = useRouter();
   const queryClient = useQueryClient();
   const [searchTerm, setSearchTerm] = useState('');
   const [filterTab, setFilterTab] = useState('all');
@@ -474,9 +475,7 @@ export default function AssetsPage() {
             enableRowSelection={true}
             onRowSelectionChange={setSelectedRows}
             onRowClick={(row) => {
-              setSelectedAssetId(row.id);
-              setSheetMode('view');
-              setIsSheetOpen(true);
+              router.push(`/assets/${row.id}`);
             }}
             emptyState={
               <EmptyState
