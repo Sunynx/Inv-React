@@ -3,11 +3,11 @@ import { useState } from 'react';
 import { supabase } from '@/lib/supabase';
 import { useQuery } from '@tanstack/react-query';
 import { format } from 'date-fns';
-import { Monitor, Clock, User, ArrowRightLeft, Calendar, Shield, X, History } from 'lucide-react';
+import { Monitor, Clock, User, ArrowRightLeft, Calendar, Shield, X, History, ExternalLink } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
-export default function UserHistoryModal({ isOpen, onClose, userName }: { isOpen: boolean; onClose: () => void; userName?: string | null }) {
+export default function UserHistoryModal({ isOpen, onClose, userName, onAssetClick }: { isOpen: boolean; onClose: () => void; userName?: string | null; onAssetClick?: (assetId: string) => void }) {
   const { data, isLoading } = useQuery({
     queryKey: ['user_history', userName],
     queryFn: async () => {
@@ -126,10 +126,17 @@ export default function UserHistoryModal({ isOpen, onClose, userName }: { isOpen
                 ) : (
                   <div className="grid gap-4">
                     {data?.current.map((asset: any) => (
-                      <div key={asset.id} className="p-4 rounded-xl border border-border bg-card hover:border-blue-200 dark:hover:border-blue-800 transition-colors shadow-sm">
+                      <div
+                        key={asset.id}
+                        onClick={() => onAssetClick && onAssetClick(asset.id)}
+                        className={`p-4 rounded-xl border border-border bg-card transition-colors shadow-sm ${onAssetClick ? 'cursor-pointer hover:border-blue-300 dark:hover:border-blue-600 hover:shadow-md' : ''}`}
+                      >
                         <div className="flex justify-between items-start gap-4">
-                          <div>
-                            <h4 className="font-semibold text-foreground text-base">{asset.name}</h4>
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center justify-between gap-2">
+                              <h4 className="font-semibold text-foreground text-base truncate">{asset.name}</h4>
+                              {onAssetClick && <ExternalLink className="w-4 h-4 text-muted-foreground/50 shrink-0" />}
+                            </div>
                             <p className="text-sm text-muted-foreground font-mono mt-0.5">{asset.asset_code}</p>
                             
                             <div className="flex flex-wrap gap-x-4 gap-y-2 mt-3 text-xs text-muted-foreground">

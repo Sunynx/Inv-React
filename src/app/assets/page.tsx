@@ -500,6 +500,11 @@ export default function AssetsPage() {
         mode={sheetMode}
         onEdit={() => setSheetMode('edit')}
         onEditComplete={() => setSheetMode('view')}
+        onNavigateToAsset={(id) => {
+          setSelectedAssetId(id);
+          setSheetMode('view');
+          setIsSheetOpen(true);
+        }}
       />
 
       <ConfirmDialog

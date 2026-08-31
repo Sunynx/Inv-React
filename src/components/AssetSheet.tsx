@@ -100,7 +100,7 @@ const InputField = ({ form, name, label, required = false, type = "text", ...pro
 // Note: Supabase Image Transform ต้องการ Pro plan, ใช้ URL เดิมพร้อม lazy loading แทน
 const getThumbUrl = (url: string) => url;
 
-export default function AssetSheet({ isOpen, onClose, assetId, mode = 'edit', onEdit, onEditComplete }: { isOpen: boolean; onClose: () => void; assetId?: string; mode?: 'view' | 'edit'; onEdit?: () => void; onEditComplete?: () => void; }) {
+export default function AssetSheet({ isOpen, onClose, assetId, mode = 'edit', onEdit, onEditComplete, onNavigateToAsset }: { isOpen: boolean; onClose: () => void; assetId?: string; mode?: 'view' | 'edit'; onEdit?: () => void; onEditComplete?: () => void; onNavigateToAsset?: (assetId: string) => void; }) {
   const [loading, setLoading] = useState(false);
   const [selectedUserName, setSelectedUserName] = useState<string | null>(null);
   const [showTimeline, setShowTimeline] = useState(false);
@@ -831,7 +831,11 @@ export default function AssetSheet({ isOpen, onClose, assetId, mode = 'edit', on
         <UserHistoryModal 
           isOpen={selectedUserName !== null} 
           onClose={() => setSelectedUserName(null)} 
-          userName={selectedUserName} 
+          userName={selectedUserName}
+          onAssetClick={onNavigateToAsset ? (id) => {
+            setSelectedUserName(null);
+            onNavigateToAsset(id);
+          } : undefined}
         />
 
         {showSignDialog && (
