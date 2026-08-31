@@ -922,8 +922,6 @@ export default function AssetSheet({ isOpen, onClose, assetId, mode = 'edit', on
                   onClick={async () => {
                     if (!assetId || !assetData) return;
                     try {
-                      const fromStr = [assetData.location, assetData.assigned_user].filter(Boolean).join(' - ');
-                      const toStr = [transferToLocation, transferToUser].filter(Boolean).join(' - ');
                       // Update asset
                       await supabase.from('assets').update({
                         assigned_user: transferToUser || assetData.assigned_user,
@@ -931,16 +929,16 @@ export default function AssetSheet({ isOpen, onClose, assetId, mode = 'edit', on
                         location: transferToLocation || assetData.location,
                       }).eq('id', assetId);
                       // Log transfer
-                      await supabase.from('asset_transfers').insert([{
+                      const { error: transferError } = await supabase.from('asset_transfers').insert([{
                         asset_id: assetId,
-                        from_location: fromStr || 'Unknown',
-                        to_location: toStr || 'Unknown',
+                        from_location: assetData.location || 'Unknown',
+                        to_location: transferToLocation || assetData.location || 'Unknown',
                         from_user: assetData.assigned_user || null,
                         to_user: transferToUser || null,
                         transfer_date: new Date().toISOString().split('T')[0],
-                        status: 'เสร็จสมบูรณ์',
-                        reason: transferReason || 'โอนย้ายอุปกรณ์',
+                        notes: transferReason || 'โอนย้ายอุปกรณ์',
                       }]);
+                      if (transferError) throw transferError;
                       queryClient.invalidateQueries({ queryKey: ['asset', assetId] });
                       queryClient.invalidateQueries({ queryKey: ['asset_timeline', assetId] });
                       queryClient.invalidateQueries({ queryKey: ['assets'] });
