@@ -584,9 +584,6 @@ export default function AssetSheet({ isOpen, onClose, assetId, mode = 'edit', on
                   <Button
                     variant="outline" size="sm"
                     onClick={() => {
-                      setTransferToUser(formData.assigned_user || '');
-                      setTransferToLocation(formData.location || '');
-                      setTransferReason('');
                       setShowTransferDialog(true);
                     }}
                     className="gap-1.5 h-8 text-emerald-600 border-emerald-200 hover:bg-emerald-50 hover:text-emerald-700 flex-1 sm:flex-none justify-center"
