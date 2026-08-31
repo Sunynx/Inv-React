@@ -98,6 +98,7 @@ export function DataTable<TData, TValue>({
     getSortedRowModel: getSortedRowModel(),
     enableRowSelection,
     onPaginationChange: setPagination,
+    autoResetPageIndex: false,
     state: {
       sorting,
       rowSelection,
