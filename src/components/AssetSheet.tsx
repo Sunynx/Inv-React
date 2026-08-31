@@ -17,6 +17,8 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import AssetTimeline from './AssetTimeline';
+import UserHistoryModal from './UserHistoryModal';
+import AssetAssignmentHistory from './AssetAssignmentHistory';
 import { generateAssetCodeStr } from '@/lib/utils';
 import { logAudit, formatAuditDetails } from '@/lib/auditLog';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer } from 'recharts';
@@ -30,12 +32,18 @@ const statusConfig: Record<string, { icon: any; className: string }> = {
   'จำหน่าย': { icon: Ban, className: 'text-gray-500 bg-gray-50 border-gray-200/50' },
 };
 
-const DetailItem = ({ label, value }: { label: string, value: any }) => {
+const DetailItem = ({ label, value, onClick }: { label: string, value: any, onClick?: () => void }) => {
   if (!value || value === ' / ' || value === ' / -' || value === '- / -') return null;
   return (
     <div>
       <p className="text-xs text-muted-foreground mb-0.5">{label}</p>
-      <p className="text-sm font-medium text-foreground break-all">{value}</p>
+      {onClick ? (
+        <button type="button" onClick={onClick} className="text-sm font-medium text-blue-600 dark:text-blue-400 hover:underline text-left break-all">
+          {value}
+        </button>
+      ) : (
+        <p className="text-sm font-medium text-foreground break-all">{value}</p>
+      )}
     </div>
   )
 }
@@ -91,6 +99,7 @@ const InputField = ({ form, name, label, required = false, type = "text", ...pro
 
 export default function AssetSheet({ isOpen, onClose, assetId, mode = 'edit', onEdit, onEditComplete }: { isOpen: boolean; onClose: () => void; assetId?: string; mode?: 'view' | 'edit'; onEdit?: () => void; onEditComplete?: () => void; }) {
   const [loading, setLoading] = useState(false);
+  const [selectedUserName, setSelectedUserName] = useState<string | null>(null);
   const sigCanvas = useRef<SignatureCanvas>(null);
   const [uploading, setUploading] = useState(false);
   const [selectedImageIdx, setSelectedImageIdx] = useState<number | null>(null);
@@ -624,10 +633,10 @@ export default function AssetSheet({ isOpen, onClose, assetId, mode = 'edit', on
                     <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider border-b pb-1">Assignment</h3>
                     <div className="space-y-3">
                       <DetailItem label="Location / Room" value={formData.location} />
-                      <DetailItem label="Assigned User" value={formData.assigned_user} />
+                      <DetailItem label="Assigned User" value={formData.assigned_user} onClick={() => formData.assigned_user && setSelectedUserName(formData.assigned_user)} />
                       <DetailItem label="Email" value={formData.assigned_email} />
                       <DetailItem label="Position" value={formData.user_position} />
-                      <DetailItem label="Previous User" value={formData.previous_user} />
+                      <DetailItem label="Previous User" value={formData.previous_user} onClick={() => formData.previous_user && setSelectedUserName(formData.previous_user)} />
                       <DetailItem label="Handover Signer" value={formData.assigned_user} />
                       <DetailItem label="Signer Position" value={formData.user_position} />
                       {signatureUrl ? (
@@ -658,6 +667,14 @@ export default function AssetSheet({ isOpen, onClose, assetId, mode = 'edit', on
                       <DetailItem label="Password" value={formData.password} />
                     </div>
                   </div>
+
+                  {assetId && (
+                    <div className="space-y-4">
+                      <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider border-b pb-1">Assignment History</h3>
+                      <AssetAssignmentHistory assetId={assetId} onUserClick={(user) => setSelectedUserName(user)} />
+                    </div>
+                  )}
+
 
                   {attachments.length > 0 && (
                     <div className="space-y-4">
@@ -784,6 +801,12 @@ export default function AssetSheet({ isOpen, onClose, assetId, mode = 'edit', on
             <img src={images[selectedImageIdx]} alt="Full Size" className="max-w-full max-h-[90vh] object-contain rounded-md shadow-2xl animate-in zoom-in-95 duration-200" onClick={(e) => e.stopPropagation()} />
           </div>
         )}
+
+        <UserHistoryModal 
+          isOpen={selectedUserName !== null} 
+          onClose={() => setSelectedUserName(null)} 
+          userName={selectedUserName} 
+        />
 
         {showSignDialog && (
           <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-in fade-in duration-200" onClick={() => setShowSignDialog(false)}>
