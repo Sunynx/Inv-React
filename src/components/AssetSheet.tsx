@@ -110,6 +110,7 @@ export default function AssetSheet({ isOpen, onClose, assetId, mode = 'edit', on
   const sigCanvas = useRef<SignatureCanvas>(null);
   const [uploading, setUploading] = useState(false);
   const [selectedImageIdx, setSelectedImageIdx] = useState<number | null>(null);
+  const [isAnimationDone, setIsAnimationDone] = useState(false);
   const queryClient = useQueryClient();
 
   const [images, setImages] = useState<string[]>([]);
@@ -478,7 +479,16 @@ export default function AssetSheet({ isOpen, onClose, assetId, mode = 'edit', on
   const watchCatId = form.watch('category_id');
 
   useEffect(() => {
-    if (isOpen && !assetId) {
+    if (isOpen) {
+      const t = setTimeout(() => setIsAnimationDone(true), 300);
+      return () => clearTimeout(t);
+    } else {
+      setIsAnimationDone(false);
+    }
+  }, [isOpen]);
+
+  useEffect(() => {
+    if (isOpen && assetId) {
       const saveDraft = () => {
         const draft = {
           formValues: form.getValues(),
@@ -619,13 +629,15 @@ export default function AssetSheet({ isOpen, onClose, assetId, mode = 'edit', on
                   <div className="space-y-3">
                     <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Photos ({images.length})</h3>
                      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4 pb-2">
-                      {images.map((img: string, i: number) => (
-                        <div key={i} onClick={() => setSelectedImageIdx(i)} className="cursor-pointer block rounded-lg overflow-hidden border border-border shadow-sm hover:shadow-md transition-all aspect-[4/3] group relative">
+                      {isAnimationDone ? images.map((img: string, i: number) => (
+                        <div key={i} onClick={() => setSelectedImageIdx(i)} className="cursor-pointer block rounded-lg overflow-hidden border border-border shadow-sm hover:shadow-md transition-all aspect-[4/3] group relative bg-muted">
                           <img src={getThumbUrl(img)} alt="" loading="lazy" decoding="async" className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105" />
                           <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors flex items-center justify-center">
                             <span className="opacity-0 group-hover:opacity-100 text-white drop-shadow-md font-medium text-sm transition-opacity">View</span>
                           </div>
                         </div>
+                      )) : images.map((_, i: number) => (
+                        <div key={i} className="rounded-lg aspect-[4/3] bg-muted animate-pulse border border-border"></div>
                       ))}
                     </div>
                   </div>
@@ -763,19 +775,25 @@ export default function AssetSheet({ isOpen, onClose, assetId, mode = 'edit', on
                             <span className="text-lg font-bold text-primary">฿{calculateDepreciation(formData.price, formData.purchase_date)?.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</span>
                           </div>
                           <div className="h-[120px] w-full">
-                            <ResponsiveContainer width="100%" height="100%">
-                              <LineChart data={generateDepreciationData(formData.price, formData.purchase_date)} margin={{ top: 5, right: 10, left: -20, bottom: 0 }}>
-                                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="var(--border)" opacity={0.5} />
-                                <XAxis dataKey="year" axisLine={false} tickLine={false} tick={{ fontSize: 10, fill: 'var(--muted-foreground)' }} dy={5} />
-                                <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 10, fill: 'var(--muted-foreground)' }} tickFormatter={(val) => `฿${(val/1000)}k`} />
-                                <RechartsTooltip 
-                                  contentStyle={{ borderRadius: '8px', border: '1px solid var(--border)', backgroundColor: 'var(--card)', color: 'var(--card-foreground)', fontSize: '12px' }} 
-                                  formatter={(val: number) => [`฿${val.toLocaleString(undefined, {minimumFractionDigits: 0, maximumFractionDigits: 0})}`, 'Book Value']}
-                                  labelFormatter={(label) => `Year ${label}`}
-                                />
-                                <Line type="monotone" dataKey="value" stroke="#3b82f6" strokeWidth={3} dot={{ r: 3, fill: '#3b82f6', strokeWidth: 0 }} activeDot={{ r: 5 }} />
-                              </LineChart>
-                            </ResponsiveContainer>
+                            {isAnimationDone ? (
+                              <ResponsiveContainer width="100%" height="100%">
+                                <LineChart data={generateDepreciationData(formData.price, formData.purchase_date)} margin={{ top: 5, right: 10, left: -20, bottom: 0 }}>
+                                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="var(--border)" opacity={0.5} />
+                                  <XAxis dataKey="year" axisLine={false} tickLine={false} tick={{ fontSize: 10, fill: 'var(--muted-foreground)' }} dy={5} />
+                                  <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 10, fill: 'var(--muted-foreground)' }} tickFormatter={(val) => `฿${(val/1000)}k`} />
+                                  <RechartsTooltip 
+                                    contentStyle={{ borderRadius: '8px', border: '1px solid var(--border)', backgroundColor: 'var(--card)', color: 'var(--card-foreground)', fontSize: '12px' }} 
+                                    formatter={(val: number) => [`฿${val.toLocaleString(undefined, {minimumFractionDigits: 0, maximumFractionDigits: 0})}`, 'Book Value']}
+                                    labelFormatter={(label) => `Year ${label}`}
+                                  />
+                                  <Line type="monotone" dataKey="value" stroke="#3b82f6" strokeWidth={3} dot={{ r: 3, fill: '#3b82f6', strokeWidth: 0 }} activeDot={{ r: 5 }} />
+                                </LineChart>
+                              </ResponsiveContainer>
+                            ) : (
+                              <div className="w-full h-full bg-muted/20 animate-pulse rounded-md flex items-center justify-center">
+                                <span className="text-xs text-muted-foreground opacity-50">Loading chart...</span>
+                              </div>
+                            )}
                           </div>
                           <div className="text-[10px] text-center text-muted-foreground mt-2">5-Year Straight Line Depreciation</div>
                         </div>
