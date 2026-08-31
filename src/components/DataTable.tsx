@@ -86,6 +86,7 @@ export function DataTable<TData, TValue>({
 }: DataTableProps<TData, TValue>) {
   const [sorting, setSorting] = useState<SortingState>([]);
   const [rowSelection, setRowSelection] = useState<RowSelectionState>({});
+  const [pagination, setPagination] = useState({ pageIndex: 0, pageSize: 15 });
 
   const table = useReactTable({
     data,
@@ -96,13 +97,12 @@ export function DataTable<TData, TValue>({
     onRowSelectionChange: setRowSelection,
     getSortedRowModel: getSortedRowModel(),
     enableRowSelection,
+    onPaginationChange: setPagination,
     state: {
       sorting,
       rowSelection,
+      pagination,
     },
-    initialState: {
-      pagination: { pageSize: 15 },
-    }
   });
 
   useEffect(() => {
@@ -111,6 +111,13 @@ export function DataTable<TData, TValue>({
       onRowSelectionChange(selectedRows);
     }
   }, [rowSelection, table, onRowSelectionChange]);
+
+  // Reset to page 0 only when the number of rows changes (e.g. filter/search applied)
+  // This does NOT fire when parent re-renders from opening AssetSheet
+  const dataLength = data.length;
+  useEffect(() => {
+    setPagination(prev => ({ ...prev, pageIndex: 0 }));
+  }, [dataLength]);
 
   return (
     <div className="space-y-4">
