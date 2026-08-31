@@ -19,6 +19,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import AssetTimeline from './AssetTimeline';
 import UserHistoryModal from './UserHistoryModal';
 import AssetAssignmentHistory from './AssetAssignmentHistory';
+import TransferModal from './TransferModal';
 import { generateAssetCodeStr } from '@/lib/utils';
 import { logAudit, formatAuditDetails } from '@/lib/auditLog';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer } from 'recharts';
@@ -105,9 +106,7 @@ export default function AssetSheet({ isOpen, onClose, assetId, mode = 'edit', on
   const [selectedUserName, setSelectedUserName] = useState<string | null>(null);
   const [showTimeline, setShowTimeline] = useState(false);
   const [showTransferDialog, setShowTransferDialog] = useState(false);
-  const [transferToUser, setTransferToUser] = useState('');
-  const [transferToLocation, setTransferToLocation] = useState('');
-  const [transferReason, setTransferReason] = useState('');
+
   const sigCanvas = useRef<SignatureCanvas>(null);
   const [uploading, setUploading] = useState(false);
   const [selectedImageIdx, setSelectedImageIdx] = useState<number | null>(null);
@@ -855,108 +854,11 @@ export default function AssetSheet({ isOpen, onClose, assetId, mode = 'edit', on
           } : undefined}
         />
 
-        {/* Transfer Dialog */}
-        {showTransferDialog && assetId && (
-          <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-in fade-in duration-200" onClick={() => setShowTransferDialog(false)}>
-            <div className="bg-background rounded-2xl shadow-2xl border border-border w-full max-w-md animate-in zoom-in-95 duration-200" onClick={(e) => e.stopPropagation()}>
-              <div className="p-5 border-b border-border flex items-center gap-3">
-                <div className="h-9 w-9 rounded-full bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600 flex items-center justify-center shrink-0">
-                  <ArrowRightLeft size={18} />
-                </div>
-                <div>
-                  <h3 className="text-base font-bold text-foreground">โอนย้ายอุปกรณ์</h3>
-                  <p className="text-xs text-muted-foreground mt-0.5">{assetData?.name}</p>
-                </div>
-                <button onClick={() => setShowTransferDialog(false)} className="ml-auto text-muted-foreground hover:text-foreground transition-colors">
-                  <X size={18} />
-                </button>
-              </div>
-
-              <div className="p-5 space-y-4">
-                {/* Current → New */}
-                <div className="grid grid-cols-2 gap-3 p-3 bg-muted/30 rounded-xl border border-border/50">
-                  <div>
-                    <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider mb-1">ผู้ใช้ปัจจุบัน</p>
-                    <p className="text-sm font-medium text-foreground">{assetData?.assigned_user || '-'}</p>
-                  </div>
-                  <div>
-                    <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider mb-1">สถานที่ปัจจุบัน</p>
-                    <p className="text-sm font-medium text-foreground">{assetData?.location || '-'}</p>
-                  </div>
-                </div>
-
-                <div className="space-y-1.5">
-                  <Label className="text-sm font-semibold">ผู้รับมอบใหม่</Label>
-                  <Input
-                    placeholder="ชื่อพนักงานที่รับมอบ"
-                    value={transferToUser}
-                    onChange={(e) => setTransferToUser(e.target.value)}
-                    className="h-9"
-                  />
-                </div>
-                <div className="space-y-1.5">
-                  <Label className="text-sm font-semibold">สถานที่ใหม่</Label>
-                  <Input
-                    placeholder="ห้อง / อาคาร / สถานที่"
-                    value={transferToLocation}
-                    onChange={(e) => setTransferToLocation(e.target.value)}
-                    className="h-9"
-                  />
-                </div>
-                <div className="space-y-1.5">
-                  <Label className="text-sm font-semibold">หมายเหตุ <span className="text-muted-foreground font-normal">(ไม่จำเป็น)</span></Label>
-                  <Input
-                    placeholder="เหตุผลการโอนย้าย"
-                    value={transferReason}
-                    onChange={(e) => setTransferReason(e.target.value)}
-                    className="h-9"
-                  />
-                </div>
-              </div>
-
-              <div className="p-4 border-t border-border flex gap-3">
-                <Button variant="outline" className="flex-1" onClick={() => setShowTransferDialog(false)}>ยกเลิก</Button>
-                <Button
-                  className="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white gap-2"
-                  disabled={!transferToUser && !transferToLocation}
-                  onClick={async () => {
-                    if (!assetId || !assetData) return;
-                    try {
-                      // Update asset
-                      await supabase.from('assets').update({
-                        assigned_user: transferToUser || assetData.assigned_user,
-                        previous_user: assetData.assigned_user || null,
-                        location: transferToLocation || assetData.location,
-                      }).eq('id', assetId);
-                      // Log transfer
-                      const { error: transferError } = await supabase.from('asset_transfers').insert([{
-                        asset_id: assetId,
-                        from_location: assetData.location || 'Unknown',
-                        to_location: transferToLocation || assetData.location || 'Unknown',
-                        from_user: assetData.assigned_user || null,
-                        to_user: transferToUser || null,
-                        transfer_date: new Date().toISOString().split('T')[0],
-                        notes: transferReason || 'โอนย้ายอุปกรณ์',
-                      }]);
-                      if (transferError) throw transferError;
-                      queryClient.invalidateQueries({ queryKey: ['asset', assetId] });
-                      queryClient.invalidateQueries({ queryKey: ['asset_timeline', assetId] });
-                      queryClient.invalidateQueries({ queryKey: ['assets'] });
-                      queryClient.invalidateQueries({ queryKey: ['asset_assignment_history', assetId] });
-                      toast.success('โอนย้ายสำเร็จ');
-                      setShowTransferDialog(false);
-                    } catch (err: any) {
-                      toast.error('Error: ' + err.message);
-                    }
-                  }}
-                >
-                  <ArrowRightLeft size={14} />
-                  ยืนยันโอนย้าย
-                </Button>
-              </div>
-            </div>
-          </div>
-        )}
+        <TransferModal 
+          isOpen={showTransferDialog} 
+          onClose={() => setShowTransferDialog(false)} 
+          defaultAssetId={assetId || undefined} 
+        />
 
         {showSignDialog && (
           <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-in fade-in duration-200" onClick={() => setShowSignDialog(false)}>

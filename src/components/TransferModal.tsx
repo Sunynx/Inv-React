@@ -14,7 +14,7 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { Check, ChevronsUpDown } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
-export default function TransferModal({ isOpen, onClose, recordId }: { isOpen: boolean; onClose: () => void; recordId?: string }) {
+export default function TransferModal({ isOpen, onClose, recordId, defaultAssetId }: { isOpen: boolean; onClose: () => void; recordId?: string; defaultAssetId?: string; }) {
   const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState<any>({});
   const [assetComboOpen, setAssetComboOpen] = useState(false);
@@ -55,14 +55,27 @@ export default function TransferModal({ isOpen, onClose, recordId }: { isOpen: b
       if (recordId && recordData) {
         setFormData(recordData);
       } else if (!recordId) {
-        setFormData({ transfer_date: new Date().toISOString().split('T')[0] });
+        let initialData: any = { transfer_date: new Date().toISOString().split('T')[0] };
+        if (defaultAssetId && assets.length > 0) {
+          const a = assets.find((x: any) => x.id === defaultAssetId);
+          if (a) {
+            initialData = {
+              ...initialData,
+              asset_id: defaultAssetId,
+              from_user: a.assigned_user || '',
+              from_location: a.location || '',
+              from_department_id: a.department_id || null,
+            };
+          }
+        }
+        setFormData(initialData);
         setTimeout(() => sigCanvas.current?.clear(), 50);
       }
     } else {
       setFormData({});
       setTimeout(() => sigCanvas.current?.clear(), 50);
     }
-  }, [isOpen, recordId, recordData]);
+  }, [isOpen, recordId, recordData, defaultAssetId, assets]);
 
   const saveMutation = useMutation({
     mutationFn: async (payload: any) => {
@@ -115,6 +128,7 @@ export default function TransferModal({ isOpen, onClose, recordId }: { isOpen: b
       queryClient.invalidateQueries({ queryKey: ['assets'] });
       queryClient.invalidateQueries({ queryKey: ['asset'] });
       queryClient.invalidateQueries({ queryKey: ['asset_timeline'] });
+      queryClient.invalidateQueries({ queryKey: ['asset_assignment_history'] });
       onClose();
     },
     onError: (err: any) => toast.error('Error saving transfer: ' + err.message)
@@ -178,7 +192,7 @@ export default function TransferModal({ isOpen, onClose, recordId }: { isOpen: b
             <div className="space-y-2 flex flex-col">
               <Label>Asset (อุปกรณ์)</Label>
               <Popover open={assetComboOpen} onOpenChange={setAssetComboOpen}>
-                <PopoverTrigger className="inline-flex h-9 px-3 w-full items-center justify-between whitespace-nowrap rounded-md border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-sm font-normal shadow-sm ring-offset-background transition-colors hover:bg-slate-100 hover:text-slate-900 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50">
+                <PopoverTrigger disabled={!!defaultAssetId} className="inline-flex h-9 px-3 w-full items-center justify-between whitespace-nowrap rounded-md border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-sm font-normal shadow-sm ring-offset-background transition-colors hover:bg-slate-100 hover:text-slate-900 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50">
                   {formData.asset_id
                     ? `[${assets.find((a:any) => a.id === formData.asset_id)?.asset_code}] ${assets.find((a:any) => a.id === formData.asset_id)?.name}`
                     : "Select an Asset..."}
