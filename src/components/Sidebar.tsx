@@ -94,7 +94,7 @@ const SidebarContent = ({ pathname, setOpen }: { pathname: string, setOpen: (ope
                         <Icon size={18} strokeWidth={isActive ? 2.5 : 2} className={cn("transition-transform duration-200", isActive ? "scale-110" : "group-hover:scale-110")} />
                         <span>{link.name}</span>
                       </div>
-                      {isActive && <div className="w-1.5 h-1.5 rounded-full bg-blue-400 shadow-[0_0_8px_rgba(96,165,250,0.8)]" />}
+
                     </Link>
                   </li>
                 );
