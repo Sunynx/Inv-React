@@ -35,27 +35,6 @@ export default function RootLayout({
   return (
     <html lang="en" className={cn("font-sans", geist.variable)} suppressHydrationWarning>
       <head>
-        <script
-          dangerouslySetInnerHTML={{
-            __html: `
-              // Suppress Next.js/Vercel web-vitals "startTime" error
-              window.addEventListener('error', function(e) {
-                if (e && e.message && e.message.indexOf('startTime') !== -1) {
-                  e.stopImmediatePropagation();
-                  e.preventDefault();
-                  return false;
-                }
-              }, true);
-              window.addEventListener('unhandledrejection', function(e) {
-                if (e && e.reason && String(e.reason).indexOf('startTime') !== -1) {
-                  e.stopImmediatePropagation();
-                  e.preventDefault();
-                  return false;
-                }
-              }, true);
-            `,
-          }}
-        />
       </head>
       <body suppressHydrationWarning className={`${inter.className} bg-background text-foreground transition-colors duration-300`}>
         <Providers>
