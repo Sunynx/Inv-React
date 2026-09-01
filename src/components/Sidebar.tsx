@@ -1,6 +1,6 @@
 'use client';
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import { useState } from 'react';
 import { 
   LayoutDashboard, Box, QrCode, ScanLine, Wrench, Shield, 
@@ -60,7 +60,7 @@ const menuGroups = [
 }
 ];
 
-const SidebarContent = ({ pathname, setOpen }: { pathname: string, setOpen: (open: boolean) => void }) => (
+const SidebarContent = ({ pathname, setOpen, router }: { pathname: string, setOpen: (open: boolean) => void, router: any }) => (
     <div className="flex flex-col h-full bg-[#1e345d] text-white/90">
       {/* Brand Header */}
       <div className="h-24 flex items-center justify-center border-b border-white/10 shrink-0">
@@ -80,9 +80,20 @@ const SidebarContent = ({ pathname, setOpen }: { pathname: string, setOpen: (ope
                 const isActive = pathname === link.href;
                 return (
                   <li key={link.href}>
-                    <Link
+                    <a
                       href={link.href}
-                      onClick={() => setOpen(false)}
+                      onClick={(e) => {
+                        e.preventDefault();
+                        setOpen(false);
+                        router.push(link.href);
+                        
+                        // Failsafe: if Next.js router freezes, force hard navigation
+                        setTimeout(() => {
+                          if (window.location.pathname !== link.href) {
+                            window.location.href = link.href;
+                          }
+                        }, 400);
+                      }}
                       className={cn(
                         "group flex items-center justify-between px-3 py-2 rounded-lg text-sm font-medium transition-all duration-200",
                         isActive 
@@ -95,7 +106,7 @@ const SidebarContent = ({ pathname, setOpen }: { pathname: string, setOpen: (ope
                         <span>{link.name}</span>
                       </div>
 
-                    </Link>
+                    </a>
                   </li>
                 );
               })}
@@ -120,6 +131,7 @@ const SidebarContent = ({ pathname, setOpen }: { pathname: string, setOpen: (ope
 
 export default function Sidebar() {
   const pathname = usePathname();
+  const router = useRouter();
   const [open, setOpen] = useState(false);
 
 
@@ -127,7 +139,7 @@ export default function Sidebar() {
     <>
       {/* Desktop Sidebar */}
       <div className="hidden md:flex w-64 bg-[#1e345d] border-r border-[#1e345d] min-h-screen flex-col fixed inset-y-0 left-0 z-40 print:hidden">
-        <SidebarContent pathname={pathname} setOpen={setOpen} />
+        <SidebarContent pathname={pathname} setOpen={setOpen} router={router} />
       </div>
 
       {/* Mobile Header */}
@@ -137,7 +149,7 @@ export default function Sidebar() {
             <Menu size={24} />
           </SheetTrigger>
           <SheetContent side="left" className="p-0 w-64 border-none bg-transparent">
-            <SidebarContent pathname={pathname} setOpen={setOpen} />
+            <SidebarContent pathname={pathname} setOpen={setOpen} router={router} />
           </SheetContent>
         </Sheet>
         

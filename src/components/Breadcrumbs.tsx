@@ -1,6 +1,5 @@
 'use client';
-import { usePathname } from 'next/navigation';
-import Link from 'next/link';
+import { usePathname, useRouter } from 'next/navigation';
 import { ChevronRight, Home } from 'lucide-react';
 
 const routeNames: Record<string, string> = {
@@ -25,6 +24,7 @@ const routeNames: Record<string, string> = {
 
 export default function Breadcrumbs() {
   const pathname = usePathname();
+  const router = useRouter();
   const segments = pathname.split('/').filter(Boolean);
 
   if (segments.length === 0) {
@@ -38,9 +38,17 @@ export default function Breadcrumbs() {
 
   return (
     <nav className="flex items-center gap-1.5 text-sm">
-      <Link href="/" className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 transition-colors">
+      <a 
+        href="/" 
+        onClick={(e) => {
+          e.preventDefault();
+          router.push('/');
+          setTimeout(() => { if (window.location.pathname !== '/') window.location.href = '/'; }, 400);
+        }}
+        className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 transition-colors"
+      >
         <Home size={14} />
-      </Link>
+      </a>
       {segments.map((segment, idx) => {
         const href = '/' + segments.slice(0, idx + 1).join('/');
         const isLast = idx === segments.length - 1;
@@ -51,9 +59,17 @@ export default function Breadcrumbs() {
             {isLast ? (
               <span className="font-semibold text-slate-700 dark:text-slate-200">{name}</span>
             ) : (
-              <Link href={href} className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 transition-colors font-medium">
+              <a 
+                href={href} 
+                onClick={(e) => {
+                  e.preventDefault();
+                  router.push(href);
+                  setTimeout(() => { if (window.location.pathname !== href) window.location.href = href; }, 400);
+                }}
+                className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 transition-colors font-medium"
+              >
                 {name}
-              </Link>
+              </a>
             )}
           </span>
         );
