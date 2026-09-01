@@ -111,7 +111,7 @@ export default function AssetDetailsPage() {
   const [mode, setMode] = useState<'view' | 'edit'>(isNew || searchParams.get('mode') === 'edit' ? 'edit' : 'view');
   
   const isOpen = true;
-  const onClose = () => router.push('/assets');
+  const onClose = () => router.back();
   const onEdit = () => setMode('edit');
   const onEditComplete = () => setMode('view');
   const onNavigateToAsset = (newId: string) => router.push(`/assets/${newId}`);
@@ -582,7 +582,7 @@ export default function AssetDetailsPage() {
       <div className="min-h-screen bg-background text-foreground flex flex-col">
         {/* Header with Back Button */}
         <div className="sticky top-0 z-10 bg-background/80 backdrop-blur-md border-b border-border px-4 py-3 sm:px-6 lg:px-8 flex items-center justify-between">
-          <Button variant="ghost" size="sm" onClick={() => router.push('/assets')} className="gap-2 text-muted-foreground hover:text-foreground">
+          <Button variant="ghost" size="sm" onClick={() => router.back()} className="gap-2 text-muted-foreground hover:text-foreground">
             <ArrowLeft size={16} />
             กลับไปหน้ารวมอุปกรณ์
           </Button>
