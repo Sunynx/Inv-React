@@ -11,7 +11,6 @@ import Breadcrumbs from '@/components/Breadcrumbs';
 import { Toaster } from 'react-hot-toast';
 import { cn } from "@/lib/utils";
 import { Analytics } from "@vercel/analytics/next";
-import Script from "next/script";
 
 const geist = Geist({subsets:['latin'],variable:'--font-sans'});
 
@@ -36,6 +35,32 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en" className={cn("font-sans", geist.variable)} suppressHydrationWarning>
+      <head>
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `
+              // Patch PerformanceObserver to prevent web-vitals "startTime" crash
+              (function() {
+                var Orig = window.PerformanceObserver;
+                if (!Orig) return;
+                window.PerformanceObserver = function(cb) {
+                  return new Orig(function(list, obs) {
+                    var entries = list.getEntries().map(function(e) {
+                      if (typeof e.startTime === 'undefined') {
+                        return Object.assign({}, e.toJSON ? e.toJSON() : e, { startTime: 0 });
+                      }
+                      return e;
+                    });
+                    cb({ getEntries: function() { return entries; } }, obs);
+                  });
+                };
+                window.PerformanceObserver.supportedEntryTypes = Orig.supportedEntryTypes;
+                window.PerformanceObserver.prototype = Orig.prototype;
+              })();
+            `,
+          }}
+        />
+      </head>
       <body suppressHydrationWarning className={`${inter.className} bg-background text-foreground transition-colors duration-300`}>
         <Providers>
           <Toaster position="top-right" />
