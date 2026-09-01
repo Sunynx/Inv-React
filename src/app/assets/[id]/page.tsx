@@ -1,5 +1,5 @@
 'use client';
-import { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { supabase } from '@/lib/supabase';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import toast from 'react-hot-toast';
@@ -102,6 +102,14 @@ const InputField = ({ form, name, label, required = false, type = "text", ...pro
 const getThumbUrl = (url: string) => url;
 
 export default function AssetDetailsPage() {
+  return (
+    <React.Suspense fallback={<div className="min-h-screen flex items-center justify-center p-12 text-muted-foreground">Loading asset details...</div>}>
+      <AssetDetailsContent />
+    </React.Suspense>
+  );
+}
+
+function AssetDetailsContent() {
   const params = useParams();
   const router = useRouter();
   const searchParams = useSearchParams();
