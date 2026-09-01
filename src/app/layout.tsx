@@ -59,17 +59,7 @@ export default function RootLayout({
           </div>
           <AIAssistant />
         </Providers>
-        <Script id="suppress-analytics-error" strategy="beforeInteractive">
-          {`
-            window.addEventListener('error', function(e) {
-              if (e.message && (e.message.includes("reading 'startTime'") || e.message.includes("reportAllChanges"))) {
-                e.stopImmediatePropagation();
-                e.preventDefault();
-              }
-            });
-          `}
-        </Script>
-        <Analytics />
+        {process.env.NODE_ENV === 'production' && <Analytics />}
       </body>
     </html>
   );
