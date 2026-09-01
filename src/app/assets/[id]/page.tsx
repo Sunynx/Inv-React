@@ -118,7 +118,6 @@ export default function AssetDetailsPage() {
 
   const [loading, setLoading] = useState(false);
   const [selectedUserName, setSelectedUserName] = useState<string | null>(null);
-  const [showTimeline, setShowTimeline] = useState(false);
   const [showTransferDialog, setShowTransferDialog] = useState(false);
 
   const sigCanvas = useRef<SignatureCanvas>(null);
@@ -827,17 +826,8 @@ export default function AssetDetailsPage() {
 
                 {assetId && (
                   <div className="space-y-4 pt-6 border-t border-border mt-8">
-                    <div className="flex items-center justify-between">
-                      <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">History &amp; Timeline</h3>
-                      <button
-                        type="button"
-                        onClick={() => setShowTimeline(v => !v)}
-                        className="text-xs text-blue-600 dark:text-blue-400 hover:underline"
-                      >
-                        {showTimeline ? 'ซ่อน' : 'แสดงประวัติ'}
-                      </button>
-                    </div>
-                    {showTimeline && <AssetTimeline assetId={assetId} />}
+                    <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">History &amp; Timeline</h3>
+                    <AssetTimeline assetId={assetId} />
                   </div>
                 )}
               </>
