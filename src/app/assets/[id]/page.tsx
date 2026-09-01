@@ -643,7 +643,7 @@ export default function AssetDetailsPage() {
                      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4 pb-2">
                       {isAnimationDone ? images.map((img: string, i: number) => (
                         <div key={i} onClick={() => setSelectedImageIdx(i)} className="cursor-pointer block rounded-lg overflow-hidden border border-border shadow-sm hover:shadow-md transition-all aspect-[4/3] group relative bg-muted">
-                          <img src={getThumbUrl(img)} alt="" loading="lazy" decoding="async" className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105" />
+                          <img src={getThumbUrl(img)} alt="" decoding="async" className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105" />
                           <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors flex items-center justify-center">
                             <span className="opacity-0 group-hover:opacity-100 text-white drop-shadow-md font-medium text-sm transition-opacity">View</span>
                           </div>

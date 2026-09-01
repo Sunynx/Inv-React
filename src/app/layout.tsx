@@ -11,6 +11,7 @@ import Breadcrumbs from '@/components/Breadcrumbs';
 import { Toaster } from 'react-hot-toast';
 import { cn } from "@/lib/utils";
 import { Analytics } from "@vercel/analytics/next";
+import Script from "next/script";
 
 const geist = Geist({subsets:['latin'],variable:'--font-sans'});
 
@@ -58,6 +59,16 @@ export default function RootLayout({
           </div>
           <AIAssistant />
         </Providers>
+        <Script id="suppress-analytics-error" strategy="beforeInteractive">
+          {`
+            window.addEventListener('error', function(e) {
+              if (e.message && (e.message.includes("reading 'startTime'") || e.message.includes("reportAllChanges"))) {
+                e.stopImmediatePropagation();
+                e.preventDefault();
+              }
+            });
+          `}
+        </Script>
         <Analytics />
       </body>
     </html>

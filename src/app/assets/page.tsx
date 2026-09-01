@@ -250,7 +250,7 @@ export default function AssetsPage() {
           <div className="flex items-center gap-3">
             <div className="h-9 w-9 rounded-md bg-muted border border-border overflow-hidden shrink-0">
               {asset.thumbnail_url ? (
-                <img src={asset.thumbnail_url} alt="" className="h-full w-full object-cover" />
+                <img src={asset.thumbnail_url} alt="" className="h-full w-full object-cover" loading="eager" />
               ) : (
                 <div className="h-full w-full flex items-center justify-center text-muted-foreground text-[9px] font-medium">N/A</div>
               )}
