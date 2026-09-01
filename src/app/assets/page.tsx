@@ -53,28 +53,32 @@ function HighlightHandler({
   const departmentFilter = searchParams.get('department');
 
   useEffect(() => {
-    let shouldReplace = false;
     if (highlightId) {
+      // If there's a highlight, just go directly to that asset
       router.push(`/assets/${highlightId}`);
-      shouldReplace = true;
+      return;
     }
+
+    let hasFilter = false;
     if (statusFilter) {
       onFilterStatus(statusFilter);
-      shouldReplace = true;
+      hasFilter = true;
     }
     if (categoryFilter) {
       onFilterCategory([categoryFilter]);
-      shouldReplace = true;
+      hasFilter = true;
     }
     if (departmentFilter) {
       onFilterDepartment([departmentFilter]);
-      shouldReplace = true;
+      hasFilter = true;
     }
-    if (shouldReplace) {
+
+    if (hasFilter) {
+      // Clean up the URL parameters without triggering a full route transition
       router.replace(pathname, { scroll: false });
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [highlightId, statusFilter, categoryFilter, departmentFilter, pathname, router]);
+  }, [highlightId, statusFilter, categoryFilter, departmentFilter]);
 
   return null;
 }
