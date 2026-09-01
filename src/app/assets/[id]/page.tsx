@@ -117,6 +117,11 @@ export default function AssetDetailsPage() {
   const onNavigateToAsset = (newId: string) => router.push(`/assets/${newId}`);
 
   const [loading, setLoading] = useState(false);
+
+  // Failsafe for Radix UI dropdown/modal pointer-events bug
+  useEffect(() => {
+    document.body.style.pointerEvents = '';
+  }, []);
   const [selectedUserName, setSelectedUserName] = useState<string | null>(null);
   const [showTransferDialog, setShowTransferDialog] = useState(false);
 

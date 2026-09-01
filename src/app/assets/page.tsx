@@ -308,7 +308,11 @@ export default function AssetsPage() {
               <MoreHorizontal className="h-4 w-4" />
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-40">
-              <DropdownMenuItem onClick={(e) => { e.stopPropagation(); router.push(`/assets/${asset.id}?mode=edit`); }}>
+              <DropdownMenuItem onClick={(e) => { 
+                e.stopPropagation(); 
+                // Delay to allow Radix UI to cleanup body pointer-events before unmounting
+                setTimeout(() => router.push(`/assets/${asset.id}?mode=edit`), 100);
+              }}>
                 <Edit className="mr-2 h-4 w-4" /> แก้ไข
               </DropdownMenuItem>
               <DropdownMenuSeparator />
