@@ -62,16 +62,16 @@ export default function RootLayout({
           <Toaster position="top-right" />
           <div className="flex min-h-screen w-full bg-slate-50 dark:bg-slate-950 transition-colors duration-300">
             <Sidebar />
-            <div className="flex-1 flex flex-col md:ml-64 min-w-0 transition-all duration-300">
+            <div className="flex-1 flex flex-col md:ml-64 print:md:ml-0 min-w-0 transition-all duration-300">
               {/* Global Top Header for Desktop */}
-              <header className="hidden md:flex h-16 items-center justify-between px-8 border-b border-slate-200/60 dark:border-slate-800/60 bg-white/70 dark:bg-slate-950/70 backdrop-blur-md sticky top-0 z-30 transition-all duration-300 shadow-[0_1px_2px_rgba(0,0,0,0.02)]">
+              <header className="hidden md:flex h-16 items-center justify-between px-8 border-b border-slate-200/60 dark:border-slate-800/60 bg-white/70 dark:bg-slate-950/70 backdrop-blur-md sticky top-0 z-30 transition-all duration-300 shadow-[0_1px_2px_rgba(0,0,0,0.02)] print:hidden">
                 <Breadcrumbs />
                 <div className="flex items-center gap-3">
                   <ThemeToggle />
                   <Notifications />
                 </div>
               </header>
-              <main className="flex-1 p-4 md:p-8 pt-20 md:pt-8 w-full max-w-[1600px] mx-auto animate-in fade-in duration-500">
+              <main className="flex-1 p-4 md:p-8 pt-20 md:pt-8 w-full max-w-[1600px] mx-auto animate-in fade-in duration-500 print:p-0 print:pt-0">
                 <ErrorBoundary>
                   {children}
                 </ErrorBoundary>

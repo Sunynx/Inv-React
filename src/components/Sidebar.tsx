@@ -126,7 +126,7 @@ export default function Sidebar() {
   return (
     <>
       {/* Desktop Sidebar */}
-      <div className="hidden md:flex w-64 bg-[#1e345d] border-r border-[#1e345d] min-h-screen flex-col fixed inset-y-0 left-0 z-40">
+      <div className="hidden md:flex w-64 bg-[#1e345d] border-r border-[#1e345d] min-h-screen flex-col fixed inset-y-0 left-0 z-40 print:hidden">
         <SidebarContent pathname={pathname} setOpen={setOpen} />
       </div>
 

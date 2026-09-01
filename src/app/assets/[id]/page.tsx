@@ -589,7 +589,7 @@ function AssetDetailsContent() {
     return (
       <div className="min-h-screen bg-background text-foreground flex flex-col">
         {/* Header with Back Button */}
-        <div className="sticky top-0 z-10 bg-background/80 backdrop-blur-md border-b border-border px-4 py-3 sm:px-6 lg:px-8 flex items-center justify-between">
+        <div className="sticky top-0 z-10 bg-background/80 backdrop-blur-md border-b border-border px-4 py-3 sm:px-6 lg:px-8 flex items-center justify-between print:hidden">
           <Button variant="ghost" size="sm" onClick={() => router.back()} className="gap-2 text-muted-foreground hover:text-foreground">
             <ArrowLeft size={16} />
             กลับไปหน้ารวมอุปกรณ์
@@ -671,7 +671,7 @@ function AssetDetailsContent() {
                       <DetailItem label="Department" value={departments.find(d => d.id === formData.department_id)?.name} />
                       <DetailItem label="Serial Number" value={formData.serial_number} />
                       {formData.asset_code && (
-                        <div className="pt-2">
+                        <div className="pt-2 print:hidden">
                           <p className="text-xs text-muted-foreground mb-1">Asset QR Code</p>
                           <div className="bg-white p-2 rounded-md border inline-block shadow-sm">
                             <QRCodeSVG 
