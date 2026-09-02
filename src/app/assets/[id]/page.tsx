@@ -43,7 +43,7 @@ const DetailItem = ({ label, value, onClick }: { label: string, value: any, onCl
           {value}
         </button>
       ) : (
-        <p className="text-sm font-medium text-foreground break-all">{value}</p>
+        <div className="text-sm font-medium text-foreground break-all">{value}</div>
       )}
     </div>
   )
@@ -131,6 +131,28 @@ function AssetDetailsContent() {
     document.body.style.pointerEvents = '';
   }, []);
   const [selectedUserName, setSelectedUserName] = useState<string | null>(null);
+
+  const renderUserLinks = (userString: string | null | undefined) => {
+    if (!userString || typeof userString !== 'string') return userString || null;
+    const users = userString.split(/[,/]/).map(u => u.trim()).filter(Boolean);
+    if (users.length === 0) return null;
+    return (
+      <div className="flex flex-wrap gap-x-2 gap-y-1">
+        {users.map((u, i) => (
+          <span key={i} className="flex items-center">
+            <button 
+              type="button" 
+              onClick={(e) => { e.preventDefault(); e.stopPropagation(); setSelectedUserName(u); }} 
+              className="text-sm font-medium text-blue-600 dark:text-blue-400 hover:underline text-left break-all"
+            >
+              {u}
+            </button>
+            {i < users.length - 1 && <span className="text-muted-foreground ml-1">,</span>}
+          </span>
+        ))}
+      </div>
+    );
+  };
   const [showTransferDialog, setShowTransferDialog] = useState(false);
 
   const sigCanvas = useRef<SignatureCanvas>(null);
@@ -696,11 +718,11 @@ function AssetDetailsContent() {
                     <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider border-b pb-1">Assignment</h3>
                     <div className="space-y-3">
                       <DetailItem label="Location / Room" value={formData.location} />
-                      <DetailItem label="Assigned User" value={formData.assigned_user} onClick={() => formData.assigned_user && setSelectedUserName(formData.assigned_user)} />
+                      <DetailItem label="Assigned User" value={renderUserLinks(formData.assigned_user)} />
                       <DetailItem label="Email" value={formData.assigned_email} />
                       <DetailItem label="Position" value={formData.user_position} />
-                      <DetailItem label="Previous User" value={formData.previous_user} onClick={() => formData.previous_user && setSelectedUserName(formData.previous_user)} />
-                      <DetailItem label="Handover Signer" value={formData.assigned_user} />
+                      <DetailItem label="Previous User" value={renderUserLinks(formData.previous_user)} />
+                      <DetailItem label="Handover Signer" value={renderUserLinks(formData.assigned_user)} />
                       <DetailItem label="Signer Position" value={formData.user_position} />
                       {signatureUrl ? (
                         <div className="pt-2 border-t mt-2">
