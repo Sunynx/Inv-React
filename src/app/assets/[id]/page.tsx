@@ -229,7 +229,7 @@ function AssetDetailsContent() {
           price: assetData.price ? Number(assetData.price) : null
         });
       } else if (!assetId) {
-        const draftStr = localStorage.getItem('asset_form_draft');
+        const draftStr = localStorage.getItem('asset_form_draft_new');
         let loadedDraft = false;
         if (draftStr) {
           try {
@@ -476,7 +476,7 @@ function AssetDetailsContent() {
           onClose();
         }
       } else {
-        localStorage.removeItem('asset_form_draft');
+        localStorage.removeItem('asset_form_draft_new');
         onClose();
       }
       queryClient.invalidateQueries({ queryKey: ['dashboard_data'] });
@@ -522,7 +522,8 @@ function AssetDetailsContent() {
           thumbnailUrl,
           attachments
         };
-        localStorage.setItem('asset_form_draft', JSON.stringify(draft));
+        const draftKey = assetId ? `asset_form_draft_${assetId}` : 'asset_form_draft_new';
+        localStorage.setItem(draftKey, JSON.stringify(draft));
       };
       
       const subscription = form.watch(() => {
