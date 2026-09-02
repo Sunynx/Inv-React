@@ -55,7 +55,10 @@ export default function ProcurementModal({ isOpen, onClose, document, onSaved }:
       }
       setItems(paddedItems.slice(0, 8));
       
-      setMetadata(document.metadata || {});
+      setMetadata({
+        ...(document.metadata || {}),
+        reason_for_purchase: document.metadata?.reason_for_purchase || document.title || ''
+      });
       setIsVatIncluded(document.metadata?.is_vat_included || false);
       if (document.total_amount) {
         // Only set manual total if it differs from the calculated auto total
