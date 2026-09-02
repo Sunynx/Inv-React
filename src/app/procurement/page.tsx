@@ -385,6 +385,7 @@ export default function ProcurementPage() {
               data={filteredDocs}
               isLoading={isLoading}
               enableRowSelection={false}
+              onRowClick={handleEdit}
               emptyState={
                 <EmptyState 
                   title="ไม่พบเอกสารจัดซื้อ" 
