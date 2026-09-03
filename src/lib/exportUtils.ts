@@ -54,7 +54,7 @@ export async function exportToExcel(data: any, options: { filename: string, incl
     // We pushed headers to row 2
     summarySheet.getRow(2).values = ['Metric', 'Value'];
     
-    summarySheet.addRow({ metric: 'Generated On', value: format(new Date(), 'dd MMM yyyy HH:mm') });
+    summarySheet.addRow({ metric: 'Generated On', value: format(new Date(), 'd/M/yyyy HH:mm') });
     if (data.assets) summarySheet.addRow({ metric: 'Total Assets Exported', value: data.assets.length });
     if (data.tickets) summarySheet.addRow({ metric: 'Total Tickets Exported', value: data.tickets.length });
     if (data.maintenance) summarySheet.addRow({ metric: 'Maintenance Logs Exported', value: data.maintenance.length });
@@ -92,7 +92,7 @@ export async function exportToExcel(data: any, options: { filename: string, incl
         model: a.model || '-',
         cpu: a.cpu || '-',
         ram: a.ram || '-',
-        purchase_date: a.purchase_date ? format(new Date(a.purchase_date), 'dd MMM yyyy') : '-',
+        purchase_date: a.purchase_date ? format(new Date(a.purchase_date), 'd/M/yyyy') : '-',
         price: a.price || 0
       });
     });
@@ -120,7 +120,7 @@ export async function exportToExcel(data: any, options: { filename: string, incl
         priority: t.priority,
         asset_code: t.assets?.asset_code || '-',
         reported_by: t.reported_by,
-        created_at: t.created_at ? format(new Date(t.created_at), 'dd MMM yyyy HH:mm') : '-',
+        created_at: t.created_at ? format(new Date(t.created_at), 'd/M/yyyy HH:mm') : '-',
       });
     });
     styleSheet(sheet, 1);
@@ -140,7 +140,7 @@ export async function exportToExcel(data: any, options: { filename: string, incl
     sheet.getRow(1).font = { bold: true };
     data.stock.forEach((s: any) => {
       sheet.addRow({
-        created_at: s.created_at ? format(new Date(s.created_at), 'dd MMM yyyy HH:mm') : '-',
+        created_at: s.created_at ? format(new Date(s.created_at), 'd/M/yyyy HH:mm') : '-',
         item_name: s.stock_items?.name || '-',
         transaction_type: s.transaction_type,
         quantity: s.quantity,
@@ -168,7 +168,7 @@ export async function exportToExcel(data: any, options: { filename: string, incl
         title: m.title || '-',
         asset_code: m.assets?.asset_code || '-',
         status: m.status,
-        next_due_at: m.next_due_at ? format(new Date(m.next_due_at), 'dd MMM yyyy') : '-',
+        next_due_at: m.next_due_at ? format(new Date(m.next_due_at), 'd/M/yyyy') : '-',
         frequency: m.frequency || '-',
         performed_by: m.performed_by || '-',
       });
@@ -201,7 +201,7 @@ export function exportToPDF(data: any, options: { filename: string, includeSumma
   
   doc.setFontSize(14);
   doc.setTextColor(100);
-  doc.text(`Generated on: ${format(new Date(), 'dd MMM yyyy HH:mm')}`, 14, currentY);
+  doc.text(`Generated on: ${format(new Date(), 'd/M/yyyy HH:mm')}`, 14, currentY);
   currentY += 15;
 
   let firstTable = true;
@@ -259,7 +259,7 @@ export function exportToPDF(data: any, options: { filename: string, includeSumma
       t.status || '-',
       t.priority || '-',
       t.assets?.asset_code || '-',
-      t.created_at ? format(new Date(t.created_at), 'dd MMM yyyy') : '-'
+      t.created_at ? format(new Date(t.created_at), 'd/M/yyyy') : '-'
     ]);
 
     autoTable(doc, {
@@ -281,7 +281,7 @@ export function exportToPDF(data: any, options: { filename: string, includeSumma
     doc.text(`Stock Movements (${data.stock.length})`, 14, currentY);
     
     const stockBody = data.stock.map((s: any) => [
-      s.created_at ? format(new Date(s.created_at), 'dd MMM yyyy') : '-',
+      s.created_at ? format(new Date(s.created_at), 'd/M/yyyy') : '-',
       s.stock_items?.name || '-',
       s.transaction_type || '-',
       s.quantity?.toString() || '0',
@@ -311,7 +311,7 @@ export function exportToPDF(data: any, options: { filename: string, includeSumma
       m.title || '-',
       m.assets?.asset_code || '-',
       m.status || '-',
-      m.next_due_at ? format(new Date(m.next_due_at), 'dd MMM yyyy') : '-',
+      m.next_due_at ? format(new Date(m.next_due_at), 'd/M/yyyy') : '-',
       m.frequency || '-',
       m.performed_by || '-'
     ]);
