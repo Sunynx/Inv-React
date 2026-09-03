@@ -29,6 +29,10 @@ export default function ReportExportModal({
   const [endDate, setEndDate] = useState('');
   const [includeSummary, setIncludeSummary] = useState(true);
 
+  // New states for category filter
+  const [categories, setCategories] = useState<any[]>([]);
+  const [selectedCategory, setSelectedCategory] = useState<string>('all');
+
   // Reset state when modal opens
   const initialDataTypesStr = initialDataTypes?.join(',') || '';
   
@@ -39,6 +43,12 @@ export default function ReportExportModal({
       setStartDate('');
       setEndDate('');
       setIncludeSummary(true);
+      setSelectedCategory('all');
+      
+      // Fetch categories for the filter
+      supabase.from('categories').select('id, name').order('name').then(({ data }) => {
+        if (data) setCategories(data);
+      });
     }
   }, [isOpen, initialDataTypesStr]);
 
@@ -72,6 +82,9 @@ export default function ReportExportModal({
         // Usually assets are a current snapshot, but if they want to filter by created_at
         if (start) q = q.gte('created_at', start);
         if (endISO) q = q.lte('created_at', endISO);
+        if (selectedCategory && selectedCategory !== 'all') {
+          q = q.eq('category_id', selectedCategory);
+        }
         promises.push(
           q.then(({ data, error }) => {
             if (error) throw error;
@@ -207,6 +220,23 @@ export default function ReportExportModal({
               ))}
             </div>
           </div>
+
+          {/* Category Filter */}
+          {dataTypes.includes('assets') && (
+            <div className="space-y-3">
+              <Label className="text-sm font-semibold">Asset Category <span className="text-muted-foreground font-normal">(Optional)</span></Label>
+              <select 
+                className="flex h-10 w-full items-center justify-between rounded-md border border-input bg-white px-3 py-2 text-sm shadow-sm focus:outline-none focus:ring-1 focus:ring-primary disabled:cursor-not-allowed disabled:opacity-50"
+                value={selectedCategory} 
+                onChange={(e) => setSelectedCategory(e.target.value)}
+              >
+                <option value="all">All Categories</option>
+                {categories.map(c => (
+                  <option key={c.id} value={c.id}>{c.name}</option>
+                ))}
+              </select>
+            </div>
+          )}
 
           {/* Date Range */}
           <div className="space-y-3">
