@@ -72,8 +72,12 @@ export async function exportToExcel(data: any, options: { filename: string, incl
       { header: 'Name', key: 'name', width: 30 },
       { header: 'Category', key: 'category', width: 20 },
       { header: 'Status', key: 'status', width: 15 },
-      { header: 'Location', key: 'location', width: 20 },
+      { header: 'ตำแหน่ง', key: 'location', width: 20 },
       { header: 'Assigned User', key: 'user', width: 25 },
+      { header: 'Old User', key: 'previous_user', width: 25 },
+      { header: 'Model', key: 'model', width: 20 },
+      { header: 'CPU', key: 'cpu', width: 20 },
+      { header: 'RAM', key: 'ram', width: 15 },
       { header: 'Purchase Date', key: 'purchase_date', width: 15 },
       { header: 'Price (THB)', key: 'price', width: 15 },
     ];
@@ -86,6 +90,10 @@ export async function exportToExcel(data: any, options: { filename: string, incl
         status: a.status,
         location: a.location,
         user: a.assigned_user,
+        previous_user: a.previous_user || '-',
+        model: a.model || '-',
+        cpu: a.cpu || '-',
+        ram: a.ram || '-',
         purchase_date: a.purchase_date ? format(new Date(a.purchase_date), 'dd MMM yyyy') : '-',
         price: a.price || 0
       });
@@ -198,12 +206,16 @@ export function exportToPDF(data: any, options: { filename: string, includeSumma
       a.categories?.name || '-',
       a.status || '-',
       a.location || '-',
-      a.assigned_user || '-'
+      a.assigned_user || '-',
+      a.previous_user || '-',
+      a.model || '-',
+      a.cpu || '-',
+      a.ram || '-'
     ]);
 
     autoTable(doc, {
       startY: currentY + 5,
-      head: [['Code', 'Name', 'Category', 'Status', 'Location', 'Assigned User']],
+      head: [['Code', 'Name', 'Category', 'Status', 'ตำแหน่ง', 'Assigned User', 'Old User', 'Model', 'CPU', 'RAM']],
       body: assetBody,
       headStyles: { fillColor: primaryColor, font: 'Sarabun', fontSize: 14 },
       styles: { font: 'Sarabun', fontSize: 12 },
