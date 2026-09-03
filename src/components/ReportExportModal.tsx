@@ -31,7 +31,7 @@ export default function ReportExportModal({
 
   // New states for category filter
   const [categories, setCategories] = useState<any[]>([]);
-  const [selectedCategory, setSelectedCategory] = useState<string>('all');
+  const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
 
   // Reset state when modal opens
   const initialDataTypesStr = initialDataTypes?.join(',') || '';
@@ -43,7 +43,7 @@ export default function ReportExportModal({
       setStartDate('');
       setEndDate('');
       setIncludeSummary(true);
-      setSelectedCategory('all');
+      setSelectedCategories([]);
       
       // Fetch categories for the filter
       supabase.from('categories').select('id, name').order('name').then(({ data }) => {
@@ -82,8 +82,8 @@ export default function ReportExportModal({
         // Usually assets are a current snapshot, but if they want to filter by created_at
         if (start) q = q.gte('created_at', start);
         if (endISO) q = q.lte('created_at', endISO);
-        if (selectedCategory && selectedCategory !== 'all') {
-          q = q.eq('category_id', selectedCategory);
+        if (selectedCategories.length > 0) {
+          q = q.in('category_id', selectedCategories);
         }
         promises.push(
           q.then(({ data, error }) => {
@@ -224,17 +224,31 @@ export default function ReportExportModal({
           {/* Category Filter */}
           {dataTypes.includes('assets') && (
             <div className="space-y-3">
-              <Label className="text-sm font-semibold">Asset Category <span className="text-muted-foreground font-normal">(Optional)</span></Label>
-              <select 
-                className="flex h-10 w-full items-center justify-between rounded-md border border-input bg-white px-3 py-2 text-sm shadow-sm focus:outline-none focus:ring-1 focus:ring-primary disabled:cursor-not-allowed disabled:opacity-50"
-                value={selectedCategory} 
-                onChange={(e) => setSelectedCategory(e.target.value)}
-              >
-                <option value="all">All Categories</option>
+              <div className="flex justify-between items-center">
+                <Label className="text-sm font-semibold">Asset Categories <span className="text-muted-foreground font-normal">(Optional)</span></Label>
+                {selectedCategories.length > 0 && (
+                  <button type="button" onClick={() => setSelectedCategories([])} className="text-xs text-blue-600 hover:underline">Clear Selection</button>
+                )}
+              </div>
+              <div className="grid grid-cols-2 gap-2 max-h-40 overflow-y-auto p-2 border border-border/50 rounded-md bg-muted/10">
                 {categories.map(c => (
-                  <option key={c.id} value={c.id}>{c.name}</option>
+                  <div key={c.id} className="flex items-center space-x-2 p-1.5 hover:bg-slate-50 dark:hover:bg-slate-800 rounded-md transition-colors">
+                    <Checkbox 
+                      id={`cat-${c.id}`} 
+                      checked={selectedCategories.includes(c.id)} 
+                      onCheckedChange={(checked) => {
+                        if (checked) {
+                          setSelectedCategories([...selectedCategories, c.id]);
+                        } else {
+                          setSelectedCategories(selectedCategories.filter(id => id !== c.id));
+                        }
+                      }} 
+                    />
+                    <Label htmlFor={`cat-${c.id}`} className="text-sm cursor-pointer flex-1 break-words">{c.name}</Label>
+                  </div>
                 ))}
-              </select>
+              </div>
+              <p className="text-[11px] text-muted-foreground italic">If none are selected, all categories will be exported.</p>
             </div>
           )}
 
