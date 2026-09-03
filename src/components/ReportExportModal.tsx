@@ -78,7 +78,7 @@ export default function ReportExportModal({
 
       // Fetch Assets
       if (dataTypes.includes('assets')) {
-        let q = supabase.from('assets').select('*, categories(name)');
+        let q = supabase.from('assets').select('*, categories(name), departments(name)');
         // Usually assets are a current snapshot, but if they want to filter by created_at
         if (start) q = q.gte('created_at', start);
         if (endISO) q = q.lte('created_at', endISO);

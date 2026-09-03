@@ -68,11 +68,10 @@ export async function exportToExcel(data: any, options: { filename: string, incl
   if (data.assets && data.assets.length > 0) {
     const sheet = workbook.addWorksheet('Assets');
     sheet.columns = [
-      { header: 'Asset Code', key: 'asset_code', width: 20 },
       { header: 'Name', key: 'name', width: 30 },
       { header: 'Category', key: 'category', width: 20 },
-      { header: 'Status', key: 'status', width: 15 },
-      { header: 'ตำแหน่ง', key: 'position', width: 20 },
+      { header: 'Brand', key: 'brand', width: 20 },
+      { header: 'แผนก', key: 'department', width: 20 },
       { header: 'Old User', key: 'previous_user', width: 25 },
       { header: 'Assigned User', key: 'user', width: 25 },
       { header: 'Model', key: 'model', width: 20 },
@@ -84,13 +83,12 @@ export async function exportToExcel(data: any, options: { filename: string, incl
     sheet.getRow(1).font = { bold: true };
     data.assets.forEach((a: any) => {
       sheet.addRow({
-        asset_code: a.asset_code,
         name: a.name,
         category: a.categories?.name || '-',
-        status: a.status,
-        position: a.user_position || '-',
-        user: a.assigned_user,
+        brand: a.brand || '-',
+        department: a.departments?.name || '-',
         previous_user: a.previous_user || '-',
+        user: a.assigned_user,
         model: a.model || '-',
         cpu: a.cpu || '-',
         ram: a.ram || '-',
@@ -226,11 +224,10 @@ export function exportToPDF(data: any, options: { filename: string, includeSumma
     doc.text(`Asset Inventory (${data.assets.length})`, 14, currentY);
     
     const assetBody = data.assets.map((a: any) => [
-      a.asset_code || '-',
       a.name || '-',
       a.categories?.name || '-',
-      a.status || '-',
-      a.user_position || '-',
+      a.brand || '-',
+      a.departments?.name || '-',
       a.previous_user || '-',
       a.assigned_user || '-',
       a.model || '-',
@@ -240,7 +237,7 @@ export function exportToPDF(data: any, options: { filename: string, includeSumma
 
     autoTable(doc, {
       startY: currentY + 5,
-      head: [['Code', 'Name', 'Category', 'Status', 'ตำแหน่ง', 'Old User', 'Assigned User', 'Model', 'CPU', 'RAM']],
+      head: [['Name', 'Category', 'Brand', 'แผนก', 'Old User', 'Assigned User', 'Model', 'CPU', 'RAM']],
       body: assetBody,
       headStyles: { fillColor: primaryColor, font: 'Sarabun', fontSize: 14 },
       styles: { font: 'Sarabun', fontSize: 12 },
