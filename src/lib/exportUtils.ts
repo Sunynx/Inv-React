@@ -73,8 +73,8 @@ export async function exportToExcel(data: any, options: { filename: string, incl
       { header: 'Category', key: 'category', width: 20 },
       { header: 'Status', key: 'status', width: 15 },
       { header: 'ตำแหน่ง', key: 'position', width: 20 },
-      { header: 'Assigned User', key: 'user', width: 25 },
       { header: 'Old User', key: 'previous_user', width: 25 },
+      { header: 'Assigned User', key: 'user', width: 25 },
       { header: 'Model', key: 'model', width: 20 },
       { header: 'CPU', key: 'cpu', width: 20 },
       { header: 'RAM', key: 'ram', width: 15 },
@@ -153,6 +153,31 @@ export async function exportToExcel(data: any, options: { filename: string, incl
     styleSheet(sheet, 1);
   }
 
+  // Maintenance Sheet
+  if (data.maintenance && data.maintenance.length > 0) {
+    const sheet = workbook.addWorksheet('Maintenance Logs');
+    sheet.columns = [
+      { header: 'Title', key: 'title', width: 30 },
+      { header: 'Asset Code', key: 'asset_code', width: 20 },
+      { header: 'Status', key: 'status', width: 15 },
+      { header: 'Scheduled Date', key: 'next_due_at', width: 20 },
+      { header: 'Frequency', key: 'frequency', width: 15 },
+      { header: 'Performed By', key: 'performed_by', width: 20 },
+    ];
+    sheet.getRow(1).font = { bold: true };
+    data.maintenance.forEach((m: any) => {
+      sheet.addRow({
+        title: m.title || '-',
+        asset_code: m.assets?.asset_code || '-',
+        status: m.status,
+        next_due_at: m.next_due_at ? format(new Date(m.next_due_at), 'dd MMM yyyy') : '-',
+        frequency: m.frequency || '-',
+        performed_by: m.performed_by || '-',
+      });
+    });
+    styleSheet(sheet, 1);
+  }
+
   const buffer = await workbook.xlsx.writeBuffer();
   const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
   saveAs(blob, `${options.filename}.xlsx`);
@@ -206,8 +231,8 @@ export function exportToPDF(data: any, options: { filename: string, includeSumma
       a.categories?.name || '-',
       a.status || '-',
       a.user_position || '-',
-      a.assigned_user || '-',
       a.previous_user || '-',
+      a.assigned_user || '-',
       a.model || '-',
       a.cpu || '-',
       a.ram || '-'
@@ -215,7 +240,7 @@ export function exportToPDF(data: any, options: { filename: string, includeSumma
 
     autoTable(doc, {
       startY: currentY + 5,
-      head: [['Code', 'Name', 'Category', 'Status', 'ตำแหน่ง', 'Assigned User', 'Old User', 'Model', 'CPU', 'RAM']],
+      head: [['Code', 'Name', 'Category', 'Status', 'ตำแหน่ง', 'Old User', 'Assigned User', 'Model', 'CPU', 'RAM']],
       body: assetBody,
       headStyles: { fillColor: primaryColor, font: 'Sarabun', fontSize: 14 },
       styles: { font: 'Sarabun', fontSize: 12 },
@@ -271,6 +296,33 @@ export function exportToPDF(data: any, options: { filename: string, includeSumma
       startY: currentY + 5,
       head: [['Date', 'Item', 'Type', 'Qty', 'Reference', 'Notes']],
       body: stockBody,
+      headStyles: { fillColor: primaryColor, font: 'Sarabun', fontSize: 14 },
+      styles: { font: 'Sarabun', fontSize: 12 },
+    });
+    currentY = (doc as any).lastAutoTable.finalY + 15;
+    firstTable = false;
+  }
+
+  // Maintenance
+  if (data.maintenance && data.maintenance.length > 0) {
+    if (!firstTable) { doc.addPage(); currentY = 20; }
+    doc.setFontSize(14);
+    doc.setTextColor(0);
+    doc.text(`Maintenance Logs (${data.maintenance.length})`, 14, currentY);
+    
+    const maintenanceBody = data.maintenance.map((m: any) => [
+      m.title || '-',
+      m.assets?.asset_code || '-',
+      m.status || '-',
+      m.next_due_at ? format(new Date(m.next_due_at), 'dd MMM yyyy') : '-',
+      m.frequency || '-',
+      m.performed_by || '-'
+    ]);
+
+    autoTable(doc, {
+      startY: currentY + 5,
+      head: [['Title', 'Asset Code', 'Status', 'Scheduled Date', 'Frequency', 'Performed By']],
+      body: maintenanceBody,
       headStyles: { fillColor: primaryColor, font: 'Sarabun', fontSize: 14 },
       styles: { font: 'Sarabun', fontSize: 12 },
     });

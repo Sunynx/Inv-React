@@ -11,7 +11,7 @@ import { exportToExcel, exportToPDF } from '@/lib/exportUtils';
 import toast from 'react-hot-toast';
 import { format } from 'date-fns';
 
-const DEFAULT_DATA_TYPES = ['assets', 'tickets', 'stock', 'audit'];
+const DEFAULT_DATA_TYPES = ['assets', 'tickets', 'stock', 'audit', 'maintenance'];
 
 export default function ReportExportModal({ 
   isOpen, 
@@ -119,6 +119,19 @@ export default function ReportExportModal({
         );
       }
 
+      // Fetch Maintenance
+      if (dataTypes.includes('maintenance')) {
+        let q = supabase.from('maintenance_schedules').select('*, assets(asset_code, name)');
+        if (start) q = q.gte('created_at', start);
+        if (endISO) q = q.lte('created_at', endISO);
+        promises.push(
+          q.then(({ data, error }) => {
+            if (error) throw error;
+            exportData.maintenance = data;
+          })
+        );
+      }
+
       await Promise.all(promises);
 
       const filename = `RPM_Report_${format(new Date(), 'yyyyMMdd_HHmm')}`;
@@ -180,7 +193,8 @@ export default function ReportExportModal({
                 { id: 'assets', label: 'Asset Inventory' },
                 { id: 'tickets', label: 'Repair Tickets' },
                 { id: 'stock', label: 'Stock Movements' },
-                { id: 'audit', label: 'Audit Logs' }
+                { id: 'audit', label: 'Audit Logs' },
+                { id: 'maintenance', label: 'Maintenance (PM)' }
               ].map(dt => (
                 <div key={dt.id} className="flex items-center space-x-2 bg-muted/30 p-2.5 rounded-md border border-border/50">
                   <Checkbox 
