@@ -226,9 +226,10 @@ export default function ReportExportModal({
             <div className="space-y-3">
               <div className="flex justify-between items-center">
                 <Label className="text-sm font-semibold">Asset Categories <span className="text-muted-foreground font-normal">(Optional)</span></Label>
-                {selectedCategories.length > 0 && (
-                  <button type="button" onClick={() => setSelectedCategories([])} className="text-xs text-blue-600 hover:underline">Clear Selection</button>
-                )}
+                <div className="flex items-center gap-3">
+                  <button type="button" onClick={() => setSelectedCategories(categories.map(c => c.id))} className="text-xs font-medium text-blue-600 hover:underline">Select All</button>
+                  <button type="button" onClick={() => setSelectedCategories([])} className="text-xs font-medium text-destructive hover:underline">Clear</button>
+                </div>
               </div>
               <div className="grid grid-cols-2 gap-2 max-h-40 overflow-y-auto p-2 border border-border/50 rounded-md bg-muted/10">
                 {categories.map(c => (
