@@ -103,19 +103,18 @@ const InputField = ({ form, name, label, required = false, type = "text", ...pro
 // Note: Supabase Image Transform ต้องการ Pro plan, ใช้ URL เดิมพร้อม lazy loading แทน
 const getThumbUrl = (url: string) => url;
 
-export default function AssetClient() {
+export default function AssetClient({ id }: { id: string }) {
   return (
     <React.Suspense fallback={<div className="min-h-screen flex items-center justify-center p-12 text-muted-foreground">Loading asset details...</div>}>
-      <AssetDetailsContent />
+      <AssetDetailsContent id={id} />
     </React.Suspense>
   );
 }
 
-function AssetDetailsContent() {
-  const params = useParams();
+function AssetDetailsContent({ id }: { id: string }) {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const rawAssetId = params?.id as string;
+  const rawAssetId = id;
   const isNew = rawAssetId === 'new';
   const assetId = isNew ? undefined : rawAssetId;
   const [mode, setMode] = useState<'view' | 'edit'>(isNew || searchParams.get('mode') === 'edit' ? 'edit' : 'view');
