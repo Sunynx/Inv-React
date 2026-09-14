@@ -112,6 +112,12 @@ export default function SeatAssignmentModal({
     setFormData({ ...formData, [name]: value });
   };
 
+  const selectedAsset = assets.find((a: any) => a.id === formData.asset_id);
+  const selectedAssetLabel = selectedAsset ? `[${selectedAsset.asset_code}] ${selectedAsset.name}` : undefined;
+
+  const selectedEmployee = employees.find((e: any) => e.id === formData.employee_id);
+  const selectedEmployeeLabel = selectedEmployee ? `${selectedEmployee.name} (${selectedEmployee.email})` : undefined;
+
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
       <DialogContent className="w-[95vw] md:max-w-3xl max-h-[90vh] overflow-y-auto">
@@ -139,7 +145,7 @@ export default function SeatAssignmentModal({
               <div className="space-y-2">
                 <Label>Assign to Asset (อุปกรณ์)</Label>
                 <Select value={formData.asset_id || 'none'} onValueChange={(v) => handleSelectChange('asset_id', v)}>
-                  <SelectTrigger><SelectValue placeholder="Select an Asset..." /></SelectTrigger>
+                  <SelectTrigger><SelectValue placeholder="Select an Asset...">{selectedAssetLabel}</SelectValue></SelectTrigger>
                   <SelectContent>
                     <SelectItem value="none">-- ไม่ระบุ (No Asset) --</SelectItem>
                     {assets.map((a: any) => <SelectItem key={a.id} value={a.id}>[{a.asset_code}] {a.name}</SelectItem>)}
@@ -150,7 +156,7 @@ export default function SeatAssignmentModal({
               <div className="space-y-2">
                 <Label>Assign to Employee (พนักงาน)</Label>
                 <Select value={formData.employee_id || 'none'} onValueChange={(v) => handleSelectChange('employee_id', v)}>
-                  <SelectTrigger><SelectValue placeholder="Select an Employee..." /></SelectTrigger>
+                  <SelectTrigger><SelectValue placeholder="Select an Employee...">{selectedEmployeeLabel}</SelectValue></SelectTrigger>
                   <SelectContent>
                     <SelectItem value="none">-- ไม่ระบุ (No Employee) --</SelectItem>
                     {employees.map((e: any) => <SelectItem key={e.id} value={e.id}>{e.name} ({e.email})</SelectItem>)}
