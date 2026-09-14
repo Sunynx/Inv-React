@@ -2,12 +2,13 @@
 import { useState } from 'react';
 import { supabase } from '@/lib/supabase';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { Search, Plus, Filter, Edit, Trash2 } from 'lucide-react';
+import { Search, Plus, Filter, Edit, Trash2, Upload } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent } from '@/components/ui/card';
 import LicenseModal from '@/components/LicenseModal';
+import LicenseImportModal from '@/components/LicenseImportModal';
 import { format } from 'date-fns';
 import { DataTable } from '@/components/DataTable';
 import { ColumnDef } from '@tanstack/react-table';
@@ -18,6 +19,7 @@ export default function LicensesPage() {
   const [filterStatus, setFilterStatus] = useState('all');
   
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isImportModalOpen, setIsImportModalOpen] = useState(false);
   const [selectedRecord, setSelectedRecord] = useState<any | null>(null);
 
   const { data: records = [], isLoading } = useQuery({
@@ -53,8 +55,9 @@ export default function LicensesPage() {
   const filteredLicenses = records.filter(l => {
     const matchSearch = l.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
                         l.license_key?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                        l.vendor?.toLowerCase().includes(searchTerm.toLowerCase()) ||
                         l.assets?.name?.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchStatus = filterStatus === 'all' || l.status === filterStatus;
+    const matchStatus = filterStatus === 'all' || l.status?.toLowerCase() === filterStatus.toLowerCase();
     return matchSearch && matchStatus;
   });
 
@@ -69,42 +72,44 @@ export default function LicensesPage() {
       cell: ({ row }) => <span className="font-medium text-primary">{row.original.name}</span>
     },
     {
-      accessorKey: 'license_key',
-      header: 'License Key',
-      cell: ({ row }) => {
-        const key = row.original.license_key;
-        return key ? <span className="font-mono text-xs bg-muted px-2 py-1 rounded-md text-muted-foreground">{key}</span> : '-';
-      }
+      accessorKey: 'vendor',
+      header: 'Vendor',
+      cell: ({ row }) => <span>{row.original.vendor || '-'}</span>
     },
     {
-      accessorKey: 'assets.name',
-      header: 'Assigned Asset',
+      accessorKey: 'category',
+      header: 'Category',
+      cell: ({ row }) => <span>{row.original.category || '-'}</span>
+    },
+    {
+      accessorKey: 'total_seats',
+      header: 'Seats (Assigned/Total)',
+      cell: ({ row }) => (
+        <span>{row.original.assigned_seats || 0} / {row.original.total_seats || 1}</span>
+      )
+    },
+    {
+      accessorKey: 'annual_cost',
+      header: 'Annual Cost',
       cell: ({ row }) => {
-        const record = row.original;
-        if (record.asset_id) {
-          return (
-            <div>
-              <div className="font-medium">{record.assets?.name}</div>
-              <div className="text-xs text-muted-foreground">{record.assets?.asset_code}</div>
-            </div>
-          );
-        }
-        return <span className="text-muted-foreground italic">Unassigned</span>;
+        const cost = row.original.annual_cost;
+        return <span>{cost ? `${Number(cost).toLocaleString()} THB` : '-'}</span>;
       }
     },
     {
       accessorKey: 'status',
       header: 'Status',
       cell: ({ row }) => {
-        const status = row.original.status;
+        const status = row.original.status || 'Active';
+        const lower = status.toLowerCase();
         return (
           <span className={`inline-flex px-2 py-0.5 rounded-full text-[11px] font-semibold ${
-            status === 'active' ? 'bg-green-100 text-green-700' :
-            status === 'cancelled' ? 'bg-gray-100 text-gray-700' :
-            status === 'expired' ? 'bg-red-100 text-red-700' :
+            lower === 'active' ? 'bg-green-100 text-green-700' :
+            lower === 'cancelled' ? 'bg-gray-100 text-gray-700' :
+            lower === 'expired' ? 'bg-red-100 text-red-700' :
             'bg-gray-100 text-gray-700'
           }`}>
-            {status || 'Unknown'}
+            {status}
           </span>
         );
       }
@@ -144,9 +149,14 @@ export default function LicensesPage() {
           <h1 className="text-3xl font-bold tracking-tight text-foreground">Software Licenses</h1>
           <p className="text-muted-foreground mt-1">Manage and track software license keys and expirations</p>
         </div>
-        <Button onClick={() => { setSelectedRecord(null); setIsModalOpen(true); }} className="bg-primary hover:bg-primary/90 text-primary-foreground">
-          <Plus className="mr-2 h-4 w-4" /> Add License
-        </Button>
+        <div className="flex gap-2">
+          <Button variant="outline" onClick={() => setIsImportModalOpen(true)}>
+            <Upload className="mr-2 h-4 w-4" /> Import CSV
+          </Button>
+          <Button onClick={() => { setSelectedRecord(null); setIsModalOpen(true); }} className="bg-primary hover:bg-primary/90 text-primary-foreground">
+            <Plus className="mr-2 h-4 w-4" /> Add License
+          </Button>
+        </div>
       </div>
 
       <Card>
@@ -155,7 +165,7 @@ export default function LicensesPage() {
             <div className="relative flex-1">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input 
-                placeholder="Search by software name or license key..."
+                placeholder="Search by software name, vendor or license key..."
                 className="pl-10"
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
@@ -189,6 +199,11 @@ export default function LicensesPage() {
         isOpen={isModalOpen} 
         onClose={() => { setIsModalOpen(false); refreshData(); }} 
         recordId={selectedRecord?.id}
+      />
+
+      <LicenseImportModal
+        isOpen={isImportModalOpen}
+        onClose={() => { setIsImportModalOpen(false); refreshData(); }}
       />
     </div>
   );

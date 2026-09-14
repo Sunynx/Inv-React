@@ -216,6 +216,16 @@ function AssetDetailsContent() {
     staleTime: 30000, // cache for 30s so re-opens don't re-fetch
   });
 
+  const { data: assetLicenses, isLoading: isLoadingLicenses } = useQuery({
+    queryKey: ['asset_licenses', assetId],
+    queryFn: async () => {
+      if (!assetId) return [];
+      const { data, error } = await supabase.from('licenses').select('*').eq('asset_id', assetId);
+      if (error) throw error;
+      return data || [];
+    },
+    enabled: isOpen && !!assetId
+  });
 
   useEffect(() => {
     if (isOpen) {
@@ -784,6 +794,22 @@ function AssetDetailsContent() {
                       <DetailItem label="Office Version" value={formData.office_version} />
                       <DetailItem label="Office License" value={formData.office_license} />
                     </div>
+                    {assetLicenses && assetLicenses.length > 0 && (
+                      <div className="mt-4">
+                        <h4 className="text-xs font-semibold text-muted-foreground mb-2 border-b pb-1">Attached Licenses from System</h4>
+                        <div className="space-y-2">
+                          {assetLicenses.map((lic: any) => (
+                            <div key={lic.id} className="text-sm bg-muted/50 p-2 rounded-md flex flex-col gap-1">
+                              <div className="flex justify-between items-start">
+                                <span className="font-medium text-foreground">{lic.name}</span>
+                                <span className="text-[10px] px-2 py-0.5 rounded-full bg-blue-100 text-blue-700">{lic.status || 'Active'}</span>
+                              </div>
+                              <span className="text-xs text-muted-foreground font-mono">{lic.license_key || 'No Key'}</span>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
                   </div>
 
                   <div className="space-y-4">
