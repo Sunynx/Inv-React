@@ -2,9 +2,10 @@ import { NextResponse } from 'next/server';
 import { supabase } from '@/lib/supabase';
 // @ts-expect-error: xlsx-populate does not have types
 import XlsxPopulate from 'xlsx-populate';
-import path from 'path';
 
-export async function GET() {
+export const runtime = 'edge';
+
+export async function GET(request: Request) {
   try {
     // 1. Fetch data from Supabase
     const { data: licenseMaster, error: masterError } = await supabase
@@ -35,9 +36,13 @@ export async function GET() {
       }
     });
 
-    // 2. Load the template
-    const templatePath = path.resolve('./public/templates/license_template.xlsx');
-    const workbook = await XlsxPopulate.fromFileAsync(templatePath);
+    // 2. Load the template using fetch since fs is not available in Edge runtime
+    const templateUrl = new URL('/templates/license_template.xlsx', request.url);
+    const templateRes = await fetch(templateUrl);
+    if (!templateRes.ok) throw new Error('Failed to fetch template');
+    
+    const arrayBuffer = await templateRes.arrayBuffer();
+    const workbook = await XlsxPopulate.fromDataAsync(arrayBuffer);
 
     // 3. Populate "License Register" (Master Data)
     const registerSheet = workbook.sheet('License Register');

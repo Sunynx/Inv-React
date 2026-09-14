@@ -12,6 +12,8 @@ import { ColumnDef } from '@tanstack/react-table';
 import SeatAssignmentModal from '@/components/SeatAssignmentModal';
 import { useState } from 'react';
 
+export const runtime = 'edge';
+
 export default function LicenseDetailsPage({ params }: { params: Promise<{ id: string }> }) {
   const resolvedParams = use(params);
   const licenseId = resolvedParams.id;
