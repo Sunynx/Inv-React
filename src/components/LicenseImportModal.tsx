@@ -47,19 +47,21 @@ export default function LicenseImportModal({ isOpen, onClose }: { isOpen: boolea
 
         try {
           const mappedData = results.data.map((row: any) => {
-            return {
-              name: row['Product / Service'],
-              vendor: row['Vendor'],
-              category: row['Category'],
-              license_type: row['License Type'],
-              license_key: row['License Key / Contract Ref'],
-              seat_no: parseInt(row['Seat No.']) || null,
-              assigned_to: row['User Name'],
-              account_email: row['Account / Email'],
-              device_hostname: row['Device / Hostname'],
-              start_date: parseDate(row['Assigned Date']),
-              expiry_date: parseDate(row['Expiry Date']),
-              assignment_status: row['Assignment Status'],
+              const rawAssignStatus = (row['Assignment Status'] || '').trim().toLowerCase();
+              
+              return {
+                name: row['Product / Service'],
+                vendor: row['Vendor'],
+                category: row['Category'],
+                license_type: row['License Type'],
+                license_key: row['License Key / Contract Ref'],
+                seat_no: parseInt(row['Seat No.']) || null,
+                assigned_to: row['User Name'],
+                account_email: row['Account / Email'],
+                device_hostname: row['Device / Hostname'],
+                start_date: parseDate(row['Assigned Date']),
+                expiry_date: parseDate(row['Expiry Date']),
+                assignment_status: rawAssignStatus === 'assigned' ? 'Assigned' : 'Unassigned',
               total_seats: parseInt(row['Total Seats']) || 1,
               assigned_seats: parseInt(row['Assigned Seats']) || 1,
               available_seats: parseInt(row['Available Seats']) || 0,
