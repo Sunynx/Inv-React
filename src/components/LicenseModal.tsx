@@ -39,7 +39,7 @@ export default function LicenseModal({ isOpen, onClose, recordId }: { isOpen: bo
         setFormData(recordData);
       } else if (!recordId) {
         setFormData({ 
-          status: 'Active', 
+          status: 'active', 
           start_date: new Date().toISOString().split('T')[0], 
           category: 'Productivity',
           license_type: 'Subscription',
@@ -91,7 +91,7 @@ export default function LicenseModal({ isOpen, onClose, recordId }: { isOpen: bo
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
-      <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+      <DialogContent className="max-w-full md:max-w-4xl w-[95vw] max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="text-2xl">{recordId ? 'Edit License' : 'Add Software License'}</DialogTitle>
         </DialogHeader>
@@ -133,12 +133,12 @@ export default function LicenseModal({ isOpen, onClose, recordId }: { isOpen: bo
               </div>
               <div className="space-y-2">
                 <Label>License Status</Label>
-                <Select value={formData.status || 'Active'} onValueChange={(v) => handleSelectChange('status', v)}>
+                <Select value={formData.status || 'active'} onValueChange={(v) => handleSelectChange('status', v)}>
                   <SelectTrigger><SelectValue placeholder="Select Status..." /></SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="Active">Active</SelectItem>
-                    <SelectItem value="Expired">Expired</SelectItem>
-                    <SelectItem value="Cancelled">Cancelled</SelectItem>
+                    <SelectItem value="active">Active</SelectItem>
+                    <SelectItem value="expired">Expired</SelectItem>
+                    <SelectItem value="cancelled">Cancelled</SelectItem>
                   </SelectContent>
                 </Select>
               </div>

@@ -68,7 +68,7 @@ export default function LicenseImportModal({ isOpen, onClose }: { isOpen: boolea
               unit_cost: parseNumber(row['Unit Cost']),
               annual_cost: parseNumber(row['Annual Cost']),
               owner: row['Owner'],
-              status: row['License Status'] || 'Active',
+              status: (row['License Status'] || 'active').toLowerCase(),
               notes: row['License Notes'],
               assignment_notes: row['Assignment Notes'],
               source_sheet: row['Source Sheet']
@@ -113,7 +113,7 @@ export default function LicenseImportModal({ isOpen, onClose }: { isOpen: boolea
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && handleClose()}>
-      <DialogContent className="max-w-xl">
+      <DialogContent className="max-w-full md:max-w-2xl w-[95vw]">
         <DialogHeader>
           <DialogTitle className="text-2xl">Import Software Licenses</DialogTitle>
           <DialogDescription>
