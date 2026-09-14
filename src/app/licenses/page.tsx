@@ -81,7 +81,11 @@ export default function LicensesPage() {
     {
       accessorKey: 'name',
       header: 'Software',
-      cell: ({ row }) => <span className="font-medium text-primary">{row.original.name}</span>
+      cell: ({ row }) => (
+        <a href={`/licenses/${row.original.id}`} className="font-medium text-primary hover:underline">
+          {row.original.name}
+        </a>
+      )
     },
     {
       accessorKey: 'vendor',
@@ -135,9 +139,11 @@ export default function LicensesPage() {
         const record = row.original;
         return (
           <div className="flex items-center justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-            <Button variant="ghost" size="icon" onClick={() => { setSelectedRecord(record); setIsModalOpen(true); }}>
-              <Edit className="h-4 w-4 text-muted-foreground hover:text-primary" />
-            </Button>
+            <a href={`/licenses/${record.id}`}>
+              <Button variant="ghost" size="icon">
+                <Edit className="h-4 w-4 text-muted-foreground hover:text-primary" />
+              </Button>
+            </a>
             <Button variant="ghost" size="icon" onClick={() => handleDelete(record.id)}>
               <Trash2 className="h-4 w-4 text-muted-foreground hover:text-destructive" />
             </Button>
