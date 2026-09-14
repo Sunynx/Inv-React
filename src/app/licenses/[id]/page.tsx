@@ -5,7 +5,8 @@ import { use } from 'react';
 import { format } from 'date-fns';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft, Edit, Plus } from 'lucide-react';
+import { Input } from '@/components/ui/input';
+import { ArrowLeft, Edit, Plus, Search } from 'lucide-react';
 import { DataTable } from '@/components/DataTable';
 import { ColumnDef } from '@tanstack/react-table';
 import SeatAssignmentModal from '@/components/SeatAssignmentModal';
@@ -17,6 +18,7 @@ export default function LicenseDetailsPage({ params }: { params: Promise<{ id: s
   
   const [isSeatModalOpen, setIsSeatModalOpen] = useState(false);
   const [selectedSeatId, setSelectedSeatId] = useState<string | null>(null);
+  const [searchQuery, setSearchQuery] = useState('');
 
   const { data: master, isLoading: isLoadingMaster } = useQuery({
     queryKey: ['license_master', licenseId],
@@ -133,6 +135,13 @@ export default function LicenseDetailsPage({ params }: { params: Promise<{ id: s
 
   const assignedCount = seats.filter((s: any) => s.assignment_status?.toLowerCase() === 'assigned').length;
 
+  const filteredSeats = seats.filter((s: any) => {
+    if (!searchQuery) return true;
+    const term = searchQuery.toLowerCase();
+    const searchStr = `${s.seat_no || ''} ${s.license_key || ''} ${s.employees?.name || ''} ${s.employees?.email || ''} ${s.assets?.name || ''} ${s.assets?.asset_code || ''} ${s.assignment_status || ''} ${s.status || ''}`.toLowerCase();
+    return searchStr.includes(term);
+  });
+
   return (
     <div className="space-y-6">
       <div className="flex items-center gap-4">
@@ -175,17 +184,28 @@ export default function LicenseDetailsPage({ params }: { params: Promise<{ id: s
       </div>
 
       <Card>
-        <CardHeader className="flex flex-row items-center justify-between">
+        <CardHeader className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
           <CardTitle>Seat Assignments ({seats.length})</CardTitle>
-          <Button size="sm" onClick={() => {
-            setSelectedSeatId(null);
-            setIsSeatModalOpen(true);
-          }}>
-            <Plus className="h-4 w-4 mr-2" /> Add Seat
-          </Button>
+          <div className="flex flex-col sm:flex-row items-center gap-3 w-full sm:w-auto">
+            <div className="relative w-full sm:w-64">
+              <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+              <Input
+                placeholder="Search seats..."
+                className="pl-8 h-9 bg-background"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+              />
+            </div>
+            <Button size="sm" onClick={() => {
+              setSelectedSeatId(null);
+              setIsSeatModalOpen(true);
+            }} className="w-full sm:w-auto whitespace-nowrap">
+              <Plus className="h-4 w-4 mr-2" /> Add Seat
+            </Button>
+          </div>
         </CardHeader>
         <CardContent>
-          <DataTable columns={columns} data={seats} isLoading={isLoadingSeats} />
+          <DataTable columns={columns} data={filteredSeats} isLoading={isLoadingSeats} />
         </CardContent>
       </Card>
       
