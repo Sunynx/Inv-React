@@ -49,7 +49,14 @@ export default function LicenseDetailsPage({ params }: { params: Promise<{ id: s
     {
       accessorKey: 'license_key',
       header: 'License Key',
-      cell: ({ row }) => <span className="font-mono text-sm">{row.original.license_key || '-'}</span>
+      cell: ({ row }) => (
+        <span 
+          className="font-mono text-xs max-w-[150px] md:max-w-[250px] lg:max-w-[350px] xl:max-w-[500px] block truncate" 
+          title={row.original.license_key || ''}
+        >
+          {row.original.license_key || '-'}
+        </span>
+      )
     },
     {
       accessorKey: 'assigned_to',
