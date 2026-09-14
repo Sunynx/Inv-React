@@ -1,5 +1,4 @@
 'use client';
-export const runtime = 'edge';
 import React, { useState, useEffect, useRef } from 'react';
 import { supabase } from '@/lib/supabase';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
