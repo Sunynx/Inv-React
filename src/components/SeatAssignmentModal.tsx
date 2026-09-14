@@ -16,12 +16,14 @@ export default function SeatAssignmentModal({
   isOpen, 
   onClose, 
   seatId, 
-  licenseMasterId 
+  licenseMasterId,
+  nextSeatNo
 }: { 
   isOpen: boolean; 
   onClose: () => void; 
   seatId?: string | null;
   licenseMasterId?: string;
+  nextSeatNo?: number;
 }) {
   const [formData, setFormData] = useState<any>({});
   const [openAsset, setOpenAsset] = useState(false);
@@ -67,7 +69,8 @@ export default function SeatAssignmentModal({
         setFormData({ 
           status: 'active',
           assignment_status: 'Unassigned',
-          license_master_id: licenseMasterId
+          license_master_id: licenseMasterId,
+          seat_no: nextSeatNo || 1
         });
       }
     } else {

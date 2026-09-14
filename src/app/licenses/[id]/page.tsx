@@ -214,6 +214,7 @@ export default function LicenseDetailsPage({ params }: { params: Promise<{ id: s
         onClose={() => setIsSeatModalOpen(false)}
         seatId={selectedSeatId}
         licenseMasterId={licenseId}
+        nextSeatNo={seats.length > 0 ? Math.max(...seats.map((s: any) => Number(s.seat_no) || 0)) + 1 : 1}
       />
     </div>
   );
