@@ -1,20 +1,8 @@
 'use client';
-import { useState, useEffect, lazy, Suspense } from 'react';
+import dynamic from 'next/dynamic';
 
-const LicenseClient = lazy(() => import('./LicenseClient'));
+const LicenseClient = dynamic(() => import('./LicenseClient'), { ssr: false });
 
 export default function LicenseClientWrapper({ id }: { id: string }) {
-  const [mounted, setMounted] = useState(false);
-  
-  useEffect(() => {
-    setMounted(true);
-  }, []);
-
-  if (!mounted) return null;
-
-  return (
-    <Suspense fallback={<div className="min-h-screen flex items-center justify-center p-12 text-muted-foreground">Loading license details...</div>}>
-      <LicenseClient id={id} />
-    </Suspense>
-  );
+  return <LicenseClient id={id} />;
 }
