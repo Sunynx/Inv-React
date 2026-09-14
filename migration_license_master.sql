@@ -4,7 +4,8 @@
 -- ==============================================================================
 
 -- 1. Create Employees Table (if not exists)
-CREATE TABLE IF NOT EXISTS public.employees (
+DROP TABLE IF EXISTS public.employees CASCADE;
+CREATE TABLE public.employees (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     name TEXT NOT NULL,
     email TEXT UNIQUE NOT NULL,
@@ -14,7 +15,8 @@ CREATE TABLE IF NOT EXISTS public.employees (
 );
 
 -- 2. Create License Master Table
-CREATE TABLE IF NOT EXISTS public.license_master (
+DROP TABLE IF EXISTS public.license_master CASCADE;
+CREATE TABLE public.license_master (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     name TEXT NOT NULL,
     vendor TEXT,
@@ -58,21 +60,12 @@ CREATE TABLE public.licenses (
 
 -- RLS Policies for License Master
 ALTER TABLE public.license_master ENABLE ROW LEVEL SECURITY;
-CREATE POLICY "Enable read access for all users" ON public.license_master FOR SELECT USING (true);
-CREATE POLICY "Enable insert for authenticated users only" ON public.license_master FOR INSERT WITH CHECK (auth.role() = 'authenticated');
-CREATE POLICY "Enable update for authenticated users only" ON public.license_master FOR UPDATE USING (auth.role() = 'authenticated');
-CREATE POLICY "Enable delete for authenticated users only" ON public.license_master FOR DELETE USING (auth.role() = 'authenticated');
+CREATE POLICY "Allow All" ON public.license_master FOR ALL USING (true);
 
 -- RLS Policies for Employees
 ALTER TABLE public.employees ENABLE ROW LEVEL SECURITY;
-CREATE POLICY "Enable read access for all users" ON public.employees FOR SELECT USING (true);
-CREATE POLICY "Enable insert for authenticated users only" ON public.employees FOR INSERT WITH CHECK (auth.role() = 'authenticated');
-CREATE POLICY "Enable update for authenticated users only" ON public.employees FOR UPDATE USING (auth.role() = 'authenticated');
-CREATE POLICY "Enable delete for authenticated users only" ON public.employees FOR DELETE USING (auth.role() = 'authenticated');
+CREATE POLICY "Allow All" ON public.employees FOR ALL USING (true);
 
 -- RLS Policies for Licenses (Seats)
 ALTER TABLE public.licenses ENABLE ROW LEVEL SECURITY;
-CREATE POLICY "Enable read access for all users" ON public.licenses FOR SELECT USING (true);
-CREATE POLICY "Enable insert for authenticated users only" ON public.licenses FOR INSERT WITH CHECK (auth.role() = 'authenticated');
-CREATE POLICY "Enable update for authenticated users only" ON public.licenses FOR UPDATE USING (auth.role() = 'authenticated');
-CREATE POLICY "Enable delete for authenticated users only" ON public.licenses FOR DELETE USING (auth.role() = 'authenticated');
+CREATE POLICY "Allow All" ON public.licenses FOR ALL USING (true);
