@@ -15,11 +15,13 @@ interface DashboardStats {
   spareRate: number;
   repairRate: number;
   fromLastMonth: number;
+  totalLicenseSeats?: number;
+  assignedLicenseSeats?: number;
 }
 
 export function KPICardsSkeleton() {
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+    <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-4">
       {[...Array(4)].map((_, i) => (
         <Card key={i} className="shadow-sm border border-slate-200/60 dark:border-slate-800/60 rounded-2xl bg-white dark:bg-slate-900">
           <CardContent className="p-6 space-y-4">
@@ -115,10 +117,25 @@ export default function DashboardKPICards({ stats, isLoading }: { stats: Dashboa
       labelIcon: <Box size={16} className="text-amber-500" />,
       accentColor: 'amber',
     },
+    {
+      label: 'Software Licenses',
+      value: stats.totalLicenseSeats || 0,
+      subtitle: 'Total software seats',
+      footerLabel: 'Assigned Seats',
+      footerRawValue: stats.assignedLicenseSeats || 0,
+      footerPrefix: '',
+      footerSuffix: '',
+      footerIcon: null,
+      footerColor: 'text-indigo-600 bg-indigo-50 dark:bg-indigo-500/10',
+      iconBg: 'from-indigo-50 to-indigo-100 dark:from-indigo-900/20 dark:to-indigo-800/20 text-indigo-600 dark:text-indigo-400 border-indigo-100 dark:border-indigo-800/30',
+      icon: <Box size={24} />,
+      labelIcon: <Shield size={16} className="text-indigo-500" />,
+      accentColor: 'blue',
+    }
   ];
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+    <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-4">
       {cards.map((card, i) => (
         <Card 
           key={i} 

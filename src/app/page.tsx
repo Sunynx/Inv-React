@@ -194,17 +194,21 @@ export default function Dashboard() {
   const { data: dashboardData, isLoading } = useQuery({
     queryKey: ['dashboard_data', dateRange],
     queryFn: async () => {
-      const [assetsRes, deptsRes, catsRes, ticketsRes] = await Promise.all([
+      const [assetsRes, deptsRes, catsRes, ticketsRes, licenseMasterRes, licensesRes] = await Promise.all([
         supabase.from('assets').select('status, created_at, department_id, category_id, price, name, asset_code, model, cpu, ram, storage, purchase_date, warranty_expiry'),
         supabase.from('departments').select('id, name'),
         supabase.from('categories').select('id, name'),
-        supabase.from('repair_tickets').select(`*, assets(name)`).order('created_at', { ascending: false })
+        supabase.from('repair_tickets').select(`*, assets(name)`).order('created_at', { ascending: false }),
+        supabase.from('license_master').select('total_seats'),
+        supabase.from('licenses').select('assignment_status')
       ]);
 
       let assets = assetsRes.data || [];
       const depts = deptsRes.data || [];
       const cats = catsRes.data || [];
       let tickets = ticketsRes.data || [];
+      const licenseMasters = licenseMasterRes.data || [];
+      const allLicenses = licensesRes.data || [];
 
       if (dateRange !== 'all') {
         const now = new Date();
@@ -242,6 +246,9 @@ export default function Dashboard() {
       const spareRate = t > 0 ? Math.round((s / t) * 100) : 0;
       const repairRate = t > 0 ? Math.round((r / t) * 100) : 0;
 
+      const totalLicenseSeats = licenseMasters.reduce((sum, master) => sum + (master.total_seats || 0), 0);
+      const assignedLicenseSeats = allLicenses.filter(l => l.assignment_status === 'Assigned').length;
+
       const statsObj = { 
         total: t, 
         active: a, 
@@ -252,7 +259,9 @@ export default function Dashboard() {
         activeRate,
         spareRate,
         repairRate,
-        fromLastMonth
+        fromLastMonth,
+        totalLicenseSeats,
+        assignedLicenseSeats
       };
 
       // Chart Data
@@ -350,7 +359,7 @@ export default function Dashboard() {
     enabled: !!dateRange
   });
 
-  const stats = dashboardData?.stats || { total: 0, active: 0, repair: 0, spare: 0, fromLastMonth: 0, newAssetsThisWeek: 0, newTicketsThisWeek: 0, activeRate: 0, spareRate: 0, repairRate: 0 };
+  const stats = dashboardData?.stats || { total: 0, active: 0, repair: 0, spare: 0, fromLastMonth: 0, newAssetsThisWeek: 0, newTicketsThisWeek: 0, activeRate: 0, spareRate: 0, repairRate: 0, totalLicenseSeats: 0, assignedLicenseSeats: 0 };
   const chartData = dashboardData?.chartData || [];
   const departments = dashboardData?.departments || [];
   const categoriesStats = dashboardData?.categoriesStats || [];
