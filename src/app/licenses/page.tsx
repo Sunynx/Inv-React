@@ -2,7 +2,7 @@
 import { useState } from 'react';
 import { supabase } from '@/lib/supabase';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { Search, Plus, Filter, Edit, Trash2, Upload } from 'lucide-react';
+import { Search, Plus, Filter, Edit, Trash2, Upload, Download } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -11,6 +11,7 @@ import LicenseModal from '@/components/LicenseModal';
 import LicenseImportModal from '@/components/LicenseImportModal';
 import { format } from 'date-fns';
 import { DataTable } from '@/components/DataTable';
+import { saveAs } from 'file-saver';
 import { ColumnDef } from '@tanstack/react-table';
 
 export default function LicensesPage() {
@@ -20,6 +21,7 @@ export default function LicensesPage() {
   
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isImportModalOpen, setIsImportModalOpen] = useState(false);
+  const [isExporting, setIsExporting] = useState(false);
   const [selectedRecord, setSelectedRecord] = useState<any | null>(null);
 
   const { data: records = [], isLoading } = useQuery({
@@ -75,6 +77,27 @@ export default function LicensesPage() {
 
   const refreshData = () => {
     queryClient.invalidateQueries({ queryKey: ['licenses'] });
+  };
+
+  const handleExport = async () => {
+    try {
+      setIsExporting(true);
+      const loadingToast = toast.loading('Generating Excel file...');
+      
+      const response = await fetch('/api/export-licenses');
+      if (!response.ok) {
+        throw new Error('Failed to generate export');
+      }
+      
+      const blob = await response.blob();
+      saveAs(blob, `RPM_Software_License_Register_${format(new Date(), 'yyyy-MM-dd')}.xlsx`);
+      
+      toast.success('Export successful', { id: loadingToast });
+    } catch (error: any) {
+      toast.error(error.message || 'Error exporting to Excel');
+    } finally {
+      setIsExporting(false);
+    }
   };
 
   const columns: ColumnDef<any>[] = [
@@ -160,7 +183,10 @@ export default function LicensesPage() {
           <h1 className="text-3xl font-bold tracking-tight text-foreground">Software Licenses</h1>
           <p className="text-muted-foreground mt-1">Manage and track software license keys and expirations</p>
         </div>
-        <div className="flex gap-2">
+        <div className="flex flex-wrap gap-2 justify-end">
+          <Button variant="outline" onClick={handleExport} disabled={isExporting}>
+            <Download className="mr-2 h-4 w-4" /> {isExporting ? 'Exporting...' : 'Export to Excel'}
+          </Button>
           <Button variant="outline" onClick={() => setIsImportModalOpen(true)}>
             <Upload className="mr-2 h-4 w-4" /> Import CSV
           </Button>
