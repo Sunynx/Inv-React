@@ -7,6 +7,10 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Check, ChevronsUpDown } from 'lucide-react';
+import { cn } from '@/lib/utils';
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '@/components/ui/command';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 
 export default function SeatAssignmentModal({ 
   isOpen, 
@@ -20,6 +24,8 @@ export default function SeatAssignmentModal({
   licenseMasterId?: string;
 }) {
   const [formData, setFormData] = useState<any>({});
+  const [openAsset, setOpenAsset] = useState(false);
+  const [openEmployee, setOpenEmployee] = useState(false);
   const queryClient = useQueryClient();
 
   const { data: assets = [], isLoading: isLoadingAssets } = useQuery({
@@ -142,26 +148,104 @@ export default function SeatAssignmentModal({
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-4 border-t">
-              <div className="space-y-2">
+              <div className="space-y-2 flex flex-col">
                 <Label>Assign to Asset (อุปกรณ์)</Label>
-                <Select value={formData.asset_id || 'none'} onValueChange={(v) => handleSelectChange('asset_id', v)}>
-                  <SelectTrigger><SelectValue placeholder="Select an Asset...">{selectedAssetLabel}</SelectValue></SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="none">-- ไม่ระบุ (No Asset) --</SelectItem>
-                    {assets.map((a: any) => <SelectItem key={a.id} value={a.id}>[{a.asset_code}] {a.name}</SelectItem>)}
-                  </SelectContent>
-                </Select>
+                <Popover open={openAsset} onOpenChange={setOpenAsset}>
+                  <PopoverTrigger asChild>
+                    <Button
+                      variant="outline"
+                      role="combobox"
+                      aria-expanded={openAsset}
+                      className="w-full justify-between font-normal"
+                    >
+                      {selectedAssetLabel || "-- ไม่ระบุ (No Asset) --"}
+                      <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-[300px] p-0" align="start">
+                    <Command>
+                      <CommandInput placeholder="Search asset..." />
+                      <CommandList>
+                        <CommandEmpty>No asset found.</CommandEmpty>
+                        <CommandGroup>
+                          <CommandItem
+                            value="none"
+                            onSelect={() => {
+                              handleSelectChange('asset_id', 'none');
+                              setOpenAsset(false);
+                            }}
+                          >
+                            <Check className={cn("mr-2 h-4 w-4", formData.asset_id === 'none' || !formData.asset_id ? "opacity-100" : "opacity-0")} />
+                            -- ไม่ระบุ (No Asset) --
+                          </CommandItem>
+                          {assets.map((a: any) => (
+                            <CommandItem
+                              key={a.id}
+                              value={`[${a.asset_code}] ${a.name}`}
+                              onSelect={() => {
+                                handleSelectChange('asset_id', a.id);
+                                setOpenAsset(false);
+                              }}
+                            >
+                              <Check className={cn("mr-2 h-4 w-4", formData.asset_id === a.id ? "opacity-100" : "opacity-0")} />
+                              [{a.asset_code}] {a.name}
+                            </CommandItem>
+                          ))}
+                        </CommandGroup>
+                      </CommandList>
+                    </Command>
+                  </PopoverContent>
+                </Popover>
               </div>
 
-              <div className="space-y-2">
+              <div className="space-y-2 flex flex-col">
                 <Label>Assign to Employee (พนักงาน)</Label>
-                <Select value={formData.employee_id || 'none'} onValueChange={(v) => handleSelectChange('employee_id', v)}>
-                  <SelectTrigger><SelectValue placeholder="Select an Employee...">{selectedEmployeeLabel}</SelectValue></SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="none">-- ไม่ระบุ (No Employee) --</SelectItem>
-                    {employees.map((e: any) => <SelectItem key={e.id} value={e.id}>{e.name} ({e.email})</SelectItem>)}
-                  </SelectContent>
-                </Select>
+                <Popover open={openEmployee} onOpenChange={setOpenEmployee}>
+                  <PopoverTrigger asChild>
+                    <Button
+                      variant="outline"
+                      role="combobox"
+                      aria-expanded={openEmployee}
+                      className="w-full justify-between font-normal"
+                    >
+                      {selectedEmployeeLabel || "-- ไม่ระบุ (No Employee) --"}
+                      <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-[300px] p-0" align="start">
+                    <Command>
+                      <CommandInput placeholder="Search employee..." />
+                      <CommandList>
+                        <CommandEmpty>No employee found.</CommandEmpty>
+                        <CommandGroup>
+                          <CommandItem
+                            value="none"
+                            onSelect={() => {
+                              handleSelectChange('employee_id', 'none');
+                              setOpenEmployee(false);
+                            }}
+                          >
+                            <Check className={cn("mr-2 h-4 w-4", formData.employee_id === 'none' || !formData.employee_id ? "opacity-100" : "opacity-0")} />
+                            -- ไม่ระบุ (No Employee) --
+                          </CommandItem>
+                          {employees.map((e: any) => (
+                            <CommandItem
+                              key={e.id}
+                              value={`${e.name} ${e.email}`}
+                              onSelect={() => {
+                                handleSelectChange('employee_id', e.id);
+                                setOpenEmployee(false);
+                              }}
+                            >
+                              <Check className={cn("mr-2 h-4 w-4", formData.employee_id === e.id ? "opacity-100" : "opacity-0")} />
+                              {e.name} ({e.email})
+                            </CommandItem>
+                          ))}
+                        </CommandGroup>
+                      </CommandList>
+                    </Command>
+                  </PopoverContent>
+                </Popover>
               </div>
             </div>
 
