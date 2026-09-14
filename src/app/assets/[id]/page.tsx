@@ -23,6 +23,7 @@ import TransferModal from '@/components/TransferModal';
 import { generateAssetCodeStr } from '@/lib/utils';
 import { logAudit, formatAuditDetails } from '@/lib/auditLog';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer } from 'recharts';
+import SeatAssignmentModal from '@/components/SeatAssignmentModal';
 
 const statusConfig: Record<string, { icon: any; className: string }> = {
   'ใช้งาน': { icon: CheckCircle2, className: 'text-emerald-600 bg-emerald-50 border-emerald-200/50' },
@@ -169,6 +170,8 @@ function AssetDetailsContent() {
   const [showSignDialog, setShowSignDialog] = useState(false);
   const [savingSignature, setSavingSignature] = useState(false);
   const viewSigCanvas = useRef<SignatureCanvas>(null);
+  const [selectedSeatId, setSelectedSeatId] = useState<string | null>(null);
+  const [isSeatModalOpen, setIsSeatModalOpen] = useState(false);
 
   const form = useForm<AssetFormValues>({
     resolver: zodResolver(assetSchema),
@@ -220,7 +223,10 @@ function AssetDetailsContent() {
     queryKey: ['asset_licenses', assetId],
     queryFn: async () => {
       if (!assetId) return [];
-      const { data, error } = await supabase.from('licenses').select('*').eq('asset_id', assetId);
+      const { data, error } = await supabase
+        .from('licenses')
+        .select('*, license_master(name)')
+        .eq('asset_id', assetId);
       if (error) throw error;
       return data || [];
     },
@@ -799,12 +805,20 @@ function AssetDetailsContent() {
                         <h4 className="text-xs font-semibold text-muted-foreground mb-2 border-b pb-1">Attached Licenses from System</h4>
                         <div className="space-y-2">
                           {assetLicenses.map((lic: any) => (
-                            <div key={lic.id} className="text-sm bg-muted/50 p-2 rounded-md flex flex-col gap-1">
+                            <div key={lic.id} className="text-sm bg-muted/50 p-2 rounded-md flex flex-col gap-1 group relative pr-6">
                               <div className="flex justify-between items-start">
-                                <span className="font-medium text-foreground">{lic.name}</span>
+                                <span className="font-medium text-foreground">{lic.license_master?.name || 'Unknown License'}</span>
                                 <span className="text-[10px] px-2 py-0.5 rounded-full bg-blue-100 text-blue-700">{lic.status || 'Active'}</span>
                               </div>
                               <span className="text-xs text-muted-foreground font-mono">{lic.license_key || 'No Key'}</span>
+                              
+                              <button 
+                                onClick={() => { setSelectedSeatId(lic.id); setIsSeatModalOpen(true); }} 
+                                className="absolute right-2 top-2 opacity-0 group-hover:opacity-100 transition-opacity p-1 text-muted-foreground hover:text-primary"
+                                title="Edit License Assignment"
+                              >
+                                <Edit className="h-3 w-3" />
+                              </button>
                             </div>
                           ))}
                         </div>

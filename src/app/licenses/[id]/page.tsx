@@ -5,13 +5,18 @@ import { use } from 'react';
 import { format } from 'date-fns';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft } from 'lucide-react';
+import { ArrowLeft, Edit, Plus } from 'lucide-react';
 import { DataTable } from '@/components/DataTable';
 import { ColumnDef } from '@tanstack/react-table';
+import SeatAssignmentModal from '@/components/SeatAssignmentModal';
+import { useState } from 'react';
 
 export default function LicenseDetailsPage({ params }: { params: Promise<{ id: string }> }) {
   const resolvedParams = use(params);
   const licenseId = resolvedParams.id;
+  
+  const [isSeatModalOpen, setIsSeatModalOpen] = useState(false);
+  const [selectedSeatId, setSelectedSeatId] = useState<string | null>(null);
 
   const { data: master, isLoading: isLoadingMaster } = useQuery({
     queryKey: ['license_master', licenseId],
@@ -98,6 +103,21 @@ export default function LicenseDetailsPage({ params }: { params: Promise<{ id: s
           </span>
         );
       }
+    },
+    {
+      id: 'actions',
+      cell: ({ row }) => {
+        return (
+          <div className="flex items-center justify-end">
+            <Button variant="ghost" size="icon" onClick={() => {
+              setSelectedSeatId(row.original.id);
+              setIsSeatModalOpen(true);
+            }}>
+              <Edit className="h-4 w-4 text-muted-foreground hover:text-primary" />
+            </Button>
+          </div>
+        );
+      }
     }
   ];
 
@@ -148,13 +168,26 @@ export default function LicenseDetailsPage({ params }: { params: Promise<{ id: s
       </div>
 
       <Card>
-        <CardHeader>
+        <CardHeader className="flex flex-row items-center justify-between">
           <CardTitle>Seat Assignments ({seats.length})</CardTitle>
+          <Button size="sm" onClick={() => {
+            setSelectedSeatId(null);
+            setIsSeatModalOpen(true);
+          }}>
+            <Plus className="h-4 w-4 mr-2" /> Add Seat
+          </Button>
         </CardHeader>
         <CardContent>
           <DataTable columns={columns} data={seats} isLoading={isLoadingSeats} />
         </CardContent>
       </Card>
+      
+      <SeatAssignmentModal 
+        isOpen={isSeatModalOpen}
+        onClose={() => setIsSeatModalOpen(false)}
+        seatId={selectedSeatId}
+        licenseMasterId={licenseId}
+      />
     </div>
   );
 }
