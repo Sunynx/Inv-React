@@ -87,9 +87,97 @@ export default function LicenseImportModal({ isOpen, onClose }: { isOpen: boolea
 
   const importMutation = useMutation({
     mutationFn: async (data: any[]) => {
-      // Supabase has a limit on bulk inserts, so we do it in chunks if large, but 100-200 is fine in one go.
-      const { error } = await supabase.from('licenses').insert(data);
-      if (error) throw error;
+      // 1. Build unique maps from CSV
+      const mastersMap = new Map();
+      const employeesMap = new Map();
+
+      data.forEach(row => {
+        mastersMap.set(row.name, {
+          name: row.name,
+          vendor: row.vendor,
+          category: row.category,
+          license_type: row.license_type,
+          renewal_type: row.renewal_type,
+          billing_cycle: row.billing_cycle,
+          total_seats: row.total_seats,
+          unit_cost: row.unit_cost,
+          annual_cost: row.annual_cost,
+          owner: row.owner
+        });
+
+        if (row.account_email) {
+          employeesMap.set(row.account_email, { 
+            name: row.assigned_to || row.account_email.split('@')[0], 
+            email: row.account_email 
+          });
+        }
+      });
+
+      // 2. Upsert Masters
+      for (const master of Array.from(mastersMap.values())) {
+        const { data: existing, error } = await supabase.from('license_master')
+          .select('id')
+          .eq('name', master.name)
+          .maybeSingle();
+        
+        if (existing) {
+          mastersMap.set(master.name, { ...master, id: existing.id });
+        } else {
+          const { data: newMaster, error: insertErr } = await supabase.from('license_master').insert([master]).select('id').single();
+          if (insertErr) throw insertErr;
+          mastersMap.set(master.name, { ...master, id: newMaster.id });
+        }
+      }
+
+      // 3. Upsert Employees
+      for (const emp of Array.from(employeesMap.values())) {
+        const { data: existing, error } = await supabase.from('employees')
+          .select('id')
+          .eq('email', emp.email)
+          .maybeSingle();
+          
+        if (existing) {
+          employeesMap.set(emp.email, { ...emp, id: existing.id });
+        } else {
+          const { data: newEmp, error: insertErr } = await supabase.from('employees').insert([emp]).select('id').single();
+          if (insertErr) throw insertErr;
+          employeesMap.set(emp.email, { ...emp, id: newEmp.id });
+        }
+      }
+
+      // 4. Get Assets for mapping (by name or hostname)
+      const { data: assets } = await supabase.from('assets').select('id, name');
+      const assetsMap = new Map();
+      if (assets) {
+        assets.forEach(a => assetsMap.set(a.name.toLowerCase(), a.id));
+      }
+
+      // 5. Build Licenses payload
+      const licensesPayload = data.map(row => {
+        const masterId = mastersMap.get(row.name)?.id;
+        const employeeId = row.account_email ? employeesMap.get(row.account_email)?.id : null;
+        const hostname = row.device_hostname ? row.device_hostname.toLowerCase() : '';
+        const assetId = hostname ? assetsMap.get(hostname) : null;
+        
+        return {
+          license_master_id: masterId,
+          employee_id: employeeId,
+          asset_id: assetId,
+          license_key: row.license_key,
+          seat_no: row.seat_no,
+          start_date: row.start_date,
+          expiry_date: row.expiry_date,
+          status: row.status,
+          assignment_status: row.assignment_status,
+          notes: row.notes,
+          assignment_notes: row.assignment_notes,
+          source_sheet: row.source_sheet
+        };
+      });
+
+      // 6. Insert Licenses
+      const { error: licErr } = await supabase.from('licenses').insert(licensesPayload);
+      if (licErr) throw licErr;
     },
     onSuccess: () => {
       toast.success(`Successfully imported ${preview.length} licenses`);
