@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { supabase } from '@/lib/supabase';
+// @ts-expect-error: xlsx-populate does not have types
 import XlsxPopulate from 'xlsx-populate';
 import path from 'path';
 
