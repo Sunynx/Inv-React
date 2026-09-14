@@ -20,6 +20,7 @@ import AssetTimeline from '@/components/AssetTimeline';
 import UserHistoryModal from '@/components/UserHistoryModal';
 import AssetAssignmentHistory from '@/components/AssetAssignmentHistory';
 import TransferModal from '@/components/TransferModal';
+import { MultiSelect } from '@/components/ui/multi-select';
 import { generateAssetCodeStr } from '@/lib/utils';
 import { logAudit, formatAuditDetails } from '@/lib/auditLog';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer } from 'recharts';
@@ -172,6 +173,7 @@ function AssetDetailsContent() {
   const viewSigCanvas = useRef<SignatureCanvas>(null);
   const [selectedSeatId, setSelectedSeatId] = useState<string | null>(null);
   const [isSeatModalOpen, setIsSeatModalOpen] = useState(false);
+  const [selectedLicenses, setSelectedLicenses] = useState<string[]>([]);
 
   const form = useForm<AssetFormValues>({
     resolver: zodResolver(assetSchema),
@@ -232,6 +234,30 @@ function AssetDetailsContent() {
     },
     enabled: isOpen && !!assetId
   });
+
+  const { data: licenseOptions } = useQuery({
+    queryKey: ['license_options'],
+    queryFn: async () => {
+      const { data: masters } = await supabase.from('license_master').select('*').order('name');
+      if (!masters) return [];
+      
+      const { data: seats } = await supabase.from('licenses').select('id, license_master_id, assignment_status');
+      
+      return masters.map(m => {
+         const totalSeats = m.total_seats || 1;
+         const assignedCount = seats?.filter(s => s.license_master_id === m.id && s.assignment_status === 'Assigned').length || 0;
+         const availableCount = totalSeats - assignedCount;
+         return { ...m, availableSeats: availableCount };
+      });
+    },
+    enabled: isOpen && mode === 'edit'
+  });
+
+  useEffect(() => {
+    if (assetLicenses && mode === 'edit') {
+      setSelectedLicenses(assetLicenses.map((l: any) => l.license_master_id).filter(Boolean));
+    }
+  }, [assetLicenses, mode]);
 
   useEffect(() => {
     if (isOpen) {
@@ -455,6 +481,33 @@ function AssetDetailsContent() {
               reason: 'Auto-logged from Asset Edit'
             }]);
           }
+        }
+      }
+
+      // Handle Auto-assigning Licenses
+      if (selectedLicenses) {
+        const oldAssignedIds = assetLicenses?.map((l: any) => l.license_master_id) || [];
+        const newAssignedIds = selectedLicenses || [];
+        
+        const addedIds = newAssignedIds.filter(id => !oldAssignedIds.includes(id));
+        const removedIds = oldAssignedIds.filter(id => !newAssignedIds.includes(id));
+
+        if (removedIds.length > 0) {
+           const seatsToUnassign = assetLicenses?.filter((l: any) => removedIds.includes(l.license_master_id)).map((l: any) => l.id) || [];
+           if (seatsToUnassign.length > 0) {
+              await supabase.from('licenses').update({ asset_id: null, assignment_status: 'Unassigned' }).in('id', seatsToUnassign);
+           }
+        }
+
+        for (const id of addedIds) {
+           const { data: availableSeats } = await supabase.from('licenses')
+              .select('id')
+              .eq('license_master_id', id)
+              .eq('assignment_status', 'Unassigned')
+              .limit(1);
+           if (availableSeats && availableSeats.length > 0) {
+              await supabase.from('licenses').update({ asset_id: finalAssetId, assignment_status: 'Assigned' }).eq('id', availableSeats[0].id);
+           }
         }
       }
     },
@@ -1179,6 +1232,24 @@ function AssetDetailsContent() {
 
                   <div>
                     <h4 className="text-[15px] font-bold mb-4">ข้อมูลซอฟต์แวร์และเน็ตเวิร์ก</h4>
+                    
+                    <div className="mb-6 space-y-2 bg-blue-50/50 dark:bg-slate-900/50 p-4 rounded-lg border border-blue-100 dark:border-slate-800">
+                      <Label className="text-[14px] font-bold text-blue-800 dark:text-blue-300 flex items-center gap-2">
+                        <Monitor size={16} /> Assign Licenses (Auto-assign available seats)
+                      </Label>
+                      <p className="text-xs text-muted-foreground mb-2">ระบบจะดึง Seat ที่ว่างมาผูกกับอุปกรณ์นี้ให้อัตโนมัติเมื่อกดบันทึก</p>
+                      <MultiSelect 
+                        options={licenseOptions?.map(opt => ({
+                           label: `${opt.name} (${opt.availableSeats} available)`,
+                           value: opt.id,
+                           disabled: opt.availableSeats <= 0 && !selectedLicenses.includes(opt.id)
+                        })) || []}
+                        selected={selectedLicenses}
+                        onChange={setSelectedLicenses}
+                        placeholder="Select licenses..."
+                      />
+                    </div>
+
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-4">
                       <InputField form={form} name="os" label="OS / Windows Version" placeholder="เช่น Windows 11 Pro 64-bit" />
                       <InputField form={form} name="os_key" label="OS License Key (ถ้ามี)" placeholder="XXXXX-XXXXX-XXXXX-XXXXX" />
