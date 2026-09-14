@@ -26,7 +26,7 @@ export default function LicenseModal({ isOpen, onClose, recordId }: { isOpen: bo
     queryKey: ['license', recordId],
     queryFn: async () => {
       if (!recordId) return null;
-      const { data, error } = await supabase.from('licenses').select('*').eq('id', recordId).single();
+      const { data, error } = await supabase.from('license_master').select('*').eq('id', recordId).single();
       if (error) throw error;
       return data;
     },
@@ -43,10 +43,9 @@ export default function LicenseModal({ isOpen, onClose, recordId }: { isOpen: bo
           start_date: new Date().toISOString().split('T')[0], 
           category: 'Productivity',
           license_type: 'Subscription',
-          assignment_status: 'Assigned',
-          total_seats: 1,
-          assigned_seats: 1,
-          available_seats: 0
+          renewal_type: 'Auto Renew',
+          billing_cycle: 'Annual',
+          total_seats: 1
         });
       }
     } else {
@@ -56,15 +55,28 @@ export default function LicenseModal({ isOpen, onClose, recordId }: { isOpen: bo
 
   const saveMutation = useMutation({
     mutationFn: async (payload: any) => {
-      if (payload.asset_id === 'none') {
-        payload.asset_id = null;
-      }
+      // Remove seat-specific fields that shouldn't be saved in master
+      const { assigned_seats, available_seats, ...masterPayload } = payload;
+      
       if (recordId) {
-        const { error } = await supabase.from('licenses').update(payload).eq('id', recordId);
+        const { error } = await supabase.from('license_master').update(masterPayload).eq('id', recordId);
         if (error) throw error;
       } else {
-        const { error } = await supabase.from('licenses').insert([payload]);
+        const { data: newMaster, error } = await supabase.from('license_master').insert([masterPayload]).select('id').single();
         if (error) throw error;
+        
+        // Auto-generate initial seats
+        const seatsToCreate = parseInt(masterPayload.total_seats) || 1;
+        if (seatsToCreate > 0) {
+          const seatPayloads = Array.from({ length: seatsToCreate }).map((_, i) => ({
+            license_master_id: newMaster.id,
+            seat_no: String(i + 1),
+            assignment_status: 'Unassigned',
+            status: 'active'
+          }));
+          const { error: seatError } = await supabase.from('licenses').insert(seatPayloads);
+          if (seatError) console.error('Error generating seats:', seatError);
+        }
       }
     },
     onSuccess: () => {
@@ -178,11 +190,26 @@ export default function LicenseModal({ isOpen, onClose, recordId }: { isOpen: bo
               </div>
               <div className="space-y-2">
                 <Label>Renewal Type</Label>
-                <Input name="renewal_type" value={formData.renewal_type || ''} onChange={handleChange} />
+                <Select value={formData.renewal_type || ''} onValueChange={(v) => handleSelectChange('renewal_type', v)}>
+                  <SelectTrigger><SelectValue placeholder="Select..." /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="Auto Renew">Auto Renew</SelectItem>
+                    <SelectItem value="Manual">Manual</SelectItem>
+                    <SelectItem value="No Renewal">No Renewal</SelectItem>
+                  </SelectContent>
+                </Select>
               </div>
               <div className="space-y-2">
                 <Label>Billing Cycle</Label>
-                <Input name="billing_cycle" value={formData.billing_cycle || ''} onChange={handleChange} />
+                <Select value={formData.billing_cycle || ''} onValueChange={(v) => handleSelectChange('billing_cycle', v)}>
+                  <SelectTrigger><SelectValue placeholder="Select..." /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="Monthly">Monthly</SelectItem>
+                    <SelectItem value="Quarterly">Quarterly</SelectItem>
+                    <SelectItem value="Annual">Annual</SelectItem>
+                    <SelectItem value="One-time">One-time</SelectItem>
+                  </SelectContent>
+                </Select>
               </div>
               <div className="space-y-2">
                 <Label>Unit Cost</Label>
@@ -194,7 +221,7 @@ export default function LicenseModal({ isOpen, onClose, recordId }: { isOpen: bo
               </div>
             </div>
 
-            {/* Assignment & Seats */}
+            {/* Seats */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4 pt-4 border-t">
               <div className="space-y-2">
                 <Label>Total Seats</Label>
@@ -202,65 +229,20 @@ export default function LicenseModal({ isOpen, onClose, recordId }: { isOpen: bo
               </div>
               <div className="space-y-2">
                 <Label>Assigned Seats</Label>
-                <Input type="number" name="assigned_seats" value={formData.assigned_seats || 1} onChange={handleChange} />
+                <Input type="number" disabled value={formData.assigned_seats || 0} className="bg-muted text-muted-foreground" />
               </div>
               <div className="space-y-2">
                 <Label>Available Seats</Label>
-                <Input type="number" name="available_seats" value={formData.available_seats || 0} onChange={handleChange} />
-              </div>
-              
-              <div className="space-y-2 md:col-span-3">
-                <Label>Asset (ผูกกับอุปกรณ์)</Label>
-                <Select value={formData.asset_id || ''} onValueChange={(v) => handleSelectChange('asset_id', v)}>
-                  <SelectTrigger><SelectValue placeholder="Select an Asset..." /></SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="none">-- ไม่ระบุ (No Asset) --</SelectItem>
-                    {assets.map(a => <SelectItem key={a.id} value={a.id}>[{a.asset_code}] {a.name}</SelectItem>)}
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div className="space-y-2">
-                <Label>Assigned To / User Name</Label>
-                <Input name="assigned_to" value={formData.assigned_to || ''} onChange={handleChange} />
-              </div>
-              <div className="space-y-2">
-                <Label>Account / Email</Label>
-                <Input name="account_email" value={formData.account_email || ''} onChange={handleChange} />
-              </div>
-              <div className="space-y-2">
-                <Label>Device / Hostname</Label>
-                <Input name="device_hostname" value={formData.device_hostname || ''} onChange={handleChange} />
-              </div>
-              <div className="space-y-2">
-                <Label>Assignment Status</Label>
-                <Select value={formData.assignment_status || 'Assigned'} onValueChange={(v) => handleSelectChange('assignment_status', v)}>
-                  <SelectTrigger><SelectValue placeholder="Select Status..." /></SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="Assigned">Assigned</SelectItem>
-                    <SelectItem value="Unassigned">Unassigned</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="space-y-2">
-                <Label>Owner</Label>
-                <Input name="owner" value={formData.owner || ''} onChange={handleChange} />
+                <Input type="number" disabled value={(formData.total_seats || 1) - (formData.assigned_seats || 0)} className="bg-muted text-muted-foreground" />
               </div>
             </div>
 
             {/* Notes */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-4 border-t">
+            <div className="grid grid-cols-1 gap-4 pt-4 border-t">
               <div className="space-y-2">
                 <Label>License Notes</Label>
                 <textarea 
                   name="notes" value={formData.notes || ''} onChange={handleChange} rows={3} 
-                  className="flex min-h-[80px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
-                />
-              </div>
-              <div className="space-y-2">
-                <Label>Assignment Notes</Label>
-                <textarea 
-                  name="assignment_notes" value={formData.assignment_notes || ''} onChange={handleChange} rows={3} 
                   className="flex min-h-[80px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
                 />
               </div>
