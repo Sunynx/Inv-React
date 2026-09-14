@@ -22,7 +22,7 @@ export default function SeatAssignmentModal({
   const [formData, setFormData] = useState<any>({});
   const queryClient = useQueryClient();
 
-  const { data: assets = [] } = useQuery({
+  const { data: assets = [], isLoading: isLoadingAssets } = useQuery({
     queryKey: ['assets_lookup'],
     queryFn: async () => {
       const { data } = await supabase.from('assets').select('id, name, asset_code').order('name');
@@ -31,7 +31,7 @@ export default function SeatAssignmentModal({
     enabled: isOpen
   });
 
-  const { data: employees = [] } = useQuery({
+  const { data: employees = [], isLoading: isLoadingEmployees } = useQuery({
     queryKey: ['employees_lookup'],
     queryFn: async () => {
       const { data } = await supabase.from('employees').select('id, name, email').order('name');
@@ -50,6 +50,8 @@ export default function SeatAssignmentModal({
     },
     enabled: isOpen && !!seatId
   });
+
+  const isLoadingData = isLoadingSeat || isLoadingAssets || isLoadingEmployees;
 
   useEffect(() => {
     if (isOpen) {
@@ -112,13 +114,13 @@ export default function SeatAssignmentModal({
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
-      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+      <DialogContent className="w-[95vw] md:max-w-3xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="text-xl">{seatId ? 'Edit Seat Assignment' : 'Add New Seat'}</DialogTitle>
         </DialogHeader>
 
-        {isLoadingSeat ? (
-          <div className="py-8 text-center animate-pulse">Loading...</div>
+        {isLoadingData ? (
+          <div className="py-8 text-center animate-pulse text-muted-foreground">Loading...</div>
         ) : (
           <form onSubmit={handleSave} className="space-y-4 mt-4">
             
