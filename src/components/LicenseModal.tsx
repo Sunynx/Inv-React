@@ -125,11 +125,33 @@ export default function LicenseModal({ isOpen, onClose, recordId }: { isOpen: bo
               </div>
               <div className="space-y-2">
                 <Label>Category</Label>
-                <Input name="category" value={formData.category || ''} onChange={handleChange} />
+                <Select value={formData.category || ''} onValueChange={(v) => handleSelectChange('category', v)}>
+                  <SelectTrigger><SelectValue placeholder="Select Category..." /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="Productivity">Productivity</SelectItem>
+                    <SelectItem value="Security">Security</SelectItem>
+                    <SelectItem value="Cloud / SaaS">Cloud / SaaS</SelectItem>
+                    <SelectItem value="Development">Development</SelectItem>
+                    <SelectItem value="Infrastructure">Infrastructure</SelectItem>
+                    <SelectItem value="Design">Design</SelectItem>
+                    <SelectItem value="Other">Other</SelectItem>
+                  </SelectContent>
+                </Select>
               </div>
               <div className="space-y-2">
                 <Label>License Type</Label>
-                <Input name="license_type" value={formData.license_type || ''} onChange={handleChange} />
+                <Select value={formData.license_type || ''} onValueChange={(v) => handleSelectChange('license_type', v)}>
+                  <SelectTrigger><SelectValue placeholder="Select License Type..." /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="Subscription">Subscription</SelectItem>
+                    <SelectItem value="Perpetual">Perpetual</SelectItem>
+                    <SelectItem value="Volume">Volume</SelectItem>
+                    <SelectItem value="Concurrent">Concurrent</SelectItem>
+                    <SelectItem value="Named User">Named User</SelectItem>
+                    <SelectItem value="Device-based">Device-based</SelectItem>
+                    <SelectItem value="Site License">Site License</SelectItem>
+                  </SelectContent>
+                </Select>
               </div>
               <div className="space-y-2">
                 <Label>License Status</Label>
