@@ -1,5 +1,5 @@
 'use client';
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { supabase } from '@/lib/supabase';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import toast from 'react-hot-toast';
@@ -213,9 +213,7 @@ function AssetDetailsContent({ id }: { id: string }) {
       if (!assetId) return null;
       // Run asset data, images, and signatures in parallel to avoid sequential waterfall
       const [assetRes, imagesRes, sigRes] = await Promise.all([
-        supabase.from('assets').select(
-          'id, name, asset_code, status, serial_number, category_id, department_id, location, assigned_user, previous_user, user_position, brand, assigned_email, price, purchase_date, warranty_expiry, supplier, po_number, model, cpu, ram, storage, gpu, display, os, os_key, windows_version, office_version, office_license, ip_address, mac_address, nas_user, password, notes, thumbnail_url, reference_url, signer_name, signer_position'
-        ).eq('id', assetId).single(),
+        supabase.from('assets').select('*').eq('id', assetId).single(),
         supabase.from('asset_images').select('file_url').eq('asset_id', assetId),
         supabase.from('signatures').select('signature_url').eq('asset_id', assetId).maybeSingle(),
       ]);
@@ -226,18 +224,6 @@ function AssetDetailsContent({ id }: { id: string }) {
         signatures: sigRes.data ? [sigRes.data] : [],
       };
     },
-    initialData: () => {
-      if (!assetId) return undefined;
-      const cachedAssets = queryClient.getQueryData<any[]>(['assets']);
-      const cached = cachedAssets?.find((a: any) => a.id === assetId);
-      if (!cached) return undefined;
-      return {
-        ...cached,
-        asset_images: cached.thumbnail_url ? [{ file_url: cached.thumbnail_url }] : [],
-        signatures: [],
-      };
-    },
-    initialDataUpdatedAt: () => queryClient.getQueryState(['assets'])?.dataUpdatedAt,
     enabled: isOpen && !!assetId,
     staleTime: 60000,
   });
@@ -652,6 +638,15 @@ function AssetDetailsContent({ id }: { id: string }) {
     }
   }, [watchDeptId, watchCatId, assetId, departments, categories, form]);
 
+  const displayImages = useMemo(() => {
+    const data = assetData || form.getValues();
+    return Array.from(new Set([
+      data?.thumbnail_url,
+      ...(data?.asset_images?.map((img: any) => img.file_url) || []),
+      ...images
+    ])).filter(Boolean) as string[];
+  }, [assetData, form, images]);
+
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (selectedImageIdx === null) return;
@@ -660,14 +655,14 @@ function AssetDetailsContent({ id }: { id: string }) {
         e.preventDefault();
         setSelectedImageIdx(null);
       } else if (e.key === 'ArrowLeft') {
-        setSelectedImageIdx(prev => (prev! > 0 ? prev! - 1 : images.length - 1));
+        setSelectedImageIdx(prev => (prev! > 0 ? prev! - 1 : displayImages.length - 1));
       } else if (e.key === 'ArrowRight') {
-        setSelectedImageIdx(prev => (prev! < images.length - 1 ? prev! + 1 : 0));
+        setSelectedImageIdx(prev => (prev! < displayImages.length - 1 ? prev! + 1 : 0));
       }
     };
     window.addEventListener('keydown', handleKeyDown, true);
     return () => window.removeEventListener('keydown', handleKeyDown, true);
-  }, [selectedImageIdx, images.length]);
+  }, [selectedImageIdx, displayImages.length]);
 
   if (mode === 'view') {
     const displayData = assetData || form.getValues();
@@ -744,11 +739,11 @@ function AssetDetailsContent({ id }: { id: string }) {
               <div className="py-12 text-center text-muted-foreground">Loading details...</div>
             ) : (
               <>
-                {images.length > 0 && (
+                {displayImages.length > 0 && (
                   <div className="space-y-3">
-                    <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Photos ({images.length})</h3>
+                    <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Photos ({displayImages.length})</h3>
                      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4 pb-2">
-                      {images.map((img: string, i: number) => (
+                      {displayImages.map((img: string, i: number) => (
                         <div key={i} onClick={() => setSelectedImageIdx(i)} className="cursor-pointer block rounded-lg overflow-hidden border border-border shadow-sm hover:shadow-md transition-all aspect-[4/3] group relative bg-muted">
                           <img src={getThumbUrl(img)} alt="" loading="lazy" decoding="async" className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105" />
                           <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors flex items-center justify-center">
@@ -818,13 +813,32 @@ function AssetDetailsContent({ id }: { id: string }) {
 
                   <div className="space-y-4">
                     <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider border-b pb-1">Hardware Specs</h3>
-                    <div className="space-y-3">
-                      <DetailItem label="Brand / Model" value={`${displayData.brand || ''} ${displayData.model || ''}`.trim() || null} />
-                      <DetailItem label="CPU / RAM" value={`${displayData.cpu || '-'} / ${displayData.ram || '-'}`} />
-                      <DetailItem label="Storage" value={displayData.storage} />
-                      <DetailItem label="NAS User" value={displayData.nas_user} />
-                      <DetailItem label="Password" value={displayData.password} />
-                    </div>
+                    {Boolean(
+                      displayData.brand || 
+                      displayData.model || 
+                      displayData.cpu || 
+                      displayData.ram || 
+                      displayData.storage || 
+                      displayData.gpu || 
+                      displayData.display
+                    ) ? (
+                      <div className="space-y-3">
+                        <DetailItem label="Brand / Model" value={`${displayData.brand || ''} ${displayData.model || ''}`.trim() || null} />
+                        {displayData.cpu && displayData.ram ? (
+                          <DetailItem label="CPU / RAM" value={`${displayData.cpu} / ${displayData.ram}`} />
+                        ) : (
+                          <>
+                            <DetailItem label="CPU" value={displayData.cpu} />
+                            <DetailItem label="RAM" value={displayData.ram} />
+                          </>
+                        )}
+                        <DetailItem label="Storage" value={displayData.storage} />
+                        <DetailItem label="GPU" value={displayData.gpu} />
+                        <DetailItem label="Display" value={displayData.display} />
+                      </div>
+                    ) : (
+                      <p className="text-xs text-muted-foreground italic">ไม่มีข้อมูลสเปกฮาร์ดแวร์</p>
+                    )}
                   </div>
 
                   {assetId && (
@@ -948,24 +962,24 @@ function AssetDetailsContent({ id }: { id: string }) {
             )}
           </div>
         </div>
-        {selectedImageIdx !== null && (
+        {selectedImageIdx !== null && displayImages[selectedImageIdx] && (
           <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 backdrop-blur-sm p-4 animate-in fade-in duration-200" onClick={() => setSelectedImageIdx(null)}>
             <button onClick={() => setSelectedImageIdx(null)} className="absolute top-4 right-4 text-white hover:text-gray-300 p-2 rounded-full bg-black/40 hover:bg-black/60 transition-colors z-10">
               <X size={24} />
             </button>
             
-            {images.length > 1 && (
+            {displayImages.length > 1 && (
               <>
-                <button onClick={(e) => { e.stopPropagation(); setSelectedImageIdx(prev => (prev! > 0 ? prev! - 1 : images.length - 1)); }} className="absolute left-4 text-white hover:text-gray-300 p-2 rounded-full bg-black/40 hover:bg-black/60 transition-colors z-10">
+                <button onClick={(e) => { e.stopPropagation(); setSelectedImageIdx(prev => (prev! > 0 ? prev! - 1 : displayImages.length - 1)); }} className="absolute left-4 text-white hover:text-gray-300 p-2 rounded-full bg-black/40 hover:bg-black/60 transition-colors z-10">
                   <ChevronLeft size={32} />
                 </button>
-                <button onClick={(e) => { e.stopPropagation(); setSelectedImageIdx(prev => (prev! < images.length - 1 ? prev! + 1 : 0)); }} className="absolute right-4 text-white hover:text-gray-300 p-2 rounded-full bg-black/40 hover:bg-black/60 transition-colors z-10">
+                <button onClick={(e) => { e.stopPropagation(); setSelectedImageIdx(prev => (prev! < displayImages.length - 1 ? prev! + 1 : 0)); }} className="absolute right-4 text-white hover:text-gray-300 p-2 rounded-full bg-black/40 hover:bg-black/60 transition-colors z-10">
                   <ChevronRight size={32} />
                 </button>
               </>
             )}
             
-            <img src={images[selectedImageIdx]} alt="Full Size" className="max-w-full max-h-[90vh] object-contain rounded-md shadow-2xl animate-in zoom-in-95 duration-200" onClick={(e) => e.stopPropagation()} />
+            <img src={displayImages[selectedImageIdx]} alt="Full Size" className="max-w-full max-h-[90vh] object-contain rounded-md shadow-2xl animate-in zoom-in-95 duration-200" onClick={(e) => e.stopPropagation()} />
           </div>
         )}
 

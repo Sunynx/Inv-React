@@ -597,14 +597,6 @@ export default function AssetsPage() {
             onPageIndexChange={setPageIndex}
             onRowMouseEnter={(row) => {
               router.prefetch(`/assets/${row.id}`);
-              queryClient.setQueryData(['asset', row.id], (old: any) => {
-                if (old) return old;
-                return {
-                  ...row,
-                  asset_images: row.thumbnail_url ? [{ file_url: row.thumbnail_url }] : [],
-                  signatures: [],
-                };
-              });
             }}
             onRowClick={(row) => {
               try {
