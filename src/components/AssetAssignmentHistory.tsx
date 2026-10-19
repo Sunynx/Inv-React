@@ -17,7 +17,8 @@ export default function AssetAssignmentHistory({ assetId, onUserClick }: { asset
       if (error) throw error;
       return data || [];
     },
-    enabled: !!assetId
+    enabled: !!assetId,
+    staleTime: 60000
   });
 
   if (isLoading) {

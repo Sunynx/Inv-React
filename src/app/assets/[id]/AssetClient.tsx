@@ -9,6 +9,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 
 import { useParams, useRouter, useSearchParams } from 'next/navigation';
+import dynamic from 'next/dynamic';
 import { Camera, Upload, X, CheckCircle2, AlertCircle, Clock, Ban, ChevronLeft, ChevronRight, Edit, FileText, FileSpreadsheet, Paperclip, Cpu, Monitor, Wifi, Users, ShoppingCart, Image as ImageIcon, Wand2, Printer, PenLine, Trash2, Loader2, ArrowRightLeft, ArrowLeft } from 'lucide-react';
 import SignatureCanvas from 'react-signature-canvas';
 import { QRCodeSVG } from 'qrcode.react';
@@ -17,14 +18,23 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import AssetTimeline from '@/components/AssetTimeline';
-import UserHistoryModal from '@/components/UserHistoryModal';
 import AssetAssignmentHistory from '@/components/AssetAssignmentHistory';
-import TransferModal from '@/components/TransferModal';
+import AssetDetailsSkeleton from '@/components/AssetDetailsSkeleton';
 import { MultiSelect } from '@/components/ui/multi-select';
 import { generateAssetCodeStr } from '@/lib/utils';
 import { logAudit, formatAuditDetails } from '@/lib/auditLog';
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer } from 'recharts';
-import SeatAssignmentModal from '@/components/SeatAssignmentModal';
+
+const UserHistoryModal = dynamic(() => import('@/components/UserHistoryModal'), { ssr: false });
+const TransferModal = dynamic(() => import('@/components/TransferModal'), { ssr: false });
+const SeatAssignmentModal = dynamic(() => import('@/components/SeatAssignmentModal'), { ssr: false });
+const DepreciationChart = dynamic(() => import('@/components/DepreciationChart'), { 
+  ssr: false,
+  loading: () => (
+    <div className="w-full h-[120px] bg-muted/20 animate-pulse rounded-md flex items-center justify-center">
+      <span className="text-xs text-muted-foreground opacity-50">Loading chart...</span>
+    </div>
+  )
+});
 
 const statusConfig: Record<string, { icon: any; className: string }> = {
   'ใช้งาน': { icon: CheckCircle2, className: 'text-emerald-600 bg-emerald-50 border-emerald-200/50' },
@@ -105,7 +115,7 @@ const getThumbUrl = (url: string) => url;
 
 export default function AssetClient({ id }: { id: string }) {
   return (
-    <React.Suspense fallback={<div className="min-h-screen flex items-center justify-center p-12 text-muted-foreground">Loading asset details...</div>}>
+    <React.Suspense fallback={<AssetDetailsSkeleton />}>
       <AssetDetailsContent id={id} />
     </React.Suspense>
   );
@@ -159,7 +169,6 @@ function AssetDetailsContent({ id }: { id: string }) {
   const sigCanvas = useRef<SignatureCanvas>(null);
   const [uploading, setUploading] = useState(false);
   const [selectedImageIdx, setSelectedImageIdx] = useState<number | null>(null);
-  const [isAnimationDone, setIsAnimationDone] = useState(false);
   const queryClient = useQueryClient();
 
   const [images, setImages] = useState<string[]>([]);
@@ -191,7 +200,8 @@ function AssetDetailsContent({ id }: { id: string }) {
         categories: catRes.data || []
       };
     },
-    enabled: isOpen
+    enabled: isOpen,
+    staleTime: 5 * 60 * 1000, // 5 min cache
   });
 
   const { departments = [], categories = [] } = lookups || {};
@@ -216,8 +226,20 @@ function AssetDetailsContent({ id }: { id: string }) {
         signatures: sigRes.data ? [sigRes.data] : [],
       };
     },
+    initialData: () => {
+      if (!assetId) return undefined;
+      const cachedAssets = queryClient.getQueryData<any[]>(['assets']);
+      const cached = cachedAssets?.find((a: any) => a.id === assetId);
+      if (!cached) return undefined;
+      return {
+        ...cached,
+        asset_images: cached.thumbnail_url ? [{ file_url: cached.thumbnail_url }] : [],
+        signatures: [],
+      };
+    },
+    initialDataUpdatedAt: () => queryClient.getQueryState(['assets'])?.dataUpdatedAt,
     enabled: isOpen && !!assetId,
-    staleTime: 30000, // cache for 30s so re-opens don't re-fetch
+    staleTime: 60000,
   });
 
   const { data: assetLicenses, isLoading: isLoadingLicenses } = useQuery({
@@ -231,7 +253,8 @@ function AssetDetailsContent({ id }: { id: string }) {
       if (error) throw error;
       return data || [];
     },
-    enabled: isOpen && !!assetId
+    enabled: isOpen && !!assetId,
+    staleTime: 60000,
   });
 
   const { data: licenseOptions } = useQuery({
@@ -395,23 +418,6 @@ function AssetDetailsContent({ id }: { id: string }) {
     if (monthsPassed < 0) return Number(price);
     const currentValue = Number(price) * (1 - (monthsPassed / lifespanMonths));
     return currentValue > 0 ? currentValue : 0;
-  };
-
-  const generateDepreciationData = (price: any, purchaseDate: any) => {
-    if (!price || !purchaseDate) return [];
-    const pDate = new Date(purchaseDate);
-    const data = [];
-    const lifespanYears = 5;
-    for (let i = 0; i <= lifespanYears; i++) {
-      const yearDate = new Date(pDate.getFullYear() + i, pDate.getMonth(), pDate.getDate());
-      const value = Number(price) * (1 - (i / lifespanYears));
-      data.push({
-        year: yearDate.getFullYear().toString(),
-        value: value > 0 ? value : 0,
-        actualDate: yearDate
-      });
-    }
-    return data;
   };
 
   const removeAttachment = (idx: number) => {
@@ -595,15 +601,6 @@ function AssetDetailsContent({ id }: { id: string }) {
   const watchCatId = form.watch('category_id');
 
   useEffect(() => {
-    if (isOpen) {
-      const t = setTimeout(() => setIsAnimationDone(true), 300);
-      return () => clearTimeout(t);
-    } else {
-      setIsAnimationDone(false);
-    }
-  }, [isOpen]);
-
-  useEffect(() => {
     if (isOpen && assetId) {
       const saveDraft = () => {
         const draft = {
@@ -673,15 +670,26 @@ function AssetDetailsContent({ id }: { id: string }) {
   }, [selectedImageIdx, images.length]);
 
   if (mode === 'view') {
-    const formData = form.getValues();
-    const config = statusConfig[formData.status || 'ใช้งาน'] || { icon: AlertCircle, className: 'text-muted-foreground bg-muted border-border/50' };
+    const displayData = assetData || form.getValues();
+    const config = statusConfig[displayData.status || 'ใช้งาน'] || { icon: AlertCircle, className: 'text-muted-foreground bg-muted border-border/50' };
     const StatusIcon = config.icon;
 
     return (
       <div className="min-h-screen bg-background text-foreground flex flex-col">
         {/* Header with Back Button */}
         <div className="sticky top-0 z-10 bg-background/80 backdrop-blur-md border-b border-border px-4 py-3 sm:px-6 lg:px-8 flex items-center justify-between print:hidden">
-          <Button variant="ghost" size="sm" onClick={() => router.back()} className="gap-2 text-muted-foreground hover:text-foreground">
+          <Button 
+            variant="ghost" 
+            size="sm" 
+            onClick={() => {
+              if (window.history.length > 1) {
+                router.back();
+              } else {
+                router.push('/assets');
+              }
+            }} 
+            className="gap-2 text-muted-foreground hover:text-foreground cursor-pointer"
+          >
             <ArrowLeft size={16} />
             กลับไปหน้ารวมอุปกรณ์
           </Button>
@@ -691,9 +699,9 @@ function AssetDetailsContent({ id }: { id: string }) {
           <div className="p-6 pb-5 border-b border-border bg-muted/10 rounded-t-xl mt-4 mx-4 sm:mx-6 lg:mx-8 shadow-sm">
             <div className="flex flex-col md:flex-row justify-between items-start gap-4">
               <div className="flex-1 min-w-0 w-full">
-                <h2 className="text-xl sm:text-2xl font-bold tracking-tight text-foreground break-words">{formData.name || 'Unknown Asset'}</h2>
+                <h2 className="text-xl sm:text-2xl font-bold tracking-tight text-foreground break-words">{displayData.name || 'Unknown Asset'}</h2>
                 <p className="text-sm font-medium text-muted-foreground mt-1 flex flex-wrap items-center gap-2">
-                  <span className="font-mono bg-muted px-2 py-0.5 rounded-md break-all">{formData.asset_code || '-'}</span>
+                  <span className="font-mono bg-muted px-2 py-0.5 rounded-md break-all">{displayData.asset_code || '-'}</span>
                 </p>
               </div>
               <div className="flex flex-col items-start md:items-end gap-2 mt-1 md:mt-0 print:hidden w-full md:w-auto">
@@ -725,14 +733,14 @@ function AssetDetailsContent({ id }: { id: string }) {
                 </div>
                 <div className={`px-3 py-1 rounded-full text-xs font-semibold flex items-center gap-2 border shadow-sm w-fit ${config.className}`}>
                   <StatusIcon size={14} />
-                  {formData.status}
+                  {displayData.status}
                 </div>
               </div>
             </div>
           </div>
 
           <div className="p-6 mx-4 sm:mx-6 lg:mx-8 mb-8 space-y-8 flex-1 bg-card rounded-b-xl border border-t-0 shadow-sm">
-            {isLoadingAsset || isLoadingLookups ? (
+            {isLoadingAsset && !assetData ? (
               <div className="py-12 text-center text-muted-foreground">Loading details...</div>
             ) : (
               <>
@@ -740,15 +748,13 @@ function AssetDetailsContent({ id }: { id: string }) {
                   <div className="space-y-3">
                     <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Photos ({images.length})</h3>
                      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4 pb-2">
-                      {isAnimationDone ? images.map((img: string, i: number) => (
+                      {images.map((img: string, i: number) => (
                         <div key={i} onClick={() => setSelectedImageIdx(i)} className="cursor-pointer block rounded-lg overflow-hidden border border-border shadow-sm hover:shadow-md transition-all aspect-[4/3] group relative bg-muted">
-                          <img src={getThumbUrl(img)} alt="" decoding="async" className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105" />
+                          <img src={getThumbUrl(img)} alt="" loading="lazy" decoding="async" className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105" />
                           <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors flex items-center justify-center">
                             <span className="opacity-0 group-hover:opacity-100 text-white drop-shadow-md font-medium text-sm transition-opacity">View</span>
                           </div>
                         </div>
-                      )) : images.map((_, i: number) => (
-                        <div key={i} className="rounded-lg aspect-[4/3] bg-muted animate-pulse border border-border"></div>
                       ))}
                     </div>
                   </div>
@@ -758,15 +764,15 @@ function AssetDetailsContent({ id }: { id: string }) {
                   <div className="space-y-4">
                     <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider border-b pb-1">Basic Info</h3>
                     <div className="space-y-3">
-                      <DetailItem label="Category" value={categories.find(c => c.id === formData.category_id)?.name} />
-                      <DetailItem label="Department" value={departments.find(d => d.id === formData.department_id)?.name} />
-                      <DetailItem label="Serial Number" value={formData.serial_number} />
-                      {formData.asset_code && (
+                      <DetailItem label="Category" value={categories.find(c => c.id === displayData.category_id)?.name} />
+                      <DetailItem label="Department" value={departments.find(d => d.id === displayData.department_id)?.name} />
+                      <DetailItem label="Serial Number" value={displayData.serial_number} />
+                      {displayData.asset_code && (
                         <div className="pt-2 print:hidden">
                           <p className="text-xs text-muted-foreground mb-1">Asset QR Code</p>
                           <div className="bg-white p-2 rounded-md border inline-block shadow-sm">
                             <QRCodeSVG 
-                              value={typeof window !== 'undefined' ? `${window.location.origin}/scan?code=${formData.asset_code}` : ''} 
+                              value={typeof window !== 'undefined' ? `${window.location.origin}/scan?code=${displayData.asset_code}` : ''} 
                               size={80}
                               level="H"
                               imageSettings={{
@@ -785,13 +791,13 @@ function AssetDetailsContent({ id }: { id: string }) {
                   <div className="space-y-4">
                     <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider border-b pb-1">Assignment</h3>
                     <div className="space-y-3">
-                      <DetailItem label="Location / Room" value={formData.location} />
-                      <DetailItem label="Assigned User" value={renderUserLinks(formData.assigned_user)} />
-                      <DetailItem label="Email" value={formData.assigned_email} />
-                      <DetailItem label="Position" value={formData.user_position} />
-                      <DetailItem label="Previous User" value={renderUserLinks(formData.previous_user)} />
-                      <DetailItem label="Handover Signer" value={renderUserLinks(formData.assigned_user)} />
-                      <DetailItem label="Signer Position" value={formData.user_position} />
+                      <DetailItem label="Location / Room" value={displayData.location} />
+                      <DetailItem label="Assigned User" value={renderUserLinks(displayData.assigned_user)} />
+                      <DetailItem label="Email" value={displayData.assigned_email} />
+                      <DetailItem label="Position" value={displayData.user_position} />
+                      <DetailItem label="Previous User" value={renderUserLinks(displayData.previous_user)} />
+                      <DetailItem label="Handover Signer" value={renderUserLinks(displayData.assigned_user)} />
+                      <DetailItem label="Signer Position" value={displayData.user_position} />
                       {signatureUrl ? (
                         <div className="pt-2 border-t mt-2">
                           <p className="text-xs font-medium text-muted-foreground mb-1">ลายเซ็นผู้รับมอบ</p>
@@ -813,11 +819,11 @@ function AssetDetailsContent({ id }: { id: string }) {
                   <div className="space-y-4">
                     <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider border-b pb-1">Hardware Specs</h3>
                     <div className="space-y-3">
-                      <DetailItem label="Brand / Model" value={`${formData.brand || ''} ${formData.model || ''}`.trim() || null} />
-                      <DetailItem label="CPU / RAM" value={`${formData.cpu || '-'} / ${formData.ram || '-'}`} />
-                      <DetailItem label="Storage" value={formData.storage} />
-                      <DetailItem label="NAS User" value={formData.nas_user} />
-                      <DetailItem label="Password" value={formData.password} />
+                      <DetailItem label="Brand / Model" value={`${displayData.brand || ''} ${displayData.model || ''}`.trim() || null} />
+                      <DetailItem label="CPU / RAM" value={`${displayData.cpu || '-'} / ${displayData.ram || '-'}`} />
+                      <DetailItem label="Storage" value={displayData.storage} />
+                      <DetailItem label="NAS User" value={displayData.nas_user} />
+                      <DetailItem label="Password" value={displayData.password} />
                     </div>
                   </div>
 
@@ -846,11 +852,11 @@ function AssetDetailsContent({ id }: { id: string }) {
                   <div className="space-y-4">
                     <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider border-b pb-1">Software & Licenses</h3>
                     <div className="space-y-3">
-                      <DetailItem label="OS" value={formData.os} />
-                      <DetailItem label="Windows Version" value={formData.windows_version} />
-                      <DetailItem label="OS Key" value={formData.os_key} />
-                      <DetailItem label="Office Version" value={formData.office_version} />
-                      <DetailItem label="Office License" value={formData.office_license} />
+                      <DetailItem label="OS" value={displayData.os} />
+                      <DetailItem label="Windows Version" value={displayData.windows_version} />
+                      <DetailItem label="OS Key" value={displayData.os_key} />
+                      <DetailItem label="Office Version" value={displayData.office_version} />
+                      <DetailItem label="Office License" value={displayData.office_license} />
                     </div>
                     {assetLicenses && assetLicenses.length > 0 && (
                       <div className="mt-4">
@@ -881,10 +887,10 @@ function AssetDetailsContent({ id }: { id: string }) {
                   <div className="space-y-4">
                     <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider border-b pb-1">Network & Security</h3>
                     <div className="space-y-3">
-                      <DetailItem label="IP Address" value={formData.ip_address} />
-                      <DetailItem label="MAC Address" value={formData.mac_address} />
-                      <DetailItem label="Password / PIN" value={formData.password} />
-                      <DetailItem label="NAS User" value={formData.nas_user} />
+                      <DetailItem label="IP Address" value={displayData.ip_address} />
+                      <DetailItem label="MAC Address" value={displayData.mac_address} />
+                      <DetailItem label="Password / PIN" value={displayData.password} />
+                      <DetailItem label="NAS User" value={displayData.nas_user} />
                     </div>
                   </div>
 
@@ -893,43 +899,23 @@ function AssetDetailsContent({ id }: { id: string }) {
                     
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
                       <div className="space-y-3">
-                        <DetailItem label="Purchase Date" value={formData.purchase_date} />
-                        <DetailItem label="Warranty Expiry" value={formData.warranty_expiry} />
-                        <DetailItem label="Supplier" value={formData.supplier} />
-                        <DetailItem label="PO/PR Number" value={formData.po_number} />
+                        <DetailItem label="Purchase Date" value={displayData.purchase_date} />
+                        <DetailItem label="Warranty Expiry" value={displayData.warranty_expiry} />
+                        <DetailItem label="Supplier" value={displayData.supplier} />
+                        <DetailItem label="PO/PR Number" value={displayData.po_number} />
                       </div>
                       
-                      {formData.price && formData.purchase_date ? (
+                      {displayData.price && displayData.purchase_date ? (
                         <div className="bg-slate-50 dark:bg-slate-900/50 rounded-xl p-4 border border-border/50 flex flex-col justify-center">
                           <div className="flex justify-between items-center mb-3">
                             <span className="text-sm font-medium text-muted-foreground">Purchase Price</span>
-                            <span className="text-sm font-bold">฿{Number(formData.price).toLocaleString()}</span>
+                            <span className="text-sm font-bold">฿{Number(displayData.price).toLocaleString()}</span>
                           </div>
                           <div className="flex justify-between items-center mb-4 pb-4 border-b border-border/50">
                             <span className="text-sm font-medium text-muted-foreground">Current Book Value</span>
-                            <span className="text-lg font-bold text-primary">฿{calculateDepreciation(formData.price, formData.purchase_date)?.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</span>
+                            <span className="text-lg font-bold text-primary">฿{calculateDepreciation(displayData.price, displayData.purchase_date)?.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</span>
                           </div>
-                          <div className="h-[120px] w-full">
-                            {isAnimationDone ? (
-                              <ResponsiveContainer width="100%" height="100%">
-                                <LineChart data={generateDepreciationData(formData.price, formData.purchase_date)} margin={{ top: 5, right: 10, left: -20, bottom: 0 }}>
-                                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="var(--border)" opacity={0.5} />
-                                  <XAxis dataKey="year" axisLine={false} tickLine={false} tick={{ fontSize: 10, fill: 'var(--muted-foreground)' }} dy={5} />
-                                  <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 10, fill: 'var(--muted-foreground)' }} tickFormatter={(val) => `฿${(val/1000)}k`} />
-                                  <RechartsTooltip 
-                                    contentStyle={{ borderRadius: '8px', border: '1px solid var(--border)', backgroundColor: 'var(--card)', color: 'var(--card-foreground)', fontSize: '12px' }} 
-                                    formatter={(val: number) => [`฿${val.toLocaleString(undefined, {minimumFractionDigits: 0, maximumFractionDigits: 0})}`, 'Book Value']}
-                                    labelFormatter={(label) => `Year ${label}`}
-                                  />
-                                  <Line type="monotone" dataKey="value" stroke="#3b82f6" strokeWidth={3} dot={{ r: 3, fill: '#3b82f6', strokeWidth: 0 }} activeDot={{ r: 5 }} isAnimationActive={false} />
-                                </LineChart>
-                              </ResponsiveContainer>
-                            ) : (
-                              <div className="w-full h-full bg-muted/20 animate-pulse rounded-md flex items-center justify-center">
-                                <span className="text-xs text-muted-foreground opacity-50">Loading chart...</span>
-                              </div>
-                            )}
-                          </div>
+                          <DepreciationChart price={displayData.price} purchaseDate={displayData.purchase_date} />
                           <div className="text-[10px] text-center text-muted-foreground mt-2">5-Year Straight Line Depreciation</div>
                         </div>
                       ) : (
@@ -944,10 +930,10 @@ function AssetDetailsContent({ id }: { id: string }) {
                 </div>
 
                 <div className="grid grid-cols-2 gap-x-8 gap-y-8">
-                  {formData.notes && (
+                  {displayData.notes && (
                     <div className="space-y-2">
                       <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider border-b pb-1">Notes</h3>
-                      <p className="text-sm bg-muted/30 p-3 rounded-md border border-border/50">{formData.notes}</p>
+                      <p className="text-sm bg-muted/30 p-3 rounded-md border border-border/50">{displayData.notes}</p>
                     </div>
                   )}
                 </div>

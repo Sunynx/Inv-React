@@ -186,7 +186,8 @@ export default function AssetTimeline({ assetId }: { assetId: string }) {
 
       return events.sort((a, b) => b.date.getTime() - a.date.getTime());
     },
-    enabled: !!assetId
+    enabled: !!assetId,
+    staleTime: 60000
   });
 
   if (isLoading) {

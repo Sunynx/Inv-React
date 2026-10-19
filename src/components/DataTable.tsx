@@ -70,9 +70,12 @@ interface DataTableProps<TData, TValue> {
   data: TData[];
   isLoading?: boolean;
   onRowClick?: (row: TData) => void;
+  onRowMouseEnter?: (row: TData) => void;
   emptyState?: React.ReactNode;
   enableRowSelection?: boolean;
   onRowSelectionChange?: (selectedRows: TData[]) => void;
+  pageIndex?: number;
+  onPageIndexChange?: (pageIndex: number) => void;
 }
 
 export function DataTable<TData, TValue>({
@@ -80,13 +83,28 @@ export function DataTable<TData, TValue>({
   data,
   isLoading = false,
   onRowClick,
+  onRowMouseEnter,
   emptyState,
   enableRowSelection = false,
   onRowSelectionChange,
+  pageIndex,
+  onPageIndexChange,
 }: DataTableProps<TData, TValue>) {
   const [sorting, setSorting] = useState<SortingState>([]);
   const [rowSelection, setRowSelection] = useState<RowSelectionState>({});
-  const [pagination, setPagination] = useState({ pageIndex: 0, pageSize: 15 });
+  const [internalPagination, setInternalPagination] = useState({ pageIndex: pageIndex ?? 0, pageSize: 15 });
+
+  const pagination = pageIndex !== undefined
+    ? { pageIndex, pageSize: internalPagination.pageSize }
+    : internalPagination;
+
+  const handlePaginationChange = (updater: any) => {
+    const nextPagination = typeof updater === 'function' ? updater(pagination) : updater;
+    setInternalPagination(nextPagination);
+    if (onPageIndexChange && nextPagination.pageIndex !== pagination.pageIndex) {
+      onPageIndexChange(nextPagination.pageIndex);
+    }
+  };
 
   const table = useReactTable({
     data,
@@ -97,7 +115,7 @@ export function DataTable<TData, TValue>({
     onRowSelectionChange: setRowSelection,
     getSortedRowModel: getSortedRowModel(),
     enableRowSelection,
-    onPaginationChange: setPagination,
+    onPaginationChange: handlePaginationChange,
     autoResetPageIndex: false,
     state: {
       sorting,
@@ -113,12 +131,13 @@ export function DataTable<TData, TValue>({
     }
   }, [rowSelection, table, onRowSelectionChange]);
 
-  // Reset to page 0 only when the number of rows changes (e.g. filter/search applied)
-  // This does NOT fire when parent re-renders from opening AssetSheet
+  // Reset to page 0 only when uncontrolled and the number of rows changes
   const dataLength = data.length;
   useEffect(() => {
-    setPagination(prev => ({ ...prev, pageIndex: 0 }));
-  }, [dataLength]);
+    if (pageIndex === undefined) {
+      setInternalPagination(prev => ({ ...prev, pageIndex: 0 }));
+    }
+  }, [dataLength, pageIndex]);
 
   return (
     <div className="space-y-4">
@@ -180,6 +199,7 @@ export function DataTable<TData, TValue>({
                   data-state={row.getIsSelected() && "selected"}
                   className={`border-border/50 hover:bg-muted/30 transition-colors ${onRowClick ? 'cursor-pointer' : ''}`}
                   onClick={() => onRowClick?.(row.original)}
+                  onMouseEnter={() => onRowMouseEnter?.(row.original)}
                 >
                   {row.getVisibleCells().map((cell) => (
                     <TableCell 

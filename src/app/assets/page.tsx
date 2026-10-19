@@ -3,7 +3,7 @@ import { useState, useEffect, Suspense, useMemo } from 'react';
 import { useSearchParams, useRouter, usePathname } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { Search, Plus, FileSpreadsheet, MoreHorizontal, Edit, Trash2, CheckCircle2, AlertCircle, Clock, Ban, Download, Printer, CheckSquare, Bookmark, BookmarkPlus, MoveRight } from 'lucide-react';
+import { Search, Plus, FileSpreadsheet, MoreHorizontal, Edit, Trash2, CheckCircle2, AlertCircle, Clock, Ban, Download, Printer, CheckSquare, Bookmark, BookmarkPlus, MoveRight, RotateCcw, X } from 'lucide-react';
 import { QRCodeSVG } from 'qrcode.react';
 import toast from 'react-hot-toast';
 import ReportExportModal from '@/components/ReportExportModal';
@@ -37,12 +37,14 @@ function HighlightHandler({
   onHighlight,
   onFilterStatus,
   onFilterCategory,
-  onFilterDepartment
+  onFilterDepartment,
+  onSearchTerm,
 }: {
   onHighlight: (id: string) => void,
   onFilterStatus: (status: string) => void,
   onFilterCategory: (category: string[]) => void,
-  onFilterDepartment: (department: string[]) => void
+  onFilterDepartment: (department: string[]) => void,
+  onSearchTerm?: (search: string) => void,
 }) {
   const searchParams = useSearchParams();
   const router = useRouter();
@@ -51,6 +53,7 @@ function HighlightHandler({
   const statusFilter = searchParams.get('status');
   const categoryFilter = searchParams.get('category');
   const departmentFilter = searchParams.get('department');
+  const searchFilter = searchParams.get('search');
 
   useEffect(() => {
     if (highlightId) {
@@ -72,13 +75,17 @@ function HighlightHandler({
       onFilterDepartment([departmentFilter]);
       hasFilter = true;
     }
+    if (searchFilter && onSearchTerm) {
+      onSearchTerm(searchFilter);
+      hasFilter = true;
+    }
 
     if (hasFilter) {
       // Clean up the URL parameters without triggering a full route transition
       router.replace(pathname, { scroll: false });
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [highlightId, statusFilter, categoryFilter, departmentFilter]);
+  }, [highlightId, statusFilter, categoryFilter, departmentFilter, searchFilter]);
 
   return null;
 }
@@ -90,6 +97,89 @@ export default function AssetsPage() {
   const [filterTab, setFilterTab] = useState('all');
   const [filterDepartment, setFilterDepartment] = useState<string[]>([]);
   const [filterCategory, setFilterCategory] = useState<string[]>([]);
+  const [sortBy, setSortBy] = useState('newest');
+  const [pageIndex, setPageIndex] = useState(0);
+  const [isFilterRestored, setIsFilterRestored] = useState(false);
+
+  // Restore filter and search state from sessionStorage so navigating back keeps previous results
+  useEffect(() => {
+    try {
+      const saved = sessionStorage.getItem('asset_filter_state');
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (parsed.searchTerm !== undefined) setSearchTerm(parsed.searchTerm);
+        if (parsed.filterTab !== undefined) setFilterTab(parsed.filterTab);
+        if (Array.isArray(parsed.filterDepartment)) setFilterDepartment(parsed.filterDepartment);
+        if (Array.isArray(parsed.filterCategory)) setFilterCategory(parsed.filterCategory);
+        if (parsed.sortBy !== undefined) setSortBy(parsed.sortBy);
+        if (typeof parsed.pageIndex === 'number') setPageIndex(parsed.pageIndex);
+      }
+    } catch (e) {
+      console.error('Failed to parse saved asset filters', e);
+    }
+    setIsFilterRestored(true);
+  }, []);
+
+  // Sync current filter and pagination state to sessionStorage
+  useEffect(() => {
+    if (!isFilterRestored) return;
+    try {
+      sessionStorage.setItem('asset_filter_state', JSON.stringify({
+        searchTerm,
+        filterTab,
+        filterDepartment,
+        filterCategory,
+        sortBy,
+        pageIndex
+      }));
+    } catch (e) {}
+  }, [searchTerm, filterTab, filterDepartment, filterCategory, sortBy, pageIndex, isFilterRestored]);
+
+  const handleSearchChange = (val: string) => {
+    setSearchTerm(val);
+    setPageIndex(0);
+  };
+
+  const handleTabChange = (tab: string) => {
+    setFilterTab(tab);
+    setPageIndex(0);
+  };
+
+  const handleDepartmentChange = (depts: string[]) => {
+    setFilterDepartment(depts);
+    setPageIndex(0);
+  };
+
+  const handleCategoryChange = (cats: string[]) => {
+    setFilterCategory(cats);
+    setPageIndex(0);
+  };
+
+  const handleSortChange = (sort: string) => {
+    setSortBy(sort);
+    setPageIndex(0);
+  };
+
+  const hasActiveFilters = Boolean(
+    searchTerm !== '' ||
+    filterTab !== 'all' ||
+    (filterDepartment && filterDepartment.length > 0) ||
+    (filterCategory && filterCategory.length > 0) ||
+    sortBy !== 'newest'
+  );
+
+  const handleClearFilters = () => {
+    setSearchTerm('');
+    setFilterTab('all');
+    setFilterDepartment([]);
+    setFilterCategory([]);
+    setSortBy('newest');
+    setPageIndex(0);
+    try {
+      sessionStorage.removeItem('asset_filter_state');
+    } catch (e) {}
+  };
+
   const [savedViews, setSavedViews] = useState<{ name: string, dept: string[], cat: string[] }[]>([]);
   useEffect(() => {
     const views = localStorage.getItem('asset_saved_views');
@@ -103,7 +193,6 @@ export default function AssetsPage() {
     localStorage.setItem('asset_saved_views', JSON.stringify(newViews));
     toast.success('View saved successfully!');
   };
-  const [sortBy, setSortBy] = useState('newest');
   const [isExportModalOpen, setIsExportModalOpen] = useState(false);
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
   const [selectedRows, setSelectedRows] = useState<any[]>([]);
@@ -341,7 +430,7 @@ export default function AssetsPage() {
 
       <Card className="shadow-sm border border-slate-200/60 dark:border-slate-800/60 rounded-2xl overflow-hidden bg-white dark:bg-slate-900 transition-colors duration-300 print:hidden">
         <div className="p-5 border-b border-slate-100 dark:border-slate-800/50 flex flex-col gap-5">
-          <Tabs.Root value={filterTab} onValueChange={setFilterTab} className="w-full overflow-x-auto hide-scrollbar">
+          <Tabs.Root value={filterTab} onValueChange={handleTabChange} className="w-full overflow-x-auto hide-scrollbar">
             <Tabs.List className="flex gap-1.5 inline-flex w-max bg-slate-100/50 dark:bg-slate-800/50 p-1.5 rounded-xl border border-slate-200/50 dark:border-slate-700/50">
               {[
                 { value: 'all', label: 'ทั้งหมด', count: assets.length },
@@ -362,21 +451,47 @@ export default function AssetsPage() {
           <div className="flex flex-wrap lg:flex-nowrap items-center justify-between gap-4 w-full">
             <div className="relative w-full lg:w-72 shrink-0">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
-              <Input placeholder="ค้นหาชื่อ, รหัส, S/N, สถานที่..." className="pl-10 h-10 bg-white/60 dark:bg-slate-900/60 border-slate-200/60 shadow-sm focus:ring-2 focus:ring-blue-500/20 text-sm w-full rounded-xl transition-all" value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} />
+              <Input 
+                placeholder="ค้นหาชื่อ, รหัส, S/N, สถานที่..." 
+                className="pl-10 pr-9 h-10 bg-white/60 dark:bg-slate-900/60 border-slate-200/60 shadow-sm focus:ring-2 focus:ring-blue-500/20 text-sm w-full rounded-xl transition-all" 
+                value={searchTerm} 
+                onChange={(e) => handleSearchChange(e.target.value)} 
+              />
+              {searchTerm && (
+                <button
+                  type="button"
+                  onClick={() => handleSearchChange('')}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 p-0.5 rounded-full cursor-pointer"
+                  title="ล้างคำค้นหา"
+                >
+                  <X className="h-4 w-4" />
+                </button>
+              )}
             </div>
 
             <div className="grid grid-cols-2 sm:flex sm:flex-wrap items-center gap-3 w-full lg:w-auto justify-start lg:justify-end">
+              {hasActiveFilters && (
+                <Button 
+                  variant="ghost" 
+                  size="sm" 
+                  onClick={handleClearFilters} 
+                  className="h-10 px-3 text-xs text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/30 rounded-xl cursor-pointer"
+                  title="รีเซ็ตตัวกรองทั้งหมด"
+                >
+                  <RotateCcw className="w-3.5 h-3.5 mr-1.5" /> ล้างตัวกรอง
+                </Button>
+              )}
               <MultiSelectPopover
                 title="ทุกแผนก"
                 options={uniqueDepartments.map(d => ({ label: d, value: d }))}
                 selected={filterDepartment || []}
-                onChange={setFilterDepartment}
+                onChange={handleDepartmentChange}
               />
               <MultiSelectPopover
                 title="ทุกประเภท"
                 options={uniqueCategories.map(c => ({ label: c, value: c }))}
                 selected={filterCategory || []}
-                onChange={setFilterCategory}
+                onChange={handleCategoryChange}
               />
               <DropdownMenu>
                 <DropdownMenuTrigger
@@ -401,7 +516,7 @@ export default function AssetsPage() {
               </DropdownMenu>
 
               <div className="col-span-2 sm:col-span-1 w-full sm:w-[140px] shrink-0">
-                <Select value={sortBy} onValueChange={setSortBy}>
+                <Select value={sortBy} onValueChange={handleSortChange}>
                   <SelectTrigger className="!h-10 px-4 bg-white dark:bg-slate-900 border-slate-200/60 dark:border-slate-800/60 shadow-sm text-sm w-full flex justify-between rounded-xl transition-all">
                     <span className="truncate">
                       {sortBy === 'newest' && 'เพิ่มใหม่ล่าสุด'}
@@ -478,7 +593,30 @@ export default function AssetsPage() {
             isLoading={isLoading}
             enableRowSelection={true}
             onRowSelectionChange={setSelectedRows}
+            pageIndex={pageIndex}
+            onPageIndexChange={setPageIndex}
+            onRowMouseEnter={(row) => {
+              router.prefetch(`/assets/${row.id}`);
+              queryClient.setQueryData(['asset', row.id], (old: any) => {
+                if (old) return old;
+                return {
+                  ...row,
+                  asset_images: row.thumbnail_url ? [{ file_url: row.thumbnail_url }] : [],
+                  signatures: [],
+                };
+              });
+            }}
             onRowClick={(row) => {
+              try {
+                sessionStorage.setItem('asset_filter_state', JSON.stringify({
+                  searchTerm,
+                  filterTab,
+                  filterDepartment,
+                  filterCategory,
+                  sortBy,
+                  pageIndex
+                }));
+              } catch (e) {}
               router.push(`/assets/${row.id}`);
             }}
             emptyState={
@@ -559,13 +697,16 @@ export default function AssetsPage() {
         <HighlightHandler
           onHighlight={() => {}}
           onFilterStatus={(status) => {
-            setFilterTab(prev => prev === status ? prev : status);
+            handleTabChange(status);
           }}
           onFilterCategory={(category) => {
-            setFilterCategory(prev => JSON.stringify(prev) === JSON.stringify(category) ? prev : category);
+            handleCategoryChange(category);
           }}
           onFilterDepartment={(department) => {
-            setFilterDepartment(prev => JSON.stringify(prev) === JSON.stringify(department) ? prev : department);
+            handleDepartmentChange(department);
+          }}
+          onSearchTerm={(search) => {
+            handleSearchChange(search);
           }}
         />
       </Suspense>
