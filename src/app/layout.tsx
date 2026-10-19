@@ -11,13 +11,30 @@ import Breadcrumbs from '@/components/Breadcrumbs';
 import { Toaster } from 'react-hot-toast';
 import { cn } from "@/lib/utils";
 
+import PWAInstaller from '@/components/PWAInstaller';
+
 const geist = Geist({subsets:['latin'],variable:'--font-sans'});
 
 const inter = Inter({ subsets: ['latin'] });
 
 export const metadata: Metadata = {
-  title: 'AssetQR - IT Asset Inventory System',
-  description: 'Manage IT Assets with ease',
+  title: 'RPM IT - Asset Management System',
+  description: 'ระบบจัดการและสแกนทรัพย์สินไอที Royal Phuket Marina',
+  manifest: '/manifest.json',
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: 'default',
+    title: 'RPM IT',
+  },
+  icons: {
+    icon: [
+      { url: '/icons/icon-192x192.png', sizes: '192x192', type: 'image/png' },
+      { url: '/icons/icon-512x512.png', sizes: '512x512', type: 'image/png' },
+    ],
+    apple: [
+      { url: '/icons/apple-touch-icon.png', sizes: '180x180', type: 'image/png' },
+    ],
+  },
 };
 
 export const viewport: import('next').Viewport = {
@@ -25,6 +42,7 @@ export const viewport: import('next').Viewport = {
   initialScale: 1,
   maximumScale: 1,
   userScalable: false,
+  themeColor: '#1b365d',
 };
 
 export default function RootLayout({
@@ -33,12 +51,18 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en" className={cn("font-sans", geist.variable)} suppressHydrationWarning>
+    <html lang="th" className={cn("font-sans", geist.variable)} suppressHydrationWarning>
       <head>
+        <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png" />
+        <meta name="apple-mobile-web-app-capable" content="yes" />
+        <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+        <meta name="apple-mobile-web-app-title" content="RPM IT" />
+        <meta name="mobile-web-app-capable" content="yes" />
       </head>
       <body suppressHydrationWarning className={`${inter.className} bg-background text-foreground transition-colors duration-300`}>
         <Providers>
           <Toaster position="top-right" />
+          <PWAInstaller />
           <div className="flex min-h-screen w-full bg-slate-50 dark:bg-slate-950 transition-colors duration-300">
             <Sidebar />
             <div className="flex-1 flex flex-col md:ml-64 print:md:ml-0 min-w-0 transition-all duration-300">

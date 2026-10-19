@@ -1,0 +1,80 @@
+{
+  "name": "RPM IT Inventory System",
+  "short_name": "RPM IT",
+  "description": "ระบบจัดการทรัพย์สินไอที Royal Phuket Marina",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#0f172a",
+  "theme_color": "#1b365d",
+  "orientation": "portrait-primary",
+  "scope": "/",
+  "categories": [
+    "business",
+    "productivity",
+    "utilities"
+  ],
+  "icons": [
+    {
+      "src": "/icons/icon-192x192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icons/icon-512x512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icons/icon-maskable-192x192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "maskable"
+    },
+    {
+      "src": "/icons/icon-maskable-512x512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "สแกน QR Code",
+      "short_name": "สแกน QR",
+      "description": "เปิดกล้องสแกนทรัพย์สินเพื่อดูข้อมูลหรือแจ้งซ่อม",
+      "url": "/scan",
+      "icons": [
+        {
+          "src": "/icons/icon-192x192.png",
+          "sizes": "192x192"
+        }
+      ]
+    },
+    {
+      "name": "ค้นหาทรัพย์สิน",
+      "short_name": "อุปกรณ์",
+      "description": "ดูรายการอุปกรณ์ไอทีทั้งหมด",
+      "url": "/assets",
+      "icons": [
+        {
+          "src": "/icons/icon-192x192.png",
+          "sizes": "192x192"
+        }
+      ]
+    },
+    {
+      "name": "แจ้งซ่อม / ตั๋วงาน",
+      "short_name": "ตั๋วซ่อม",
+      "description": "ดูรายการตั๋วแจ้งซ่อมบำรุง",
+      "url": "/tickets",
+      "icons": [
+        {
+          "src": "/icons/icon-192x192.png",
+          "sizes": "192x192"
+        }
+      ]
+    }
+  ]
+}
