@@ -1,8 +1,16 @@
-import { useState, useRef } from 'react';
+'use client';
+
+import React, { useState, useMemo } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
-import { Printer, AlertCircle } from 'lucide-react';
-import { QRCodeSVG } from 'qrcode.react';
+import { Badge } from '@/components/ui/badge';
+import { Printer, AlertCircle, Sliders, Check } from 'lucide-react';
+import AssetLabelSticker, { 
+  STANDARD_LABEL_TEMPLATES, 
+  DEFAULT_LABEL_OPTIONS, 
+  LabelTemplateConfig, 
+  LabelFieldOptions 
+} from '@/components/AssetLabelSticker';
 
 interface BulkPrintQRModalProps {
   isOpen: boolean;
@@ -11,76 +19,204 @@ interface BulkPrintQRModalProps {
 }
 
 export default function BulkPrintQRModal({ isOpen, onClose, selectedAssets }: BulkPrintQRModalProps) {
-  const printRef = useRef<HTMLDivElement>(null);
+  const [selectedTemplateId, setSelectedTemplateId] = useState<string>('50x25');
+  const [options, setOptions] = useState<LabelFieldOptions>(DEFAULT_LABEL_OPTIONS);
+
+  const activeTemplate = useMemo<LabelTemplateConfig>(() => {
+    return STANDARD_LABEL_TEMPLATES.find(t => t.id === selectedTemplateId) || STANDARD_LABEL_TEMPLATES[0];
+  }, [selectedTemplateId]);
 
   const handlePrint = () => {
-    if (!printRef.current) return;
-    const printContent = printRef.current.innerHTML;
-    const originalContent = document.body.innerHTML;
-    
-    // Add print specific styles
-    const printStyle = document.createElement('style');
-    printStyle.innerHTML = `
-      @media print {
-        body * { visibility: hidden; }
-        #print-container, #print-container * { visibility: visible; }
-        #print-container {
-          position: absolute;
-          left: 0;
-          top: 0;
-          width: 100%;
-          padding: 10mm;
-        }
-        .no-print { display: none !important; }
-        @page { margin: 0; size: auto; }
-      }
-    `;
-    document.head.appendChild(printStyle);
-    
-    document.body.innerHTML = `<div id="print-container">${printContent}</div>`;
     window.print();
-    
-    // Restore
-    document.body.innerHTML = originalContent;
-    document.head.removeChild(printStyle);
-    window.location.reload(); // Quick way to restore React event listeners after messing with innerHTML
   };
 
   return (
-    <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
-      <DialogContent className="sm:max-w-[800px] bg-background text-foreground transition-colors duration-300 max-h-[90vh] flex flex-col p-0">
-        <DialogHeader className="p-6 pb-4 border-b shrink-0 flex flex-row items-center justify-between">
-          <div>
-            <DialogTitle className="text-xl font-bold">Print QR Codes</DialogTitle>
-            <p className="text-sm text-muted-foreground mt-1">Preparing {selectedAssets.length} labels for printing</p>
-          </div>
-          <Button onClick={handlePrint} className="bg-blue-600 hover:bg-blue-700 text-white shadow-sm">
-            <Printer className="w-4 h-4 mr-2" /> Print All
-          </Button>
-        </DialogHeader>
+    <>
+      {/* Dynamic Print Styles for Modal */}
+      <style dangerouslySetInnerHTML={{__html: `
+        @media print {
+          body * {
+            visibility: hidden;
+          }
+          #bulk-modal-print-area, #bulk-modal-print-area * {
+            visibility: visible;
+          }
+          #bulk-modal-print-area {
+            position: absolute;
+            left: 0;
+            top: 0;
+            width: 100%;
+            margin: 0;
+            padding: 0;
+            background: white !important;
+          }
 
-        <div className="flex-1 overflow-y-auto p-6 bg-slate-50 dark:bg-slate-900/50">
-          <div className="mb-4 p-3 bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300 rounded-lg text-sm flex items-start gap-2 border border-blue-200 dark:border-blue-800">
-            <AlertCircle className="w-5 h-5 shrink-0 mt-0.5" />
-            <p><strong>Tip for printing:</strong> Set margins to "Minimum" or "None" and ensure "Background graphics" is enabled in your print dialog.</p>
-          </div>
-          
-          <div className="bg-white dark:bg-white text-black p-8 shadow-sm rounded border max-w-full mx-auto" ref={printRef}>
-            <div className="grid grid-cols-2 md:grid-cols-3 gap-6">
-              {selectedAssets.map((asset) => (
-                <div key={asset.id} className="flex flex-col items-center justify-center p-4 border-2 border-dashed border-gray-300 rounded-xl break-inside-avoid">
-                  <div className="font-bold text-center text-sm mb-2">{asset.asset_code}</div>
-                  <QRCodeSVG value={asset.asset_code} size={100} level="M" includeMargin={false} />
-                  <div className="text-xs text-center mt-3 font-medium line-clamp-1">{asset.name}</div>
-                  {asset.departments?.name && (
-                    <div className="text-[10px] text-center text-gray-500 mt-1">{asset.departments.name}</div>
-                  )}
-                </div>
-              ))}
+          ${activeTemplate.category === 'thermal' || activeTemplate.category === 'custom' ? `
+            @page {
+              size: ${activeTemplate.widthMm}mm ${activeTemplate.heightMm}mm;
+              margin: 0mm;
+            }
+            .bulk-thermal-list {
+              display: block;
+            }
+            .bulk-label-item {
+              width: ${activeTemplate.widthMm}mm !important;
+              height: ${activeTemplate.heightMm}mm !important;
+              page-break-after: always;
+              break-after: page;
+              margin: 0 !important;
+              border: none !important;
+              box-shadow: none !important;
+              overflow: hidden;
+            }
+          ` : `
+            @page {
+              size: A4 portrait;
+              margin: 8mm 6mm;
+            }
+            .bulk-a4-grid {
+              display: grid !important;
+              grid-template-columns: ${activeTemplate.id === 'a4_3x8' ? 'repeat(3, 1fr)' : 'repeat(2, 1fr)'} !important;
+              gap: 2mm 3mm !important;
+              page-break-after: always;
+            }
+            .bulk-label-item {
+              width: ${activeTemplate.widthMm}mm !important;
+              height: ${activeTemplate.heightMm}mm !important;
+              page-break-inside: avoid;
+              break-inside: avoid;
+              margin: 0 !important;
+              box-shadow: none !important;
+            }
+          `}
+        }
+      `}} />
+
+      <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
+        <DialogContent className="sm:max-w-[850px] bg-background text-foreground transition-colors duration-300 max-h-[90vh] flex flex-col p-0">
+          <DialogHeader className="p-5 pb-3 border-b shrink-0 flex flex-row items-center justify-between">
+            <div>
+              <DialogTitle className="text-lg font-bold flex items-center gap-2">
+                <Printer className="w-5 h-5 text-primary" />
+                พิมพ์สติกเกอร์บาร์โค้ด ({selectedAssets.length} รายการ)
+              </DialogTitle>
+              <p className="text-xs text-muted-foreground mt-0.5">
+                เลือกขนาดสติกเกอร์ที่ต้องการพิมพ์ (รองรับทั้งม้วน Thermal และแผ่น A4)
+              </p>
+            </div>
+            <div className="flex items-center gap-2">
+              <Button variant="outline" size="sm" onClick={onClose} className="cursor-pointer">
+                ยกเลิก
+              </Button>
+              <Button onClick={handlePrint} className="bg-blue-600 hover:bg-blue-700 text-white shadow-sm cursor-pointer">
+                <Printer className="w-4 h-4 mr-1.5" /> สั่งพิมพ์ทันที
+              </Button>
+            </div>
+          </DialogHeader>
+
+          {/* Configuration & Controls */}
+          <div className="p-4 bg-muted/20 border-b flex flex-wrap items-center justify-between gap-3 text-xs">
+            <div className="flex items-center gap-2">
+              <span className="font-semibold text-foreground">ขนาดสติกเกอร์:</span>
+              <div className="flex flex-wrap gap-1.5">
+                {STANDARD_LABEL_TEMPLATES.filter(t => t.id !== 'custom').map((tmpl) => (
+                  <button
+                    key={tmpl.id}
+                    type="button"
+                    onClick={() => setSelectedTemplateId(tmpl.id)}
+                    className={`px-2.5 py-1 rounded-md text-xs font-medium transition-all cursor-pointer border ${
+                      selectedTemplateId === tmpl.id
+                        ? 'bg-primary text-primary-foreground border-primary shadow-xs'
+                        : 'bg-background hover:bg-muted text-foreground border-border'
+                    }`}
+                  >
+                    {tmpl.name}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div className="flex items-center gap-3">
+              <label className="flex items-center gap-1.5 cursor-pointer">
+                <input 
+                  type="checkbox" 
+                  checked={options.showLogo} 
+                  onChange={(e) => setOptions(prev => ({ ...prev, showLogo: e.target.checked }))} 
+                  className="rounded text-primary h-3.5 w-3.5"
+                />
+                <span>โลโก้ RPM</span>
+              </label>
+
+              <label className="flex items-center gap-1.5 cursor-pointer">
+                <input 
+                  type="checkbox" 
+                  checked={options.showSerial} 
+                  onChange={(e) => setOptions(prev => ({ ...prev, showSerial: e.target.checked }))} 
+                  className="rounded text-primary h-3.5 w-3.5"
+                />
+                <span>Serial Number</span>
+              </label>
             </div>
           </div>
-        </div>
-      </DialogContent>
-    </Dialog>
+
+          {/* Preview Container */}
+          <div className="flex-1 overflow-y-auto p-6 bg-slate-50 dark:bg-slate-900/50 space-y-4">
+            <div className="p-3 bg-blue-50/70 dark:bg-blue-950/40 text-blue-800 dark:text-blue-300 rounded-lg text-xs flex items-start gap-2 border border-blue-200 dark:border-blue-900">
+              <AlertCircle className="w-4 h-4 shrink-0 mt-0.5 text-blue-600" />
+              <p>
+                <strong>คำแนะนำการพิมพ์:</strong> ในหน้าต่าง Print Dialog ให้เลือกขนาดกระดาษให้ตรงกับแม่แบบ ({activeTemplate.widthMm} x {activeTemplate.heightMm} mm) และปรับ Margins เป็น <b>"None"</b>
+              </p>
+            </div>
+
+            {/* Sticker Preview Grid */}
+            <div className="bg-white p-6 shadow-sm rounded-xl border border-slate-200 max-w-full mx-auto">
+              <div className="flex flex-wrap gap-4 items-center justify-center">
+                {selectedAssets.map((asset) => (
+                  <div key={asset.id} className="shadow-xs hover:shadow-md transition-shadow">
+                    <AssetLabelSticker 
+                      asset={asset}
+                      template={activeTemplate}
+                      options={options}
+                      scale={1.5}
+                    />
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Hidden print area for modal */}
+      <div id="bulk-modal-print-area" className="hidden print:block">
+        {activeTemplate.category === 'thermal' || activeTemplate.category === 'custom' ? (
+          <div className="bulk-thermal-list">
+            {selectedAssets.map((asset) => (
+              <div key={asset.id} className="bulk-label-item">
+                <AssetLabelSticker 
+                  asset={asset}
+                  template={activeTemplate}
+                  options={{ ...options, showBorder: false }}
+                  scale={1.0}
+                />
+              </div>
+            ))}
+          </div>
+        ) : (
+          <div className="bulk-a4-grid">
+            {selectedAssets.map((asset) => (
+              <div key={asset.id} className="bulk-label-item">
+                <AssetLabelSticker 
+                  asset={asset}
+                  template={activeTemplate}
+                  options={options}
+                  scale={1.0}
+                />
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+    </>
   );
 }
