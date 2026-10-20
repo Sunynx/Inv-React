@@ -27,14 +27,6 @@ import { logAudit, formatAuditDetails } from '@/lib/auditLog';
 const UserHistoryModal = dynamic(() => import('@/components/UserHistoryModal'), { ssr: false });
 const TransferModal = dynamic(() => import('@/components/TransferModal'), { ssr: false });
 const SeatAssignmentModal = dynamic(() => import('@/components/SeatAssignmentModal'), { ssr: false });
-const DepreciationChart = dynamic(() => import('@/components/DepreciationChart'), { 
-  ssr: false,
-  loading: () => (
-    <div className="w-full h-[120px] bg-muted/20 animate-pulse rounded-md flex items-center justify-center">
-      <span className="text-xs text-muted-foreground opacity-50">Loading chart...</span>
-    </div>
-  )
-});
 
 const statusConfig: Record<string, { icon: any; className: string }> = {
   'ใช้งาน': { icon: CheckCircle2, className: 'text-emerald-600 bg-emerald-50 border-emerald-200/50' },
@@ -920,23 +912,24 @@ function AssetDetailsContent({ id }: { id: string }) {
                       </div>
                       
                       {displayData.price && displayData.purchase_date ? (
-                        <div className="bg-slate-50 dark:bg-slate-900/50 rounded-xl p-4 border border-border/50 flex flex-col justify-center">
-                          <div className="flex justify-between items-center mb-3">
+                        <div className="bg-slate-50 dark:bg-slate-900/50 rounded-xl p-4 border border-border/50 flex flex-col justify-center space-y-3">
+                          <div className="flex justify-between items-center">
                             <span className="text-sm font-medium text-muted-foreground">Purchase Price</span>
                             <span className="text-sm font-bold">฿{Number(displayData.price).toLocaleString()}</span>
                           </div>
-                          <div className="flex justify-between items-center mb-4 pb-4 border-b border-border/50">
-                            <span className="text-sm font-medium text-muted-foreground">Current Book Value</span>
+                          <div className="flex justify-between items-center pt-2 border-t border-border/50">
+                            <div className="flex flex-col">
+                              <span className="text-sm font-medium text-muted-foreground">Current Book Value</span>
+                              <span className="text-[10px] text-muted-foreground">5-Year Straight Line</span>
+                            </div>
                             <span className="text-lg font-bold text-primary">฿{calculateDepreciation(displayData.price, displayData.purchase_date)?.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</span>
                           </div>
-                          <DepreciationChart price={displayData.price} purchaseDate={displayData.purchase_date} />
-                          <div className="text-[10px] text-center text-muted-foreground mt-2">5-Year Straight Line Depreciation</div>
                         </div>
                       ) : (
                         <div className="bg-slate-50 dark:bg-slate-900/50 rounded-xl p-4 border border-border/50 flex flex-col items-center justify-center text-center">
                           <ShoppingCart className="w-8 h-8 text-muted-foreground/30 mb-2" />
                           <span className="text-xs font-medium text-muted-foreground">No financial data available</span>
-                          <span className="text-[10px] text-muted-foreground mt-1">Please enter Purchase Date and Price to see depreciation curve.</span>
+                          <span className="text-[10px] text-muted-foreground mt-1">Please enter Purchase Date and Price to calculate book value.</span>
                         </div>
                       )}
                     </div>
